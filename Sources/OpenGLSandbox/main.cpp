@@ -7,8 +7,6 @@
 
 #include "SandboxApp.h"
 
-const GLuint WIDTH = 800, HEIGHT = 600;
-
 class TriangleApp final : public Eugenix::SandboxApp
 {
 protected:
