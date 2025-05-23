@@ -1,8 +1,9 @@
 #include <iostream>
 
 #include <glad/glad.h>
-
 #include <GLFW/glfw3.h>
+
+#include "SandboxApp.h"
 
 const GLuint WIDTH = 800, HEIGHT = 600;
 
@@ -24,80 +25,75 @@ void main()
 }
 )";
 
-int main()
+class TriangleApp final : public Eugenix::SandboxApp
 {
-	glfwInit();
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+protected:
+	bool OnInit() override
+	{ 
+		const float vertices[] =
+		{
+			-0.5f, -0.5f, 0.0f,
+			 0.0f,  0.5f, 0.0f,
+			 0.5f, -0.5f, 0.0f
+		};
 
-	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "OGLDev", nullptr, nullptr);
-	if (window == nullptr)
-	{
-		std::cout << "Failed to create GLFW window" << std::endl;
-		glfwTerminate();
-		return -1;
+		glGenVertexArrays(1, &_triangleVao);
+		glBindVertexArray(_triangleVao);
+
+		glGenBuffers(1, &_triangleVbo);
+		glBindBuffer(GL_ARRAY_BUFFER, _triangleVbo);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+		GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+		glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
+		glCompileShader(vertexShader);
+
+		GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+		glShaderSource(fragmentShader, 1, &fragmentShaderSource, nullptr);
+		glCompileShader(fragmentShader);
+
+		_trianglePipeline = glCreateProgram();
+		glAttachShader(_trianglePipeline, vertexShader);
+		glAttachShader(_trianglePipeline, fragmentShader);
+		glLinkProgram(_trianglePipeline);
+		glUseProgram(_trianglePipeline);
+
+		glDeleteShader(vertexShader);
+		glDeleteShader(fragmentShader);
+
+		return true; 
 	}
-	glfwMakeContextCurrent(window);
 
-	gladLoadGL();
-
-	float vertices[] = 
+	void OnRender() override
 	{
-		-0.5f, -0.5f, 0.0f,
-		 0.0f,  0.5f, 0.0f, 
-		 0.5f, -0.5f, 0.0f  
-	};
-
-	unsigned int VAO, VBO;
-
-	glGenVertexArrays(1, &VAO);
-	glBindVertexArray(VAO);
-
-	glGenBuffers(1, &VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-
-	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
-	glCompileShader(vertexShader);
-
-	GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragmentShader, 1, &fragmentShaderSource, nullptr);
-	glCompileShader(fragmentShader);
-
-	GLuint shaderProgram = glCreateProgram();
-	glAttachShader(shaderProgram, vertexShader);
-	glAttachShader(shaderProgram, fragmentShader);
-	glLinkProgram(shaderProgram);
-	glUseProgram(shaderProgram);
-
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
-
-	while (!glfwWindowShouldClose(window))
-	{
-		glfwPollEvents();
-
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		glUseProgram(shaderProgram);
+		glUseProgram(_trianglePipeline);
 
-		glBindVertexArray(VAO);
+		glBindVertexArray(_triangleVao);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
-
-		glfwSwapBuffers(window);
+	}
+	
+	void OnCleanup() override
+	{
+		glDeleteProgram(_trianglePipeline);
+		glDeleteVertexArrays(1, &_triangleVao);
+		glDeleteBuffers(1, &_triangleVbo);
 	}
 
-	glDeleteVertexArrays(1, &VAO);
-	glDeleteBuffers(1, &VBO);
+private:
+	uint32_t _triangleVao{};
+	uint32_t _triangleVbo{};
 
-	glfwDestroyWindow(window);
-	glfwTerminate();
+	uint32_t _trianglePipeline{};
+};
 
-	return 0;
+int main()
+{
+	TriangleApp app;
+	return app.Run();
 }
