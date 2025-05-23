@@ -3,27 +3,11 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include "Engine/IO/IO.h"
+
 #include "SandboxApp.h"
 
 const GLuint WIDTH = 800, HEIGHT = 600;
-
-const char* vertexShaderSource = R"(
-#version 330 core
-layout(location = 0) in vec3 aPos;
-void main()
-{
-    gl_Position = vec4(aPos, 1.0);
-}
-)";
-
-const char* fragmentShaderSource = R"(
-#version 330 core
-out vec4 FragColor;
-void main()
-{
-    FragColor = vec4(1.0, 0.5, 0.2, 1.0);
-}
-)";
 
 class TriangleApp final : public Eugenix::SandboxApp
 {
@@ -47,12 +31,18 @@ protected:
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
+		const auto vsSourceData = Eugenix::IO::FileContent("Shaders/simple.vert");
+		const char* vsSource = vsSourceData.data();
+
 		GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-		glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
+		glShaderSource(vertexShader, 1, &vsSource, nullptr);
 		glCompileShader(vertexShader);
 
+		const auto fsSourceData = Eugenix::IO::FileContent("Shaders/simple.frag");
+		const char* fsSource = fsSourceData.data();
+
 		GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-		glShaderSource(fragmentShader, 1, &fragmentShaderSource, nullptr);
+		glShaderSource(fragmentShader, 1, &fsSource, nullptr);
 		glCompileShader(fragmentShader);
 
 		_trianglePipeline = glCreateProgram();
