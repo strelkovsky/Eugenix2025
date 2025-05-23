@@ -1,11 +1,15 @@
+// STD headers
 #include <iostream>
 
+// ThirdParty headers
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+// Engine headers
 #include "Engine/IO/IO.h"
 
-#include "SandboxApp.h"
+// Sandbox headers
+#include "App/SandboxApp.h"
 
 class TriangleApp final : public Eugenix::SandboxApp
 {
