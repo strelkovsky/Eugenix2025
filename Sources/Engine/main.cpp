@@ -167,6 +167,10 @@ private:
 	VkPipelineLayout _pipelineLayout{ VK_NULL_HANDLE };
 	VkPipeline _graphicsPipeline{ VK_NULL_HANDLE };
 
+	std::vector<VkFramebuffer> _swapchainFramebuffers;
+	VkCommandPool _commandPool{ VK_NULL_HANDLE };
+	std::vector<VkCommandBuffer> _commandBuffers;
+
 	void initWindow()
 	{
 		glfwInit();
@@ -186,6 +190,9 @@ private:
 		createImageViews(); // TODO : merge with createSwapchain
 		createRenderPass();
 		createGraphicsPipeline();
+		createFramebuffers();
+		createCommandPool();
+		createCommandBuffers();
 	}
 
 	void createInstance()
@@ -557,6 +564,30 @@ private:
 		}
 	}
 
+	void createFramebuffers()
+	{
+		_swapchainFramebuffers.resize(_swapchainImageViews.size());
+
+		for (size_t i = 0; i < _swapchainImages.size(); ++i)
+		{
+			VkImageView attachments[] = { _swapchainImageViews[i] };
+
+			VkFramebufferCreateInfo framebufferInfo{};
+			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			framebufferInfo.renderPass = _renderPass;
+			framebufferInfo.attachmentCount = 1;
+			framebufferInfo.pAttachments = attachments;
+			framebufferInfo.width = _swapchainExtent.width;
+			framebufferInfo.height = _swapchainExtent.height;
+			framebufferInfo.layers = 1;
+
+			if (vkCreateFramebuffer(_device, &framebufferInfo, nullptr, &_swapchainFramebuffers[i]) != VK_SUCCESS)
+			{
+				throw std::runtime_error("Failed to create framebuffer!\n");
+			}
+		}
+	}
+
 	void createRenderPass()
 	{
 		VkAttachmentDescription colorAttachment{};
@@ -728,7 +759,7 @@ private:
 		vkDestroyShaderModule(_device, vertShaderModule, nullptr);
 		vkDestroyShaderModule(_device, fragShaderModule, nullptr);
 	}
-	
+
 	VkShaderModule createShaderModule(const std::vector<char>& code)
 	{
 		VkShaderModuleCreateInfo createInfo{};
@@ -742,6 +773,67 @@ private:
 			throw std::runtime_error("Failed to create shader module!\n");
 		}
 		return shaderModule;
+	}
+
+	void createCommandPool()
+	{
+		QueueFamilyIndices queueFamilyIndices = findQueueFamilies(_physicalDevice);
+
+		VkCommandPoolCreateInfo poolInfo{};
+		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+
+		if (vkCreateCommandPool(_device, &poolInfo, nullptr, &_commandPool))
+		{
+			throw std::runtime_error("Failed to create command pool!\n");
+		}
+	}
+
+	void createCommandBuffers()
+	{
+		_commandBuffers.resize(_swapchainFramebuffers.size());
+
+		VkCommandBufferAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.commandPool = _commandPool;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandBufferCount = static_cast<uint32_t>(_commandBuffers.size());
+
+		if (vkAllocateCommandBuffers(_device, &allocInfo, _commandBuffers.data()) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to allocate command buffers!\n");
+		}
+
+		for (size_t i = 0; i < _commandBuffers.size(); ++i)
+		{
+			VkCommandBufferBeginInfo beginInfo{};
+			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+			if (vkBeginCommandBuffer(_commandBuffers[i], &beginInfo))
+			{
+				throw std::runtime_error("Failed to begin recording command buffer!\n");
+			}
+
+			VkRenderPassBeginInfo renderPassInfo{};
+			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+			renderPassInfo.renderPass = _renderPass;
+			renderPassInfo.framebuffer = _swapchainFramebuffers[i];
+			renderPassInfo.renderArea.offset = { 0, 0 };
+			renderPassInfo.renderArea.extent = _swapchainExtent;
+			VkClearValue clearColor = { 0.5f, 0.0f, 0.25f, 1.0f };
+			renderPassInfo.clearValueCount = 1;
+			renderPassInfo.pClearValues = &clearColor;
+
+			vkCmdBeginRenderPass(_commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+			vkCmdBindPipeline(_commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline);
+			vkCmdDraw(_commandBuffers[i], 3, 1, 0, 0);
+			vkCmdEndRenderPass(_commandBuffers[i]);
+
+			if (vkEndCommandBuffer(_commandBuffers[i]) != VK_SUCCESS)
+			{
+				throw std::runtime_error("Failed to record command buffer!\n");
+			}
+		}
 	}
 
 	void createSurface()
@@ -762,6 +854,13 @@ private:
 
 	void cleanup()
 	{
+		vkDestroyCommandPool(_device, _commandPool, nullptr);
+
+		for (auto framebuffer : _swapchainFramebuffers)
+		{
+			vkDestroyFramebuffer(_device, framebuffer, nullptr);
+		}
+
 		vkDestroyPipeline(_device, _graphicsPipeline, nullptr);
 		vkDestroyPipelineLayout(_device, _pipelineLayout, nullptr);
 		vkDestroyRenderPass(_device, _renderPass, nullptr);
