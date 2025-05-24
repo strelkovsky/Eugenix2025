@@ -1,5 +1,7 @@
 #include "SandboxApp.h"
 
+#include "Engine/Core/Time.h"
+
 namespace
 {
 #if _DEBUG
@@ -73,14 +75,35 @@ namespace Eugenix
 			return EXIT_FAILURE;
 		}
 
+		auto lastTime = Time::Clock::now();
+		auto fpsTime = lastTime;
+		int frameCount = 0;
+
 		while (!glfwWindowShouldClose(_window))
 		{
+			auto currentTime = Time::Clock::now();
+			Time::Duration deltaTime = currentTime - lastTime;
+			lastTime = currentTime;
+
 			glfwPollEvents();
 
-			OnUpdate(0);
+			OnUpdate(deltaTime.count());
 			OnRender();
 
 			glfwSwapBuffers(_window);
+
+			frameCount++;
+			if (Time::Duration(currentTime - fpsTime).count() >= 1.0f)
+			{
+				float fps = static_cast<float>(frameCount);
+				std::ostringstream title;
+				title << "EugenixSandbox - FPS: " << std::fixed << std::setprecision(1) << fps
+					<< " | Frame Time: " << std::setprecision(3) << (deltaTime.count() * 1000.0f) << " ms";
+				glfwSetWindowTitle(_window, title.str().c_str());
+
+				frameCount = 0;
+				fpsTime = currentTime;
+			}
 		}
 
 		OnCleanup();
