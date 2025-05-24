@@ -118,6 +118,7 @@ namespace Eugenix
 
 #if _DEBUG
 		glEnable(GL_DEBUG_OUTPUT);
+		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 		glDebugMessageCallback(debugCallback, nullptr);
 #endif // _DEBUG
 
