@@ -242,12 +242,20 @@ private:
 
 	std::vector<Vertex> vertices =
 	{
-		{{ 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}, { 0.5f, 0.0f}},
-		{{ 0.5f,  0.5f}, {0.0f, 1.0f, 0.0f}, { 1.0f, 1.0f}},
-		{{-0.5f,  0.5f}, {0.0f, 0.0f, 2.0f}, { 0.0f, 1.0f}}
+		{{-1.0f,  1.0f}, {1.0f, 1.0f, 1.0f}, { 0.0f, 0.0f}},
+		{{ 1.0f,  1.0f}, {1.0f, 1.0f, 1.0f}, { 1.0f, 0.0f}},
+		{{ 1.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, { 1.0f, 1.0f}},
+		{{-1.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, { 0.0f, 1.0f}}
 	};
+	std::vector<uint32_t> indices =
+	{
+		0, 2, 1, 3, 2, 0
+	};
+
 	VkBuffer _vertexBuffer;
 	VkDeviceMemory _vertexBufferMemory;
+	VkBuffer _indexBuffer;
+	VkDeviceMemory _indexBufferMemory;
 	VkDescriptorSetLayout _descriptorSetLayout;
 	std::vector<VkBuffer> _uniformBuffers;
 	std::vector<VkDeviceMemory> _uniformBuffersMemory;
@@ -292,6 +300,7 @@ private:
 		createTextureImageView();
 		createTextureSampler();
 		createVertexBuffer();
+		createIndexBuffer();
 		createUniformBuffers();
 		createDescriptorPool();
 		createDescriptorSets();
@@ -1065,8 +1074,9 @@ private:
 			VkBuffer vertexBuffers[] = { _vertexBuffer };
 			VkDeviceSize offsets[] = { 0 };
 			vkCmdBindVertexBuffers(_commandBuffers[i], 0, 1, vertexBuffers, offsets);
+			vkCmdBindIndexBuffer(_commandBuffers[i], _indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 			vkCmdBindDescriptorSets(_commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSets[i], 0, nullptr);
-			vkCmdDraw(_commandBuffers[i], static_cast<uint32_t>(vertices.size()), 1, 0, 0);
+			vkCmdDrawIndexed(_commandBuffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 			vkCmdEndRenderPass(_commandBuffers[i]);
 
 			if (vkEndCommandBuffer(_commandBuffers[i]) != VK_SUCCESS)
@@ -1157,6 +1167,30 @@ private:
 			_vertexBuffer, _vertexBufferMemory);
 
 		copyBuffer(stagingBuffer, _vertexBuffer, size);
+		vkDestroyBuffer(_device, stagingBuffer, nullptr);
+		vkFreeMemory(_device, stagingBufferMemory, nullptr);
+	}
+
+	void createIndexBuffer()
+	{
+		VkDeviceSize size = sizeof(uint32_t) * indices.size();
+
+		VkBuffer stagingBuffer;
+		VkDeviceMemory stagingBufferMemory;
+		createBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			stagingBuffer, stagingBufferMemory);
+
+		void* data;
+		vkMapMemory(_device, stagingBufferMemory, 0, size, 0, &data);
+		memcpy(data, indices.data(), static_cast<size_t>(size));
+		vkUnmapMemory(_device, stagingBufferMemory);
+
+		createBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			_indexBuffer, _indexBufferMemory);
+
+		copyBuffer(stagingBuffer, _indexBuffer, size);
 		vkDestroyBuffer(_device, stagingBuffer, nullptr);
 		vkFreeMemory(_device, stagingBufferMemory, nullptr);
 	}
@@ -1528,7 +1562,7 @@ private:
 		float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
 		UniformBufferObject ubo{};
-		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(30.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		ubo.proj = glm::perspective(glm::radians(45.0f), static_cast<float>(_swapchainExtent.width / _swapchainExtent.height), 0.1f, 10.0f);
 		ubo.proj[1][1] *= -1;
@@ -1549,6 +1583,9 @@ private:
 
 		vkDestroyBuffer(_device, _vertexBuffer, nullptr);
 		vkFreeMemory(_device, _vertexBufferMemory, nullptr);
+
+		vkDestroyBuffer(_device, _indexBuffer, nullptr);
+		vkFreeMemory(_device, _indexBufferMemory, nullptr);
 
 		for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
 		{
