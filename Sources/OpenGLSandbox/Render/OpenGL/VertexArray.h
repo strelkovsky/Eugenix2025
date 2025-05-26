@@ -4,8 +4,8 @@
 
 #include <glad/glad.h>
 
+#include "Object.h"
 #include "Render/Attribute.h"
-#include "Render/OpenGL/Object.h"
 
 namespace Eugenix
 {

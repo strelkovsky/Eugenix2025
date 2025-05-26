@@ -11,7 +11,10 @@
 // Sandbox headers
 #include "App/SandboxApp.h"
 #include "Render/OpenGL/Buffer.h"
+#include "Render/OpenGL/Pipeline.h"
+#include "Render/OpenGL/ShaderStage.h"
 #include "Render/OpenGL/VertexArray.h"
+#include "Render/Types.h"
 
 class SquareApp final : public Eugenix::SandboxApp
 {
@@ -44,31 +47,30 @@ protected:
 		_squareVao.AttachIndices(_squareEbo.Handle());
 
 		constexpr Eugenix::Render::Attribute position_attribute{ 0, 3, GL_FLOAT, GL_FALSE,  0 };
-
 		_squareVao.Attribute(position_attribute);
 
 		const auto vsSourceData = Eugenix::IO::FileContent("Shaders/simple.vert");
 		const char* vsSource = vsSourceData.data();
 
-		GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-		glShaderSource(vertexShader, 1, &vsSource, nullptr);
-		glCompileShader(vertexShader);
+		Eugenix::Render::OpenGL::ShaderStage vertexStage{Eugenix::Render::ShaderStageType::Vertex};
+		vertexStage.Create();
+		vertexStage.CompileFromSource(vsSource);
 
 		const auto fsSourceData = Eugenix::IO::FileContent("Shaders/simple.frag");
 		const char* fsSource = fsSourceData.data();
 
-		GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-		glShaderSource(fragmentShader, 1, &fsSource, nullptr);
-		glCompileShader(fragmentShader);
+		Eugenix::Render::OpenGL::ShaderStage fragmentStage{ Eugenix::Render::ShaderStageType::Fragment };
+		fragmentStage.Create();
+		fragmentStage.CompileFromSource(fsSource);
 
-		_squarePipeline = glCreateProgram();
-		glAttachShader(_squarePipeline, vertexShader);
-		glAttachShader(_squarePipeline, fragmentShader);
-		glLinkProgram(_squarePipeline);
-		glUseProgram(_squarePipeline);
+		_squarePipeline.Create();
+		_squarePipeline
+			.Attach(vertexStage)
+			.Attach(fragmentStage)
+			.Build();
 
-		glDeleteShader(vertexShader);
-		glDeleteShader(fragmentShader);
+		vertexStage.Destroy();
+		fragmentStage.Destroy();
 
 		return true; 
 	}
@@ -78,7 +80,7 @@ protected:
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		glUseProgram(_squarePipeline);
+		_squarePipeline.Bind();
 
 		_squareVao.Bind();
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
@@ -86,7 +88,8 @@ protected:
 	
 	void OnCleanup() override
 	{
-		glDeleteProgram(_squarePipeline);
+		_squarePipeline.Destroy();
+
 		_squareVao.Destroy();
 		_squareVbo.Destroy();
 		_squareEbo.Destroy();
@@ -97,7 +100,7 @@ private:
 	Eugenix::Render::OpenGL::Buffer _squareVbo{};
 	Eugenix::Render::OpenGL::Buffer _squareEbo{};
 
-	uint32_t _squarePipeline{};
+	Eugenix::Render::OpenGL::Pipeline _squarePipeline{};
 };
 
 int main()
