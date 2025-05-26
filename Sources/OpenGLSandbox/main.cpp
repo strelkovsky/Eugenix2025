@@ -10,6 +10,8 @@
 
 // Sandbox headers
 #include "App/SandboxApp.h"
+#include "Render/OpenGL/Buffer.h"
+#include "Render/OpenGL/VertexArray.h"
 
 class SquareApp final : public Eugenix::SandboxApp
 {
@@ -30,20 +32,20 @@ protected:
 			1, 2, 3
 		};
 
-		glCreateVertexArrays(1, &_squareVao);
+		_squareVao.Create();
 
-		glCreateBuffers(1, &_squareVbo);
-		glNamedBufferData(_squareVbo, square_vertices.size() * sizeof(square_vertices), square_vertices.data(), GL_STATIC_DRAW);
+		_squareVbo.Create();
+		_squareVbo.Storage(Eugenix::Render::MakeData(square_vertices));
 
-		glCreateBuffers(1, &_squareEbo);
-		glNamedBufferData(_squareEbo, square_elements.size() * sizeof(uint32_t), square_elements.data(), GL_STATIC_DRAW);
+		_squareEbo.Create();
+		_squareEbo.Storage(Eugenix::Render::MakeData(square_elements));
 
-		glVertexArrayVertexBuffer(_squareVao, 0, _squareVbo, 0, sizeof(float) * 3);
-		glVertexArrayElementBuffer(_squareVao, _squareEbo);
+		_squareVao.AttachVertices(_squareVbo.Handle(), sizeof(float) * 3);
+		_squareVao.AttachIndices(_squareEbo.Handle());
 
-		glVertexArrayAttribFormat(_squareVao, 0, 3, GL_FLOAT, GL_FALSE, 0);
-		glVertexArrayAttribBinding(_squareVao, 0, 0);
-		glEnableVertexArrayAttrib(_squareVao, 0);
+		constexpr Eugenix::Render::Attribute position_attribute{ 0, 3, GL_FLOAT, GL_FALSE,  0 };
+
+		_squareVao.Attribute(position_attribute);
 
 		const auto vsSourceData = Eugenix::IO::FileContent("Shaders/simple.vert");
 		const char* vsSource = vsSourceData.data();
@@ -78,21 +80,22 @@ protected:
 
 		glUseProgram(_squarePipeline);
 
-		glBindVertexArray(_squareVao);
+		_squareVao.Bind();
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 	}
 	
 	void OnCleanup() override
 	{
 		glDeleteProgram(_squarePipeline);
-		glDeleteVertexArrays(1, &_squareVao);
-		glDeleteBuffers(1, &_squareVbo);
+		_squareVao.Destroy();
+		_squareVbo.Destroy();
+		_squareEbo.Destroy();
 	}
 
 private:
-	uint32_t _squareVao{};
-	uint32_t _squareVbo{};
-	uint32_t _squareEbo{};
+	Eugenix::Render::OpenGL::VertexArray _squareVao{};
+	Eugenix::Render::OpenGL::Buffer _squareVbo{};
+	Eugenix::Render::OpenGL::Buffer _squareEbo{};
 
 	uint32_t _squarePipeline{};
 };
