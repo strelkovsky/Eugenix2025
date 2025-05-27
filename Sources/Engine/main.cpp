@@ -1587,6 +1587,8 @@ private:
 		vkDestroyBuffer(_device, _indexBuffer, nullptr);
 		vkFreeMemory(_device, _indexBufferMemory, nullptr);
 
+		vkDestroyDescriptorSetLayout(_device, _descriptorSetLayout, nullptr);
+
 		for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
 		{
 			vkDestroySemaphore(_device, _renderFinishedSemaphores[i], nullptr);
