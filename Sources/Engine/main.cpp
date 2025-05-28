@@ -42,7 +42,7 @@ const bool enableValidationLayers{ true };
 const bool enableValidationLayers{ false };
 #endif
 
-bool checkValidationLyerSupport()
+bool checkValidationLayerSupport()
 {
 	uint32_t layerCount;
 	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -225,14 +225,14 @@ std::vector<Renderable> _renderables;
 
 class Camera {
 public:
-	glm::vec3 position = { 0.0f, 0.0f, 2.0f };
+	glm::vec3 position = { 0.0f, 5.0f, 0.0f };
 	glm::vec3 front = { 0.0f, 0.0f, -1.0f };
 	glm::vec3 up = { 0.0f, 1.0f, 0.0f };
 	glm::vec3 right = { 1.0f, 0.0f, 0.0f };
 	glm::vec3 worldUp = { 0.0f, 1.0f, 0.0f };
 
 	float yaw = -90.0f;
-	float pitch = 0.0f;
+	float pitch = -90.0f;
 
 	float moveSpeed = 2.5f;
 	float mouseSensitivity = 0.1f;
@@ -310,6 +310,11 @@ void processInput(GLFWwindow* window)
 		camera.processKeyboard('A', deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		camera.processKeyboard('D', deltaTime);
+
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) 
+	{
+		glfwSetWindowShouldClose(window, 1);
+	}
 }
 
 class VulkanApp
@@ -433,7 +438,7 @@ private:
 
 	void createInstance()
 	{
-		if (enableValidationLayers && !checkValidationLyerSupport())
+		if (enableValidationLayers && !checkValidationLayerSupport())
 		{
 			throw std::runtime_error("validation layers requested, but not available!\n");
 		}
@@ -480,6 +485,7 @@ private:
 			debugMessengerInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
 			debugMessengerInfo.messageSeverity =
 				VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+				VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
 				VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
 				VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
 			debugMessengerInfo.messageType =
@@ -694,6 +700,8 @@ private:
 				return availableFormat;
 			}
 		}
+
+		return availableFormats[0];
 	}
 
 	VkPresentModeKHR chooseSwapchainPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
@@ -1248,8 +1256,9 @@ private:
 		VkCommandPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
-		if (vkCreateCommandPool(_device, &poolInfo, nullptr, &_commandPool))
+		if (vkCreateCommandPool(_device, &poolInfo, nullptr, &_commandPool) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create command pool!\n");
 		}
@@ -1472,7 +1481,7 @@ private:
 		stbi_image_free(pixels);
 
 		createImage(width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+			VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, _textureImage, _textureImageMemory);
 
 		transitionImageLayout(_textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -1856,7 +1865,7 @@ private:
 	{
 		UniformBufferObject ubo{};
 		ubo.view = camera.getViewMatrix();
-		ubo.proj = glm::perspective(glm::radians(45.0f), static_cast<float>(_swapchainExtent.width / _swapchainExtent.height), 0.1f, 10.0f);
+		ubo.proj = glm::perspective(glm::radians(45.0f), float(_swapchainExtent.width) / float(_swapchainExtent.height), 0.1f, 100.0f);
 		ubo.proj[1][1] *= -1;
 
 		void* data;
