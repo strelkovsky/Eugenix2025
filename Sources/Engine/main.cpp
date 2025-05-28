@@ -270,8 +270,12 @@ private:
 	VkBuffer _indexBuffer;
 	VkDeviceMemory _indexBufferMemory;
 	VkDescriptorSetLayout _descriptorSetLayout;
-	std::vector<VkBuffer> _uniformBuffers;
-	std::vector<VkDeviceMemory> _uniformBuffersMemory;
+
+	VkBuffer _uniformBuffer;
+	VkDeviceMemory _uniformBufferMemory;
+
+	//std::vector<VkBuffer> _uniformBuffers;
+	//std::vector<VkDeviceMemory> _uniformBuffersMemory;
 
 	VkImage _textureImage;
 	VkDeviceMemory _textureImageMemory;
@@ -871,7 +875,7 @@ private:
 		for (size_t i = 0; i < _swapchainImages.size(); ++i)
 		{
 			VkDescriptorBufferInfo bufferInfo{};
-			bufferInfo.buffer = _uniformBuffers[i];
+			bufferInfo.buffer = _uniformBuffer;
 			bufferInfo.offset = 0;
 			bufferInfo.range = sizeof(UniformBufferObject);
 
@@ -1263,17 +1267,12 @@ private:
 
 	void createUniformBuffers()
 	{
+		// Camera UBO
 		VkDeviceSize size = sizeof(UniformBufferObject);
 
-		_uniformBuffers.resize(_swapchainImages.size());
-		_uniformBuffersMemory.resize(_swapchainImages.size());
-
-		for (size_t i = 0; i < _swapchainImages.size(); ++i)
-		{
-			createBuffer(size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-				_uniformBuffers[i], _uniformBuffersMemory[i]);
-		}
+		createBuffer(size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			_uniformBuffer, _uniformBufferMemory);
 	}
 
 	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
@@ -1752,9 +1751,9 @@ private:
 		ubo.proj[1][1] *= -1;
 
 		void* data;
-		vkMapMemory(_device, _uniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
+		vkMapMemory(_device, _uniformBufferMemory, 0, sizeof(ubo), 0, &data);
 		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(_device, _uniformBuffersMemory[currentImage]);
+		vkUnmapMemory(_device, _uniformBufferMemory);
 	}
 
 	void cleanup()
@@ -1802,11 +1801,8 @@ private:
 
 	void cleanupSwapchain()
 	{
-		for (size_t i = 0; i < _swapchainImages.size(); ++i)
-		{
-			vkDestroyBuffer(_device, _uniformBuffers[i], nullptr);
-			vkFreeMemory(_device, _uniformBuffersMemory[i], nullptr);
-		}
+		vkDestroyBuffer(_device, _uniformBuffer, nullptr);
+		vkFreeMemory(_device, _uniformBufferMemory, nullptr);
 
 		vkDestroyDescriptorPool(_device, _descriptorPool, nullptr);
 
