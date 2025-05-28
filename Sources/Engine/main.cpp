@@ -337,9 +337,6 @@ private:
 		createFramebuffers();
 		createGraphicsPipeline();
 		initRenderables();
-		//loadModel();
-		//createVertexBuffer();
-		//createIndexBuffer();
 		createUniformBuffers();
 		createDescriptorPool();
 		createDescriptorSets();
@@ -745,12 +742,17 @@ private:
 
 		createSwapchain();
 		createSwapchainImageViews();
+		createTextureImage();
+		createTextureImageView();
+		createTextureSampler();
+		createDepthResources();
 		createRenderPass();
+		createFramebuffers();
+		createGraphicsPipeline();
 		createUniformBuffers();
 		createDescriptorPool();
 		createDescriptorSets();
-		createGraphicsPipeline();
-		createFramebuffers();
+		
 		createCommandBuffers();
 	}
 
