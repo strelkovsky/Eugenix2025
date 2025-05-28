@@ -4,6 +4,7 @@
 #include <optional>
 #include <set>
 #include <stdexcept>
+#include <unordered_map>
 #include <vector>
 
 #define GLFW_INCLUDE_VULKAN
@@ -13,8 +14,11 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/hash.hpp>
 
 #include <stb_image.h>
+
+#include <tiny_obj_loader.h>
 
 #include "IO/IO.h"
 
@@ -144,7 +148,7 @@ struct SwapchainSupportDetails
 struct Vertex
 {
 	glm::vec3 pos;
-	glm::vec3 color;
+	glm::vec3 normal;
 	glm::vec2 texCoord;
 
 	static VkVertexInputBindingDescription getBondingDescription()
@@ -168,11 +172,11 @@ struct Vertex
 		attributeDesc[0].format = VK_FORMAT_R32G32B32_SFLOAT;
 		attributeDesc[0].offset = offsetof(Vertex, pos);
 
-		//color
+		//normal
 		attributeDesc[1].binding = 0;
 		attributeDesc[1].location = 1;
 		attributeDesc[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-		attributeDesc[1].offset = offsetof(Vertex, color);
+		attributeDesc[1].offset = offsetof(Vertex, normal);
 
 		//color
 		attributeDesc[2].binding = 0;
@@ -182,7 +186,25 @@ struct Vertex
 
 		return attributeDesc;
 	}
+
+	bool operator==(const Vertex& other) const
+	{
+		return pos == other.pos && normal == other.normal && texCoord == other.texCoord;
+	}
 };
+
+namespace std
+{
+	template<> struct hash<Vertex>
+	{
+		size_t operator()(Vertex const& vertex) const
+		{
+			return ((hash<glm::vec3>()(vertex.pos) ^
+				(hash<glm::vec3>()(vertex.normal) << 1)) >> 1) ^
+				(hash<glm::vec2>()(vertex.texCoord) << 1);
+		}
+	};
+}
 
 struct UniformBufferObject
 {
@@ -241,47 +263,8 @@ private:
 	VkDescriptorPool _descriptorPool;
 	std::vector<VkDescriptorSet> _descriptorSets;
 
-	std::vector<Vertex> vertices =
-	{
-		{{-1.0f, -1.0f,  1.0f}, {1.0f, 1.0f, 1.0f}, { 1.0f, 0.0f}},
-		{{-1.0f,  1.0f,  1.0f}, {1.0f, 1.0f, 1.0f}, { 2.0f, 0.0f}},
-		{{ 1.0f,  1.0f,  1.0f}, {1.0f, 1.0f, 1.0f}, { 2.0f, 1.0f}},
-		{{ 1.0f, -1.0f,  1.0f}, {1.0f, 1.0f, 1.0f}, { 1.0f, 1.0f}},
-
-		{{-1.0f, -1.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, { 1.0f, 0.0f}},
-		{{-1.0f,  1.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, { 2.0f, 0.0f}},
-		{{ 1.0f,  1.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, { 2.0f, 1.0f}},
-		{{ 1.0f, -1.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, { 1.0f, 1.0f}},
-
-		{{ 1.0f,  1.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, { 1.0f, 2.0f}},
-		{{ 1.0f, -1.0f,  1.0f}, {1.0f, 1.0f, 1.0f}, { 2.0f, 2.0f}},
-		{{ 1.0f,  1.0f,  1.0f}, {1.0f, 1.0f, 1.0f}, { 3.0f, 1.0f}},
-		{{ 1.0f,  1.0f,  1.0f}, {1.0f, 1.0f, 1.0f}, { 1.0f, 1.0f}},
-
-		{{-1.0f,  1.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, { 1.0f, 2.0f}},
-		{{-1.0f, -1.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, { 2.0f, 2.0f}},
-		{{-1.0f, -1.0f,  1.0f}, {1.0f, 1.0f, 1.0f}, { 2.0f, 1.0f}},
-		{{-1.0f,  1.0f,  1.0f}, {1.0f, 1.0f, 1.0f}, { 1.0f, 1.0f}},
-
-		{{ 1.0f,  1.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, { 1.0f, 2.0f}},
-		{{-1.0f,  1.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, { 2.0f, 2.0f}},
-		{{-1.0f,  1.0f,  1.0f}, {1.0f, 1.0f, 1.0f}, { 2.0f, 1.0f}},
-		{{ 1.0f,  1.0f,  1.0f}, {1.0f, 1.0f, 1.0f}, { 1.0f, 1.0f}},
-
-		{{ 1.0f, -1.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, { 1.0f, 2.0f}},
-		{{-1.0f, -1.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, { 2.0f, 2.0f}},
-		{{-1.0f, -1.0f,  1.0f}, {1.0f, 1.0f, 1.0f}, { 2.0f, 1.0f}},
-		{{ 1.0f, -1.0f,  1.0f}, {1.0f, 1.0f, 1.0f}, { 1.0f, 1.0f}},
-	};
-	std::vector<uint32_t> indices =
-	{
-		0, 2, 1, 0, 3, 2, 
-		5, 6, 4, 6, 7, 4,
-		8, 10, 9, 11, 10, 8,
-		13, 14, 12, 12, 14, 15,
-		16, 17, 18 ,18, 19, 16,
-		20, 21, 20, 20, 23, 22
-	};
+	std::vector<Vertex> vertices;
+	std::vector<uint32_t> indices;
 
 	VkBuffer _vertexBuffer;
 	VkDeviceMemory _vertexBufferMemory;
@@ -335,6 +318,7 @@ private:
 		createRenderPass();
 		createFramebuffers();
 		createGraphicsPipeline();
+		loadModel();
 		createVertexBuffer();
 		createIndexBuffer();
 		createUniformBuffers();
@@ -1080,6 +1064,57 @@ private:
 		return shaderModule;
 	}
 
+	void loadModel()
+	{
+		tinyobj::attrib_t attrib;
+		std::vector<tinyobj::shape_t> shapes;
+		std::vector<tinyobj::material_t> materials;
+		std::string warning, error;
+
+		std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+
+		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warning, &error, "models/viking_room.obj"))
+		{
+			throw std::runtime_error(warning + error);
+		}
+
+		for (const auto& shape : shapes)
+		{
+			for (const auto& index : shape.mesh.indices)
+			{
+				Vertex vertex{};
+
+				vertex.pos =
+				{
+					attrib.vertices[3 * index.vertex_index + 0],
+					attrib.vertices[3 * index.vertex_index + 1],
+					attrib.vertices[3 * index.vertex_index + 2]
+				};
+
+				vertex.normal =
+				{
+					attrib.normals[3 * index.normal_index + 0],
+					attrib.normals[3 * index.normal_index + 1],
+					attrib.normals[3 * index.normal_index + 2]
+				};
+
+				vertex.texCoord =
+				{
+					attrib.texcoords[2 * index.texcoord_index + 0],
+					attrib.texcoords[2 * index.texcoord_index + 1]
+				};
+
+				if (uniqueVertices.count(vertex) == 0)
+				{
+					uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+					vertices.push_back(vertex);
+				}
+
+				indices.push_back(uniqueVertices[vertex]);
+			}
+		}
+	}
+
 	void createCommandPool()
 	{
 		QueueFamilyIndices queueFamilyIndices = findQueueFamilies(_physicalDevice);
@@ -1335,7 +1370,7 @@ private:
 	void createTextureImage()
 	{
 		int width, height, channels;
-		stbi_uc* pixels = stbi_load("awesomeface.png", &width, &height, &channels, STBI_rgb_alpha);
+		stbi_uc* pixels = stbi_load("models/viking_room.png", &width, &height, &channels, STBI_rgb_alpha);
 		
 		if (!pixels)
 		{
