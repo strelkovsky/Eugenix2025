@@ -218,7 +218,7 @@ struct Renderable
 	VkBuffer vertexBuffer;
 	VkBuffer indexBuffer;
 	uint32_t indexCount;
-	VkDescriptorSet descriptorSet; // если разные текстуры
+	VkDescriptorSet descriptorSet;
 };
 
 std::vector<Renderable> _renderables;
@@ -231,7 +231,7 @@ public:
 	glm::vec3 right = { 1.0f, 0.0f, 0.0f };
 	glm::vec3 worldUp = { 0.0f, 1.0f, 0.0f };
 
-	float yaw = -90.0f; // смотрим вдоль -Z
+	float yaw = -90.0f;
 	float pitch = 0.0f;
 
 	float moveSpeed = 2.5f;
@@ -258,7 +258,6 @@ public:
 		yaw += xoffset;
 		pitch += yoffset;
 
-		// Ограничим наклон
 		pitch = glm::clamp(pitch, -89.0f, 89.0f);
 
 		updateVectors();
@@ -291,7 +290,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 	}
 
 	float xoffset = (float)xpos - lastX;
-	float yoffset = lastY - (float)ypos; // инвертируем Y
+	float yoffset = lastY - (float)ypos;
 
 	lastX = (float)xpos;
 	lastY = (float)ypos;
@@ -372,12 +371,8 @@ private:
 	VkBuffer _indexBuffer;
 	VkDeviceMemory _indexBufferMemory;
 	
-
 	VkBuffer _uniformBuffer;
 	VkDeviceMemory _uniformBufferMemory;
-
-	//std::vector<VkBuffer> _uniformBuffers;
-	//std::vector<VkDeviceMemory> _uniformBuffersMemory;
 
 	VkImage _textureImage;
 	VkDeviceMemory _textureImageMemory;
@@ -630,17 +625,6 @@ private:
 
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
 		createInfo.ppEnabledExtensionNames = deviceExtensions.data();
-
-		// ??
-		//if (enableValidationLayers)
-		//{
-		//	createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-		//	createInfo.ppEnabledLayerNames = validationLayers.data();
-		//}
-		//else
-		//{
-		//	createInfo.enabledLayerCount = 0;
-		//}
 
 		if (vkCreateDevice(_physicalDevice, &createInfo, nullptr, &_device) != VK_SUCCESS)
 		{
@@ -1855,15 +1839,6 @@ private:
 			vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(renderable.indexCount), 1, 0, 0, 0);
 		}
 
-		//vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-		//vkCmdBindIndexBuffer(commandBuffer, _indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-
-		//vkCmdPushConstants(commandBuffer, _pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &_modelMatrix);
-
-		//vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_globalDescriptorSet, 0, nullptr);
-
-		//vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
-
 		vkCmdEndRenderPass(commandBuffer);
 
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
@@ -1889,7 +1864,6 @@ private:
 	void updateUniformBuffer(uint32_t currentImage)
 	{
 		UniformBufferObject ubo{};
-		//ubo.view = glm::lookAt(glm::vec3(2, 0, 2), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
 		ubo.view = camera.getViewMatrix();
 		ubo.proj = glm::perspective(glm::radians(45.0f), static_cast<float>(_swapchainExtent.width / _swapchainExtent.height), 0.1f, 10.0f);
 		ubo.proj[1][1] *= -1;
