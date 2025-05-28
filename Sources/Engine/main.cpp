@@ -355,7 +355,6 @@ private:
 	std::vector<VkSemaphore> _imageAvailableSemaphores;
 	std::vector<VkSemaphore> _renderFinishedSemaphores;
 	std::vector<VkFence> _inFlightFences;
-	std::vector<VkFence> _imagesInFlight;
 	size_t _currentFrame{ 0 };
 	bool _resized{ false };
 
@@ -1277,7 +1276,6 @@ private:
 		_imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 		_renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 		_inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
-		_imagesInFlight.resize(MAX_FRAMES_IN_FLIGHT, VK_NULL_HANDLE);
 
 		VkSemaphoreCreateInfo semaphoreInfo{};
 		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -1290,8 +1288,7 @@ private:
 		{
 			if (vkCreateSemaphore(_device, &semaphoreInfo, nullptr, &_imageAvailableSemaphores[i]) != VK_SUCCESS ||
 				vkCreateSemaphore(_device, &semaphoreInfo, nullptr, &_renderFinishedSemaphores[i]) != VK_SUCCESS ||
-				vkCreateFence(_device, &fenceInfo, nullptr, &_inFlightFences[i]) != VK_SUCCESS || 
-				vkCreateFence(_device, &fenceInfo, nullptr, &_imagesInFlight[i]) != VK_SUCCESS)
+				vkCreateFence(_device, &fenceInfo, nullptr, &_inFlightFences[i]) != VK_SUCCESS)
 			{
 				throw std::runtime_error("Failed to create semaphores!\n");
 			}
@@ -1741,12 +1738,6 @@ private:
 
 		uint32_t imageIndex{};
 		vkAcquireNextImageKHR(_device, _swapchain, UINT64_MAX, _imageAvailableSemaphores[_currentFrame], VK_NULL_HANDLE, &imageIndex);
-
-		if (_imagesInFlight[imageIndex] != VK_NULL_HANDLE)
-		{
-			vkWaitForFences(_device, 1, &_imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
-		}
-		_imagesInFlight[imageIndex] = _inFlightFences[_currentFrame];
 
 		updatePerFrameData();
 		updateUniformBuffer(imageIndex);
