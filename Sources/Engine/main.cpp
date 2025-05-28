@@ -212,6 +212,17 @@ struct UniformBufferObject
 	glm::mat4 proj;
 };
 
+struct Renderable 
+{
+	glm::mat4 modelMatrix;
+	VkBuffer vertexBuffer;
+	VkBuffer indexBuffer;
+	uint32_t indexCount;
+	VkDescriptorSet descriptorSet; // если разные текстуры
+};
+
+std::vector<Renderable> _renderables;
+
 class VulkanApp
 {
 public:
@@ -259,8 +270,9 @@ private:
 	size_t _currentFrame{ 0 };
 	bool _resized{ false };
 
-	VkDescriptorPool _descriptorPool;
-	std::vector<VkDescriptorSet> _descriptorSets;
+	VkDescriptorPool _descriptorPool{ VK_NULL_HANDLE };
+	VkDescriptorSetLayout _globalDescriptorSetLayout;
+	VkDescriptorSet _globalDescriptorSet;
 
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
@@ -269,7 +281,7 @@ private:
 	VkDeviceMemory _vertexBufferMemory;
 	VkBuffer _indexBuffer;
 	VkDeviceMemory _indexBufferMemory;
-	VkDescriptorSetLayout _descriptorSetLayout;
+	
 
 	VkBuffer _uniformBuffer;
 	VkDeviceMemory _uniformBufferMemory;
@@ -324,9 +336,10 @@ private:
 		createRenderPass();
 		createFramebuffers();
 		createGraphicsPipeline();
-		loadModel();
-		createVertexBuffer();
-		createIndexBuffer();
+		initRenderables();
+		//loadModel();
+		//createVertexBuffer();
+		//createIndexBuffer();
 		createUniformBuffers();
 		createDescriptorPool();
 		createDescriptorSets();
@@ -826,7 +839,7 @@ private:
 		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
 		layoutInfo.pBindings = bindings.data();
 
-		if (vkCreateDescriptorSetLayout(_device, &layoutInfo, nullptr, &_descriptorSetLayout) != VK_SUCCESS)
+		if (vkCreateDescriptorSetLayout(_device, &layoutInfo, nullptr, &_globalDescriptorSetLayout) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create descriptor set layout!\n");
 		}
@@ -858,52 +871,46 @@ private:
 
 	void createDescriptorSets()
 	{
-		std::vector<VkDescriptorSetLayout> layouts(_swapchainImages.size(), _descriptorSetLayout);
-
 		VkDescriptorSetAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		allocInfo.descriptorPool = _descriptorPool;
-		allocInfo.descriptorSetCount = static_cast<uint32_t>(_swapchainImages.size());
-		allocInfo.pSetLayouts = layouts.data();
+		allocInfo.descriptorSetCount = 1;
+		allocInfo.pSetLayouts = &_globalDescriptorSetLayout;
 
-		_descriptorSets.resize(_swapchainImages.size());
-		if (vkAllocateDescriptorSets(_device, &allocInfo, _descriptorSets.data()) != VK_SUCCESS)
+		if (vkAllocateDescriptorSets(_device, &allocInfo, &_globalDescriptorSet) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to allocate descriptor sets!\n");
 		}
 
-		for (size_t i = 0; i < _swapchainImages.size(); ++i)
-		{
-			VkDescriptorBufferInfo bufferInfo{};
-			bufferInfo.buffer = _uniformBuffer;
-			bufferInfo.offset = 0;
-			bufferInfo.range = sizeof(UniformBufferObject);
+		VkDescriptorBufferInfo bufferInfo{};
+		bufferInfo.buffer = _uniformBuffer;
+		bufferInfo.offset = 0;
+		bufferInfo.range = sizeof(UniformBufferObject);
 
-			VkDescriptorImageInfo imageInfo{};
-			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			imageInfo.imageView = _textureImageView;
-			imageInfo.sampler = _textureSampler;
+		VkDescriptorImageInfo imageInfo{};
+		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		imageInfo.imageView = _textureImageView;
+		imageInfo.sampler = _textureSampler;
 
-			std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+		std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
 
-			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[0].dstSet = _descriptorSets[i];
-			descriptorWrites[0].dstBinding = 0;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptorWrites[0].pBufferInfo = &bufferInfo;
+		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites[0].dstSet = _globalDescriptorSet;
+		descriptorWrites[0].dstBinding = 0;
+		descriptorWrites[0].dstArrayElement = 0;
+		descriptorWrites[0].descriptorCount = 1;
+		descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptorWrites[0].pBufferInfo = &bufferInfo;
 
-			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[1].dstSet = _descriptorSets[i];
-			descriptorWrites[1].dstBinding = 1;
-			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[1].pImageInfo = &imageInfo;
+		descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites[1].dstSet = _globalDescriptorSet;
+		descriptorWrites[1].dstBinding = 1;
+		descriptorWrites[1].dstArrayElement = 0;
+		descriptorWrites[1].descriptorCount = 1;
+		descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		descriptorWrites[1].pImageInfo = &imageInfo;
 
-			vkUpdateDescriptorSets(_device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-		}
+		vkUpdateDescriptorSets(_device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 	}
 
 	void createGraphicsPipeline()
@@ -1024,7 +1031,7 @@ private:
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.pSetLayouts = &_descriptorSetLayout;
+		pipelineLayoutInfo.pSetLayouts = &_globalDescriptorSetLayout;
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
 		pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
@@ -1073,6 +1080,30 @@ private:
 			throw std::runtime_error("Failed to create shader module!\n");
 		}
 		return shaderModule;
+	}
+
+	void initRenderables()
+	{
+		loadModel();
+
+		createVertexBuffer();
+		createIndexBuffer();
+
+		Renderable obj1;
+		obj1.modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(-1.5f, 0.0f, 0.0f));
+		obj1.vertexBuffer = _vertexBuffer;
+		obj1.indexBuffer = _indexBuffer;
+		obj1.indexCount = static_cast<uint32_t>(indices.size());
+		obj1.descriptorSet = _globalDescriptorSet;
+
+		Renderable obj2;
+		obj2.modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(1.5f, 0.0f, 0.0f));
+		obj2.vertexBuffer = _vertexBuffer;
+		obj2.indexBuffer = _indexBuffer;
+		obj2.indexCount = static_cast<uint32_t>(indices.size());
+		obj2.descriptorSet = _globalDescriptorSet;
+
+		_renderables = { obj1, obj2 };
 	}
 
 	void loadModel()
@@ -1594,8 +1625,7 @@ private:
 			drawFrame();
 			updateFPS(_window);
 		}
-		// TODO :
-		 vkDeviceWaitIdle(_device);
+		vkDeviceWaitIdle(_device);
 	}
 
 	void updateFPS(GLFWwindow* window)
@@ -1708,16 +1738,29 @@ private:
 		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline);
 
-		VkBuffer vertexBuffers[] = { _vertexBuffer };
+		//VkBuffer vertexBuffers[] = { _vertexBuffer };
 		VkDeviceSize offsets[] = { 0 };
-		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-		vkCmdBindIndexBuffer(commandBuffer, _indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-		vkCmdPushConstants(commandBuffer, _pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &_modelMatrix);
+		for (const auto& renderable : _renderables)
+		{
+			vkCmdBindVertexBuffers(commandBuffer, 0, 1, &renderable.vertexBuffer, offsets);
+			vkCmdBindIndexBuffer(commandBuffer, renderable.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSets[imageIndex], 0, nullptr);
+			vkCmdPushConstants(commandBuffer, _pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &renderable.modelMatrix);
 
-		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_globalDescriptorSet, 0, nullptr);
+
+			vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(renderable.indexCount), 1, 0, 0, 0);
+		}
+
+		//vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+		//vkCmdBindIndexBuffer(commandBuffer, _indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+		//vkCmdPushConstants(commandBuffer, _pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &_modelMatrix);
+
+		//vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_globalDescriptorSet, 0, nullptr);
+
+		//vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
 		vkCmdEndRenderPass(commandBuffer);
 
@@ -1727,24 +1770,22 @@ private:
 		}
 	}
 
-	glm::mat4 _modelMatrix;
 
 	void updatePerFrameData()
 	{
-		static auto startTime2 = std::chrono::high_resolution_clock::now();
-		auto now = std::chrono::high_resolution_clock::now();
-		float t = std::chrono::duration<float>(now - startTime2).count();
+		static auto lastFrame = (float)glfwGetTime();
 
-		_modelMatrix = glm::rotate(glm::mat4(1.0f), t, glm::vec3(0.0f, 0.0f, 1.0f));
-		_modelMatrix = glm::scale(_modelMatrix, glm::vec3(0.5f));
+		// TODO : move deltaTime to VulkanApp
+		float currentFrame = (float)glfwGetTime();
+		auto deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
+
+		_renderables[0].modelMatrix = glm::rotate(_renderables[0].modelMatrix, deltaTime, glm::vec3(0, 0, 1));
+		_renderables[1].modelMatrix = glm::rotate(_renderables[1].modelMatrix, deltaTime, glm::vec3(0, 0, 1));
 	}
 
 	void updateUniformBuffer(uint32_t currentImage)
 	{
-		static auto startTime = std::chrono::high_resolution_clock::now();
-		auto currentTime = std::chrono::high_resolution_clock::now();
-		float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
 		UniformBufferObject ubo{};
 		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 3.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		ubo.proj = glm::perspective(glm::radians(45.0f), static_cast<float>(_swapchainExtent.width / _swapchainExtent.height), 0.1f, 10.0f);
@@ -1776,7 +1817,7 @@ private:
 		vkDestroyBuffer(_device, _indexBuffer, nullptr);
 		vkFreeMemory(_device, _indexBufferMemory, nullptr);
 
-		vkDestroyDescriptorSetLayout(_device, _descriptorSetLayout, nullptr);
+		vkDestroyDescriptorSetLayout(_device, _globalDescriptorSetLayout, nullptr);
 
 		for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
 		{
