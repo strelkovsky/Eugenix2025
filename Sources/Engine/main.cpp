@@ -1625,10 +1625,10 @@ private:
 		{
 			glfwPollEvents();
 			drawFrame();
-			vkDeviceWaitIdle(_device);
+			//vkDeviceWaitIdle(_device);
 		}
 		// TODO :
-		// vkDeviceWaitIdle(_device);
+		 vkDeviceWaitIdle(_device);
 	}
 
 	void drawFrame()
