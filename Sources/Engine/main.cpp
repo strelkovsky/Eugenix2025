@@ -223,6 +223,96 @@ struct Renderable
 
 std::vector<Renderable> _renderables;
 
+class Camera {
+public:
+	glm::vec3 position = { 0.0f, 0.0f, 2.0f };
+	glm::vec3 front = { 0.0f, 0.0f, -1.0f };
+	glm::vec3 up = { 0.0f, 1.0f, 0.0f };
+	glm::vec3 right = { 1.0f, 0.0f, 0.0f };
+	glm::vec3 worldUp = { 0.0f, 1.0f, 0.0f };
+
+	float yaw = -90.0f; // смотрим вдоль -Z
+	float pitch = 0.0f;
+
+	float moveSpeed = 2.5f;
+	float mouseSensitivity = 0.1f;
+
+	Camera() { updateVectors(); }
+
+	glm::mat4 getViewMatrix() const {
+		return glm::lookAt(position, position + front, up);
+	}
+
+	void processKeyboard(char key, float deltaTime) {
+		float velocity = moveSpeed * deltaTime;
+		if (key == 'W') position += front * velocity;
+		if (key == 'S') position -= front * velocity;
+		if (key == 'A') position -= right * velocity;
+		if (key == 'D') position += right * velocity;
+	}
+
+	void processMouse(float xoffset, float yoffset) {
+		xoffset *= mouseSensitivity;
+		yoffset *= mouseSensitivity;
+
+		yaw += xoffset;
+		pitch += yoffset;
+
+		// Ограничим наклон
+		pitch = glm::clamp(pitch, -89.0f, 89.0f);
+
+		updateVectors();
+	}
+
+private:
+	void updateVectors() {
+		glm::vec3 f;
+		f.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+		f.y = sin(glm::radians(pitch));
+		f.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+		front = glm::normalize(f);
+		right = glm::normalize(glm::cross(front, worldUp));
+		up = glm::normalize(glm::cross(right, front));
+	}
+};
+
+Camera camera;
+float lastX = 0.0f, lastY = 0.0f;
+bool firstMouse = true;
+float deltaTime = 0.0f, lastFrame = 0.0f;
+
+void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+{
+	if (firstMouse)
+	{
+		lastX = (float)xpos;
+		lastY = (float)ypos;
+		firstMouse = false;
+	}
+
+	float xoffset = (float)xpos - lastX;
+	float yoffset = lastY - (float)ypos; // инвертируем Y
+
+	lastX = (float)xpos;
+	lastY = (float)ypos;
+
+	camera.processMouse(xoffset, yoffset);
+}
+
+void processInput(GLFWwindow* window)
+{
+	auto deltaTime = 0.001f;
+
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+		camera.processKeyboard('W', deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+		camera.processKeyboard('S', deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+		camera.processKeyboard('A', deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+		camera.processKeyboard('D', deltaTime);
+}
+
 class VulkanApp
 {
 public:
@@ -310,6 +400,9 @@ private:
 		_window = glfwCreateWindow(WIDTH, HEIGHT, "Eugenix", nullptr, nullptr);
 		glfwSetWindowUserPointer(_window, this);
 		glfwSetFramebufferSizeCallback(_window, windowResize);
+
+		glfwSetCursorPosCallback(_window, mouse_callback);
+		glfwSetInputMode(_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // скрываем курсор для "free look"
 	}
 
 	static void windowResize(GLFWwindow* window, int width, int height)
@@ -1093,6 +1186,9 @@ private:
 
 		Renderable obj1;
 		obj1.modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(-1.5f, 0.0f, 0.0f));
+		obj1.modelMatrix = glm::scale(obj1.modelMatrix, glm::vec3(0.5f));
+		obj1.modelMatrix = glm::rotate(obj1.modelMatrix, glm::radians(-90.0f), glm::vec3(1, 0, 0));
+		obj1.modelMatrix = glm::rotate(obj1.modelMatrix, glm::radians(-90.0f), glm::vec3(0, 0, 1));
 		obj1.vertexBuffer = _vertexBuffer;
 		obj1.indexBuffer = _indexBuffer;
 		obj1.indexCount = static_cast<uint32_t>(indices.size());
@@ -1100,6 +1196,9 @@ private:
 
 		Renderable obj2;
 		obj2.modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(1.5f, 0.0f, 0.0f));
+		obj2.modelMatrix = glm::scale(obj2.modelMatrix, glm::vec3(0.5f));
+		obj2.modelMatrix = glm::rotate(obj2.modelMatrix, glm::radians(-90.0f), glm::vec3(1, 0, 0));
+		obj2.modelMatrix = glm::rotate(obj2.modelMatrix, glm::radians(-90.0f), glm::vec3(0, 0, 1));
 		obj2.vertexBuffer = _vertexBuffer;
 		obj2.indexBuffer = _indexBuffer;
 		obj2.indexCount = static_cast<uint32_t>(indices.size());
@@ -1624,6 +1723,7 @@ private:
 		while (!glfwWindowShouldClose(_window))
 		{
 			glfwPollEvents();
+			processInput(_window);
 			drawFrame();
 			updateFPS(_window);
 		}
@@ -1789,7 +1889,8 @@ private:
 	void updateUniformBuffer(uint32_t currentImage)
 	{
 		UniformBufferObject ubo{};
-		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 3.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		//ubo.view = glm::lookAt(glm::vec3(2, 0, 2), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+		ubo.view = camera.getViewMatrix();
 		ubo.proj = glm::perspective(glm::radians(45.0f), static_cast<float>(_swapchainExtent.width / _swapchainExtent.height), 0.1f, 10.0f);
 		ubo.proj[1][1] *= -1;
 
