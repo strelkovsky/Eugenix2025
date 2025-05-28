@@ -283,6 +283,9 @@ private:
 	VkDeviceMemory _depthImageMemory;
 	VkImageView _depthImageView;
 
+	double _lastTime;
+	int _frameCount{0};
+
 	void initWindow()
 	{
 		glfwInit();
@@ -1625,10 +1628,31 @@ private:
 		{
 			glfwPollEvents();
 			drawFrame();
-			//vkDeviceWaitIdle(_device);
+			updateFPS(_window);
 		}
 		// TODO :
 		 vkDeviceWaitIdle(_device);
+	}
+
+	void updateFPS(GLFWwindow* window)
+	{
+		double currentTime = glfwGetTime();
+		double delta = currentTime - _lastTime;
+
+		_frameCount++;
+		if (delta >= 1.0) // if last update was more than one second ago
+		{
+			double fps = double(_frameCount) / delta;
+
+			std::stringstream ss;
+			ss << "Eugenix. FPS: " << fps;
+
+			glfwSetWindowTitle(window, ss.str().c_str());
+
+			_frameCount = 0;
+
+			_lastTime = currentTime;
+		}
 	}
 
 	void drawFrame()
