@@ -158,7 +158,7 @@ struct Vertex
 	glm::vec3 normal;
 	glm::vec2 texCoord;
 
-	static VkVertexInputBindingDescription getBondingDescription()
+	static VkVertexInputBindingDescription getBindingDescription()
 	{
 		VkVertexInputBindingDescription bindingDesc{};
 
@@ -924,21 +924,10 @@ private:
 
 		std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
 
-		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrites[0].dstSet = _globalDescriptorSet;
-		descriptorWrites[0].dstBinding = 0;
-		descriptorWrites[0].dstArrayElement = 0;
-		descriptorWrites[0].descriptorCount = 1;
-		descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		descriptorWrites[0].pBufferInfo = &bufferInfo;
-
-		descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrites[1].dstSet = _globalDescriptorSet;
-		descriptorWrites[1].dstBinding = 1;
-		descriptorWrites[1].dstArrayElement = 0;
-		descriptorWrites[1].descriptorCount = 1;
-		descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		descriptorWrites[1].pImageInfo = &imageInfo;
+		descriptorWrites[0] = Eugenix::Render::Vulkan::WriteDescriptorSet(_globalDescriptorSet, 0, 0, 1,
+			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, bufferInfo);
+		descriptorWrites[1] = Eugenix::Render::Vulkan::WriteDescriptorSet(_globalDescriptorSet, 1, 0, 1,
+			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, imageInfo);
 
 		vkUpdateDescriptorSets(_device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 	}
@@ -951,33 +940,22 @@ private:
 		VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
 		VkShaderModule fragShaderModule = createShaderModule(fragfShaderCode);
 
-		VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
-		vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-		vertShaderStageInfo.module = vertShaderModule;
-		vertShaderStageInfo.pName = "main";
+		VkPipelineShaderStageCreateInfo vertShaderStageInfo = Eugenix::Render::Vulkan::ShaderStageInfo(
+			VK_SHADER_STAGE_VERTEX_BIT, vertShaderModule, "main");
 
-		VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
-		fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		fragShaderStageInfo.module = fragShaderModule;
-		fragShaderStageInfo.pName = "main";
+		VkPipelineShaderStageCreateInfo fragShaderStageInfo = Eugenix::Render::Vulkan::ShaderStageInfo(
+			VK_SHADER_STAGE_FRAGMENT_BIT, fragShaderModule, "main");
 
 		VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
-		auto bindigsDesc = Vertex::getBondingDescription();
-		auto attributeDesc = Vertex::getAttributeDescriptions();
-		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		vertexInputInfo.vertexBindingDescriptionCount = 1;
-		vertexInputInfo.pVertexBindingDescriptions = &bindigsDesc;
-		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDesc.size());
-		vertexInputInfo.pVertexAttributeDescriptions = attributeDesc.data();
+		std::array<VkVertexInputBindingDescription, 1> bindigsDescs = { Vertex::getBindingDescription() };
+		auto attributeDescs = Vertex::getAttributeDescriptions();
 
-		VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
-		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-		inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		inputAssembly.primitiveRestartEnable = VK_FALSE;
+		VkPipelineVertexInputStateCreateInfo vertexInputInfo = Eugenix::Render::Vulkan::VertexInputStateInfo(
+			bindigsDescs, attributeDescs);
+
+		VkPipelineInputAssemblyStateCreateInfo inputAssembly = Eugenix::Render::Vulkan::InputAssemplyInfo(
+			VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE);
 
 		VkViewport viewport{};
 		viewport.x = 0.0f;
@@ -987,16 +965,15 @@ private:
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 
+		std::array<VkViewport, 1> viewports = { viewport };
+
 		VkRect2D scissor{};
 		scissor.offset = { 0, 0 };
 		scissor.extent = _swapchainExtent;
 
-		VkPipelineViewportStateCreateInfo viewportState{};
-		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-		viewportState.viewportCount = 1;
-		viewportState.pViewports = &viewport;
-		viewportState.scissorCount = 1;
-		viewportState.pScissors = &scissor;
+		std::array<VkRect2D, 1> scissors = { scissor };
+
+		VkPipelineViewportStateCreateInfo viewportState = Eugenix::Render::Vulkan::ViewportStateInfo(viewports, scissors);
 
 		VkPipelineRasterizationStateCreateInfo rasterizer{};
 		rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
