@@ -20,20 +20,27 @@
 
 #include <tiny_obj_loader.h>
 
+#include "Render/Vulkan/VulkanApp.h"
+#include "Render/Vulkan/VulkanDebug.h"
+#include "Render/Vulkan/VulkanInitializers.h"
+
 #include "IO/IO.h"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 const int MAX_FRAMES_IN_FLIGHT{ 3 };
 
-const std::vector<const char*> validationLayers =
+namespace
 {
-	"VK_LAYER_KHRONOS_validation"
-};
+	inline constexpr const char* DeviceExtensionArray[] =
+	{
+		VK_KHR_SWAPCHAIN_EXTENSION_NAME
+	};
+}
 
-const std::vector<const char*> deviceExtensions =
+inline constexpr std::span<const char* const> DeviceExtensions
 {
-	VK_KHR_SWAPCHAIN_EXTENSION_NAME
+	DeviceExtensionArray
 };
 
 #ifdef _DEBUG
@@ -50,7 +57,7 @@ bool checkValidationLayerSupport()
 	std::vector<VkLayerProperties> availableLayers(layerCount);
 	vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
-	for (const char* layerName : validationLayers)
+	for (const char* layerName : Eugenix::Render::Vulkan::ValidationLayers)
 	{
 		bool layerFound = false;
 		for (const auto& layerProperties : availableLayers)
@@ -317,7 +324,7 @@ void processInput(GLFWwindow* window)
 	}
 }
 
-class VulkanApp
+class SampleApp final : public Eugenix::Render::Vulkan::VulkanApp
 {
 public:
 	void run()
@@ -406,7 +413,7 @@ private:
 
 	static void windowResize(GLFWwindow* window, int width, int height)
 	{
-		auto parent = reinterpret_cast<VulkanApp*>(glfwGetWindowUserPointer(window));
+		auto parent = reinterpret_cast<SampleApp*>(glfwGetWindowUserPointer(window));
 		parent->_resized = true;
 	}
 
@@ -443,32 +450,13 @@ private:
 			throw std::runtime_error("validation layers requested, but not available!\n");
 		}
 
-		VkApplicationInfo appInfo{};
-		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-		appInfo.pApplicationName = "Eugenix";
-		appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-		appInfo.pEngineName = "Eugenix Engine";
-		appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-		appInfo.apiVersion = VK_API_VERSION_1_4;
+		VkApplicationInfo appInfo = Eugenix::Render::Vulkan::ApplicationInfo(
+			"Eugenix", VK_MAKE_VERSION(1, 0, 0),
+			"Eugenix Engine", VK_MAKE_VERSION(1, 0, 0),
+			VK_API_VERSION_1_4);
 
-		VkInstanceCreateInfo instanceInfo{};
-		instanceInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-		instanceInfo.pApplicationInfo = &appInfo;
-
-		if (enableValidationLayers)
-		{
-			instanceInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-			instanceInfo.ppEnabledLayerNames = validationLayers.data();
-		}
-		else
-		{
-			instanceInfo.enabledLayerCount = 0;
-		}
-
-		auto extensions = getRequiredExtensions();
-
-		instanceInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-		instanceInfo.ppEnabledExtensionNames = extensions.data();
+		const auto extensions = getRequiredExtensions();
+		VkInstanceCreateInfo instanceInfo = Eugenix::Render::Vulkan::InstanceInfo(appInfo, enableValidationLayers, extensions);
 
 		VkResult res = vkCreateInstance(&instanceInfo, nullptr, &_instance);
 		if (res != VK_SUCCESS)
@@ -481,21 +469,14 @@ private:
 	{
 		if (enableValidationLayers)
 		{
-			VkDebugUtilsMessengerCreateInfoEXT debugMessengerInfo{};
-			debugMessengerInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-			debugMessengerInfo.messageSeverity =
-				VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-				VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
-				VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-				VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-			debugMessengerInfo.messageType =
-				VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-				VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-				VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-			debugMessengerInfo.pfnUserCallback = debugCallback;
+			VkDebugUtilsMessengerCreateInfoEXT debugMessengerInfo = Eugenix::Render::Vulkan::DebugMessengerInfo(
+				VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+				VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT, 
+				VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+				VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT, 
+				debugCallback);
 
-			if (CreateDebugUtilsMessengerEXT(_instance, &debugMessengerInfo, nullptr, &_debugMessenger)
-				!= VK_SUCCESS)
+			if (CreateDebugUtilsMessengerEXT(_instance, &debugMessengerInfo, nullptr, &_debugMessenger) != VK_SUCCESS)
 			{
 				throw std::runtime_error("Failed to set up debug messenger!\n");
 			}
@@ -535,7 +516,7 @@ private:
 		std::vector<VkExtensionProperties> availableExtensions(extensionCount);
 		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
 
-		std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
+		std::set<std::string> requiredExtensions(DeviceExtensions.begin(), DeviceExtensions.end());
 		for (const auto& extension : availableExtensions)
 		{
 			requiredExtensions.erase(extension.extensionName);
@@ -598,8 +579,6 @@ private:
 		return indices;
 	}
 
-
-
 	void createLogicalDevice()
 	{
 		QueueFamilyIndices indices = findQueueFamilies(_physicalDevice);
@@ -609,27 +588,14 @@ private:
 		std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 		for (uint32_t queueFamily : uniqueQueueFamilies)
 		{
-			VkDeviceQueueCreateInfo queueCreateInfo{};
-			queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-			queueCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
-			queueCreateInfo.queueCount = 1;
-			queueCreateInfo.pQueuePriorities = &queuePriority;
-			queueCreateInfos.push_back(queueCreateInfo);
+			queueCreateInfos.push_back(Eugenix::Render::Vulkan::QueueInfo(indices.graphicsFamily.value(), 1, queuePriority));
 		}
 
 		// NOTE: check in isDeviceSuitable
 		VkPhysicalDeviceFeatures deviceFeatures{};
 		deviceFeatures.samplerAnisotropy = VK_TRUE;
 
-		VkDeviceCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-		createInfo.pQueueCreateInfos = queueCreateInfos.data();
-		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
-
-		createInfo.pEnabledFeatures = &deviceFeatures;
-
-		createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
-		createInfo.ppEnabledExtensionNames = deviceExtensions.data();
+		VkDeviceCreateInfo createInfo = Eugenix::Render::Vulkan::DeviceInfo(queueCreateInfos, deviceFeatures, DeviceExtensions);
 
 		if (vkCreateDevice(_physicalDevice, &createInfo, nullptr, &_device) != VK_SUCCESS)
 		{
@@ -732,15 +698,8 @@ private:
 			imageCount = swapchainSupport.capabilities.maxImageCount;
 		}
 
-		VkSwapchainCreateInfoKHR createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-		createInfo.surface = _surface;
-		createInfo.minImageCount = imageCount;
-		createInfo.imageFormat = surfaceFormat.format;
-		createInfo.imageColorSpace = surfaceFormat.colorSpace;
-		createInfo.imageExtent = extent;
-		createInfo.imageArrayLayers = 1;
-		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		VkSwapchainCreateInfoKHR createInfo = Eugenix::Render::Vulkan::SwapchainInfo(
+			_surface, imageCount, surfaceFormat, extent, 1, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 
 		QueueFamilyIndices indices{ findQueueFamilies(_physicalDevice) };
 		uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
@@ -794,14 +753,8 @@ private:
 		{
 			std::array<VkImageView, 2> attachments = { _swapchainImageViews[i], _depthImageView };
 
-			VkFramebufferCreateInfo framebufferInfo{};
-			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			framebufferInfo.renderPass = _renderPass;
-			framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-			framebufferInfo.pAttachments = attachments.data();
-			framebufferInfo.width = _swapchainExtent.width;
-			framebufferInfo.height = _swapchainExtent.height;
-			framebufferInfo.layers = 1;
+			VkFramebufferCreateInfo framebufferInfo = Eugenix::Render::Vulkan::FrameBufferInfo(_renderPass,
+				attachments, _swapchainExtent, 1);
 
 			if (vkCreateFramebuffer(_device, &framebufferInfo, nullptr, &_swapchainFramebuffers[i]) != VK_SUCCESS)
 			{
@@ -878,6 +831,8 @@ private:
 		subpass.pColorAttachments = &colorAttachmentRef;
 		subpass.pDepthStencilAttachment = &depthAttachmentRef;
 
+		std::array<VkSubpassDescription, 1> subpasses = { subpass };
+
 		VkSubpassDependency dependency{};
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 		dependency.dstSubpass = 0;
@@ -886,14 +841,10 @@ private:
 		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 		dependency.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-		VkRenderPassCreateInfo renderPassInfo{};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-		renderPassInfo.pAttachments = attachments.data();
-		renderPassInfo.subpassCount = 1;
-		renderPassInfo.pSubpasses = &subpass;
-		renderPassInfo.dependencyCount = 1;
-		renderPassInfo.pDependencies = &dependency;
+		std::array<VkSubpassDependency, 1> dependencies = { dependency };
+
+		VkRenderPassCreateInfo renderPassInfo = Eugenix::Render::Vulkan::RenderPassInfo(
+			attachments, subpasses, dependencies);
 
 		if (vkCreateRenderPass(_device, &renderPassInfo, nullptr, &_renderPass) != VK_SUCCESS)
 		{
@@ -920,10 +871,7 @@ private:
 
 		std::array<VkDescriptorSetLayoutBinding, 2> bindings = { uboLayoutBinding, samplerLayoutBinding };
 
-		VkDescriptorSetLayoutCreateInfo layoutInfo{};
-		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-		layoutInfo.pBindings = bindings.data();
+		VkDescriptorSetLayoutCreateInfo layoutInfo = Eugenix::Render::Vulkan::DescriptorSetLayoutInfo(bindings);
 
 		if (vkCreateDescriptorSetLayout(_device, &layoutInfo, nullptr, &_globalDescriptorSetLayout) != VK_SUCCESS)
 		{
@@ -943,11 +891,8 @@ private:
 		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		poolSizes[1].descriptorCount = static_cast<uint32_t>(_swapchainImages.size());
 
-		VkDescriptorPoolCreateInfo poolInfo{};
-		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-		poolInfo.pPoolSizes = poolSizes.data();
-		poolInfo.maxSets = static_cast<uint32_t>(_swapchainImages.size());
+		VkDescriptorPoolCreateInfo poolInfo = Eugenix::Render::Vulkan::DescriptorPoolInfo(
+			poolSizes, static_cast<uint32_t>(_swapchainImages.size()));
 
 		if (vkCreateDescriptorPool(_device, &poolInfo, nullptr, &_descriptorPool) != VK_SUCCESS)
 		{
@@ -957,11 +902,10 @@ private:
 
 	void createDescriptorSets()
 	{
-		VkDescriptorSetAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocInfo.descriptorPool = _descriptorPool;
-		allocInfo.descriptorSetCount = 1;
-		allocInfo.pSetLayouts = &_globalDescriptorSetLayout;
+		std::array<VkDescriptorSetLayout, 1> setLayouts = { _globalDescriptorSetLayout };
+
+		VkDescriptorSetAllocateInfo allocInfo = Eugenix::Render::Vulkan::DescriptorSetAllocateInfo(_descriptorPool,
+			1, setLayouts);
 
 		if (vkAllocateDescriptorSets(_device, &allocInfo, &_globalDescriptorSet) != VK_SUCCESS)
 		{
@@ -1946,7 +1890,7 @@ private:
 
 int main()
 {
-	VulkanApp app;
+	SampleApp app;
 	app.run();
 	return 0;
 }
