@@ -20,6 +20,7 @@
 
 #include <tiny_obj_loader.h>
 
+#include "Core/Containers.h"
 #include "Core/Platform.h"
 
 #include "Render/Vulkan/VulkanApp.h"
@@ -87,7 +88,7 @@ std::vector<const char*> getRequiredExtensions()
 	std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
 #if EUGENIX_DEBUG
-	extensions.insert(extensions.end(), Eugenix::Render::Vulkan::DebugExtensions.begin(), Eugenix::Render::Vulkan::DebugExtensions.end());
+	Eugenix::AppendSpan(extensions, Eugenix::Render::Vulkan::DebugExtensions);
 #endif // EUGENIX_DEBUG
 
 	return extensions;
