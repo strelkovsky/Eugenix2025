@@ -10,6 +10,11 @@ namespace
 	{
 		"VK_LAYER_KHRONOS_validation"
 	};
+
+	inline constexpr const char* DebugExtensionArray[] =
+	{
+		VK_EXT_DEBUG_UTILS_EXTENSION_NAME
+	};
 }
 
 namespace Eugenix
@@ -21,6 +26,11 @@ namespace Eugenix
 			inline constexpr std::span<const char* const> ValidationLayers
 			{
 				ValidationLayerArray
+			};
+
+			inline constexpr std::span<const char* const> DebugExtensions
+			{
+				DebugExtensionArray
 			};
 		} // namespace Vulkan
 	} // namespace Render

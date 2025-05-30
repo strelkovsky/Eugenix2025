@@ -20,6 +20,8 @@
 
 #include <tiny_obj_loader.h>
 
+#include "Core/Platform.h"
+
 #include "Render/Vulkan/VulkanApp.h"
 #include "Render/Vulkan/VulkanDebug.h"
 #include "Render/Vulkan/VulkanInitializers.h"
@@ -84,10 +86,9 @@ std::vector<const char*> getRequiredExtensions()
 	const char** glfwExtensions{ glfwGetRequiredInstanceExtensions(&glfwExtensionCount) };
 	std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
-	if (enableValidationLayers)
-	{
-		extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-	}
+#if EUGENIX_DEBUG
+	extensions.insert(extensions.end(), Eugenix::Render::Vulkan::DebugExtensions.begin(), Eugenix::Render::Vulkan::DebugExtensions.end());
+#endif // EUGENIX_DEBUG
 
 	return extensions;
 }
