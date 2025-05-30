@@ -1606,7 +1606,7 @@ private:
 		submitInfo.pWaitSemaphores = waitSemaphores;
 		submitInfo.pWaitDstStageMask = waitStages;
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &_commandBuffers[imageIndex];
+		submitInfo.pCommandBuffers = &_commandBuffers[_currentFrame];
 		VkSemaphore signalSemaphores[] = { _renderFinishedSemaphores[_currentFrame]};
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = signalSemaphores;
