@@ -69,7 +69,7 @@ bool checkValidationLayerSupport()
 			}
 		}
 
-		if (!layerCount)
+		if (!layerFound)
 		{
 			return false;
 		}
