@@ -946,7 +946,7 @@ private:
 		VkPipelineShaderStageCreateInfo fragShaderStageInfo = Eugenix::Render::Vulkan::ShaderStageInfo(
 			VK_SHADER_STAGE_FRAGMENT_BIT, fragShaderModule, "main");
 
-		VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
+		std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = { vertShaderStageInfo, fragShaderStageInfo };
 
 		std::array<VkVertexInputBindingDescription, 1> bindigsDescs = { Vertex::getBindingDescription() };
 		auto attributeDescs = Vertex::getAttributeDescriptions();
@@ -975,27 +975,12 @@ private:
 
 		VkPipelineViewportStateCreateInfo viewportState = Eugenix::Render::Vulkan::ViewportStateInfo(viewports, scissors);
 
-		VkPipelineRasterizationStateCreateInfo rasterizer{};
-		rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-		rasterizer.depthClampEnable = VK_FALSE;
-		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-		rasterizer.rasterizerDiscardEnable = VK_FALSE;
-		rasterizer.lineWidth = 1.0f;
-		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-		rasterizer.depthBiasEnable = VK_FALSE;
-		rasterizer.depthBiasConstantFactor = 0.0f;
-		rasterizer.depthBiasClamp = 0.0f;
-		rasterizer.depthBiasSlopeFactor = 0.0f;
+		VkPipelineRasterizationStateCreateInfo rasterizer = Eugenix::Render::Vulkan::RasterizationStateInfo(
+			VK_FALSE, VK_POLYGON_MODE_FILL, VK_FALSE, 1.0f, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE,
+			VK_FALSE, 0.0f, 0.0f, 0.0f);
 
-		VkPipelineMultisampleStateCreateInfo multisampling{};
-		multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-		multisampling.sampleShadingEnable = VK_FALSE;
-		multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-		multisampling.minSampleShading = 1.0f;
-		multisampling.pSampleMask = nullptr;
-		multisampling.alphaToCoverageEnable = VK_FALSE;
-		multisampling.alphaToOneEnable = VK_FALSE;
+		VkPipelineMultisampleStateCreateInfo multisampling = Eugenix::Render::Vulkan::MultisampleStateInfo(
+			VK_FALSE, VK_SAMPLE_COUNT_1_BIT, 1.0f, nullptr, VK_FALSE, VK_FALSE);
 
 		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
 		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT |
@@ -1010,60 +995,31 @@ private:
 		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 		colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
 
-		// depth attachment
-		VkPipelineDepthStencilStateCreateInfo depthStencilAttachment{};
-		depthStencilAttachment.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-		depthStencilAttachment.depthTestEnable = VK_TRUE;
-		depthStencilAttachment.depthWriteEnable = VK_TRUE;
-		depthStencilAttachment.depthCompareOp = VK_COMPARE_OP_LESS;
-		depthStencilAttachment.depthBoundsTestEnable = VK_FALSE;
-		depthStencilAttachment.stencilTestEnable = VK_FALSE;
+		VkPipelineDepthStencilStateCreateInfo depthStencilAttachment = Eugenix::Render::Vulkan::DepthStencilStateInfo(
+			VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS, VK_FALSE, VK_FALSE);
 
-		VkPipelineColorBlendStateCreateInfo colorBlending{};
-		colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-		colorBlending.logicOpEnable = VK_FALSE;
-		colorBlending.logicOp = VK_LOGIC_OP_COPY;
-		colorBlending.attachmentCount = 1;
-		colorBlending.pAttachments = &colorBlendAttachment;
-		colorBlending.blendConstants[0] = 0.0f;
-		colorBlending.blendConstants[1] = 0.0f;
-		colorBlending.blendConstants[2] = 0.0f;
-		colorBlending.blendConstants[3] = 0.0f;
+		std::array<VkPipelineColorBlendAttachmentState, 1> colorAttachments = { colorBlendAttachment };
+		VkPipelineColorBlendStateCreateInfo colorBlending = Eugenix::Render::Vulkan::ColorBlendStateInfo(
+			VK_FALSE, VK_LOGIC_OP_COPY, colorAttachments, { 0.0f, 0.0f, 0.0f, 0.0f });
 
 		VkPushConstantRange pushConstantRange{};
 		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 		pushConstantRange.offset = 0;
 		pushConstantRange.size = sizeof(glm::mat4);
 
-		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.pSetLayouts = &_globalDescriptorSetLayout;
-		pipelineLayoutInfo.pushConstantRangeCount = 1;
-		pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+		std::array<VkDescriptorSetLayout, 1> setLayouts = { _globalDescriptorSetLayout };
+		std::array<VkPushConstantRange, 1> pushConstantRanges = { pushConstantRange };
+		VkPipelineLayoutCreateInfo pipelineLayoutInfo = Eugenix::Render::Vulkan::PipelineLayoutInfo(setLayouts, 
+			pushConstantRanges);
 
 		if (vkCreatePipelineLayout(_device, &pipelineLayoutInfo, nullptr, &_pipelineLayout) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create pipeline layout!\n");
 		}
 
-		VkGraphicsPipelineCreateInfo pipelineInfo{};
-		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-		pipelineInfo.stageCount = 2;
-		pipelineInfo.pStages = shaderStages;
-		pipelineInfo.pVertexInputState = &vertexInputInfo;
-		pipelineInfo.pInputAssemblyState = &inputAssembly;
-		pipelineInfo.pViewportState = &viewportState;
-		pipelineInfo.pRasterizationState = &rasterizer;
-		pipelineInfo.pMultisampleState = &multisampling;
-		pipelineInfo.pDepthStencilState = &depthStencilAttachment;
-		pipelineInfo.pColorBlendState = &colorBlending;
-		pipelineInfo.pDynamicState = nullptr;
-		pipelineInfo.layout = _pipelineLayout;
-		pipelineInfo.renderPass = _renderPass;
-		pipelineInfo.subpass = 0;
-		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-		pipelineInfo.basePipelineIndex = -1;
+		VkGraphicsPipelineCreateInfo pipelineInfo = Eugenix::Render::Vulkan::PipelineInfo(shaderStages,
+			vertexInputInfo, inputAssembly, viewportState, rasterizer, multisampling, depthStencilAttachment,
+			colorBlending, nullptr, _pipelineLayout, _renderPass, 0, VK_NULL_HANDLE, -1);
 
 		if (vkCreateGraphicsPipelines(_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_graphicsPipeline) != VK_SUCCESS)
 		{
@@ -1076,10 +1032,7 @@ private:
 
 	VkShaderModule createShaderModule(const std::vector<char>& code)
 	{
-		VkShaderModuleCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		createInfo.codeSize = code.size();
-		createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+		VkShaderModuleCreateInfo createInfo = Eugenix::Render::Vulkan::ShaderModuleInfo(code);
 
 		VkShaderModule shaderModule;
 		if (vkCreateShaderModule(_device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
@@ -1174,10 +1127,8 @@ private:
 	{
 		QueueFamilyIndices queueFamilyIndices = findQueueFamilies(_physicalDevice);
 
-		VkCommandPoolCreateInfo poolInfo{};
-		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
-		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+		VkCommandPoolCreateInfo poolInfo = Eugenix::Render::Vulkan::CommandPoolInfo(queueFamilyIndices.graphicsFamily.value(),
+			VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
 		if (vkCreateCommandPool(_device, &poolInfo, nullptr, &_commandPool) != VK_SUCCESS)
 		{
@@ -1189,11 +1140,8 @@ private:
 	{
 		_commandBuffers.resize(_swapchainFramebuffers.size());
 
-		VkCommandBufferAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.commandPool = _commandPool;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandBufferCount = static_cast<uint32_t>(_commandBuffers.size());
+		VkCommandBufferAllocateInfo allocInfo = Eugenix::Render::Vulkan::CommandBufferAllocateInfo(_commandPool,
+			VK_COMMAND_BUFFER_LEVEL_PRIMARY, static_cast<uint32_t>(_commandBuffers.size()));
 
 		if (vkAllocateCommandBuffers(_device, &allocInfo, _commandBuffers.data()) != VK_SUCCESS)
 		{
@@ -1207,12 +1155,8 @@ private:
 		_renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 		_inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
 
-		VkSemaphoreCreateInfo semaphoreInfo{};
-		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-		VkFenceCreateInfo fenceInfo{};
-		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+		VkSemaphoreCreateInfo semaphoreInfo = Eugenix::Render::Vulkan::SemaphoreInfo();
+		VkFenceCreateInfo fenceInfo = Eugenix::Render::Vulkan::FenceInfo(VK_FENCE_CREATE_SIGNALED_BIT);
 
 		for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
 		{
@@ -1227,18 +1171,14 @@ private:
 
 	VkCommandBuffer beginSingleTimeCommands()
 	{
-		VkCommandBufferAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandPool = _commandPool;
-		allocInfo.commandBufferCount = 1;
+		VkCommandBufferAllocateInfo allocInfo = Eugenix::Render::Vulkan::CommandBufferAllocateInfo(_commandPool,
+			VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
 
 		VkCommandBuffer commandBuffer;
 		vkAllocateCommandBuffers(_device, &allocInfo, &commandBuffer);
 
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+		VkCommandBufferBeginInfo beginInfo = Eugenix::Render::Vulkan::CommandBufferBeginInfo(
+			VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 		vkBeginCommandBuffer(commandBuffer, &beginInfo);
 		//VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo));
 
@@ -1249,10 +1189,8 @@ private:
 	{
 		vkEndCommandBuffer(commandBuffer);
 
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &commandBuffer;
+		VkCommandBuffer commandBuffers[] = { commandBuffer };
+		VkSubmitInfo submitInfo = Eugenix::Render::Vulkan::SubmitInfo(commandBuffers);
 
 		vkQueueSubmit(_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
 		vkQueueWaitIdle(_graphicsQueue);
@@ -1321,12 +1259,7 @@ private:
 	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
 		VkDeviceMemory& memory)
 	{
-		VkBufferCreateInfo bufferInfo{};
-		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferInfo.size = size;
-		bufferInfo.usage = usage;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
+		VkBufferCreateInfo bufferInfo = Eugenix::Render::Vulkan::BufferCreateInfo(size, usage, VK_SHARING_MODE_EXCLUSIVE);
 		if (vkCreateBuffer(_device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create buffer!\n");
@@ -1335,10 +1268,8 @@ private:
 		VkMemoryRequirements memRequirements;
 		vkGetBufferMemoryRequirements(_device, buffer, &memRequirements);
 
-		VkMemoryAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		allocInfo.allocationSize = memRequirements.size;
-		allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+		VkMemoryAllocateInfo allocInfo = Eugenix::Render::Vulkan::MemoryAllocateInfo(memRequirements.size, 
+			findMemoryType(memRequirements.memoryTypeBits, properties));
 
 		if (vkAllocateMemory(_device, &allocInfo, nullptr, &memory) != VK_SUCCESS)
 		{
@@ -1417,18 +1348,8 @@ private:
 	{
 		VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
-		VkImageMemoryBarrier barrier{};
-		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		barrier.oldLayout = oldLayout;
-		barrier.newLayout = newLayout;
-		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.image = image;
-		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		barrier.subresourceRange.baseMipLevel = 0;
-		barrier.subresourceRange.levelCount = 1;// mipLevels;
-		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = 1;
+		VkImageMemoryBarrier barrier = Eugenix::Render::Vulkan::ImageMemoryBarrier(oldLayout, newLayout,
+			VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, image, VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1);
 
 		VkPipelineStageFlags sourceStage;
 		VkPipelineStageFlags destinationStage;
