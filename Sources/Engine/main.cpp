@@ -26,6 +26,7 @@
 #include "Render/Vulkan/VulkanApp.h"
 #include "Render/Vulkan/VulkanDebug.h"
 #include "Render/Vulkan/VulkanInitializers.h"
+#include "Render/Vulkan/VulkanUtils.h"
 
 #include "IO/IO.h"
 
@@ -51,90 +52,6 @@ const bool enableValidationLayers{ true };
 #else 
 const bool enableValidationLayers{ false };
 #endif
-
-bool checkValidationLayerSupport()
-{
-	uint32_t layerCount;
-	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-	std::vector<VkLayerProperties> availableLayers(layerCount);
-	vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-
-	for (const char* layerName : Eugenix::Render::Vulkan::ValidationLayers)
-	{
-		bool layerFound = false;
-		for (const auto& layerProperties : availableLayers)
-		{
-			if (strcmp(layerName, layerProperties.layerName) == 0)
-			{
-				layerFound = true;
-				break;
-			}
-		}
-
-		if (!layerFound)
-		{
-			return false;
-		}
-	}
-
-	return true;
-}
-
-std::vector<const char*> getRequiredExtensions()
-{
-	uint32_t glfwExtensionCount{ 0 };
-	const char** glfwExtensions{ glfwGetRequiredInstanceExtensions(&glfwExtensionCount) };
-	std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-
-#if EUGENIX_DEBUG
-	Eugenix::AppendSpan(extensions, Eugenix::Render::Vulkan::DebugExtensions);
-#endif // EUGENIX_DEBUG
-
-	return extensions;
-}
-
-static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-	VkDebugUtilsMessageTypeFlagsEXT messageType,
-	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-	void* pUserData)
-{
-	std::cerr << "Validation layer: " << pCallbackData->pMessage << std::endl;
-	return VK_FALSE;
-}
-
-VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
-	const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-	const VkAllocationCallbacks* pAllocator,
-	VkDebugUtilsMessengerEXT* pDebugMessenger)
-{
-	auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-
-	if (func != nullptr)
-	{
-		return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-	}
-	else
-	{
-		return VK_ERROR_EXTENSION_NOT_PRESENT;
-	}
-}
-
-void DestroyDebugUtilsMessengerEXT(VkInstance instance,
-	VkDebugUtilsMessengerEXT debugMessenger,
-	const VkAllocationCallbacks* pAllocator)
-{
-	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-	if (func != nullptr)
-	{
-		func(instance, debugMessenger, pAllocator);
-	}
-	else
-	{
-		throw std::runtime_error("Failed to get vkDestroyDebugUtilsMessengerEXT function!\n");
-	}
-}
 
 struct QueueFamilyIndices
 {
@@ -340,7 +257,13 @@ public:
 	void run()
 	{
 		initWindow();
-		initVulkan();
+
+		if (InitVulkan({}))
+		{
+			throw std::runtime_error("Failed to init Vulkan");
+		}
+		
+		init();
 		mainLoop();
 		cleanup();
 	}
@@ -348,8 +271,8 @@ public:
 private:
 	GLFWwindow* _window{ nullptr };
 
-	VkInstance _instance{ VK_NULL_HANDLE };
-	VkDebugUtilsMessengerEXT _debugMessenger{ VK_NULL_HANDLE };
+	//VkInstance _instance{ VK_NULL_HANDLE };
+	//VkDebugUtilsMessengerEXT _debugMessenger{ VK_NULL_HANDLE };
 
 	VkSurfaceKHR _surface{ VK_NULL_HANDLE };
 
@@ -428,10 +351,8 @@ private:
 		parent->_resized = true;
 	}
 
-	void initVulkan()
+	void init()
 	{
-		createInstance();
-		setupDebugMessenger();
 		createSurface();
 		pickPhysicalDevice();
 		createLogicalDevice();
@@ -454,56 +375,16 @@ private:
 		createSyncObject();
 	}
 
-	void createInstance()
-	{
-		if (enableValidationLayers && !checkValidationLayerSupport())
-		{
-			throw std::runtime_error("validation layers requested, but not available!\n");
-		}
-
-		VkApplicationInfo appInfo = Eugenix::Render::Vulkan::ApplicationInfo(
-			"Eugenix", VK_MAKE_VERSION(1, 0, 0),
-			"Eugenix Engine", VK_MAKE_VERSION(1, 0, 0),
-			VK_API_VERSION_1_4);
-
-		const auto extensions = getRequiredExtensions();
-		VkInstanceCreateInfo instanceInfo = Eugenix::Render::Vulkan::InstanceInfo(appInfo, enableValidationLayers, extensions);
-
-		VkResult res = vkCreateInstance(&instanceInfo, nullptr, &_instance);
-		if (res != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create instance!\n");
-		}
-	}
-
-	void setupDebugMessenger()
-	{
-		if (enableValidationLayers)
-		{
-			VkDebugUtilsMessengerCreateInfoEXT debugMessengerInfo = Eugenix::Render::Vulkan::DebugMessengerInfo(
-				VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
-				VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT, 
-				VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-				VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT, 
-				debugCallback);
-
-			if (CreateDebugUtilsMessengerEXT(_instance, &debugMessengerInfo, nullptr, &_debugMessenger) != VK_SUCCESS)
-			{
-				throw std::runtime_error("Failed to set up debug messenger!\n");
-			}
-		}
-	}
-
 	void pickPhysicalDevice()
 	{
 		uint32_t deviceCount{ 0 };
-		vkEnumeratePhysicalDevices(_instance, &deviceCount, nullptr);
+		vkEnumeratePhysicalDevices(_instance.Native(), &deviceCount, nullptr);
 		if (deviceCount == 0)
 		{
 			throw std::runtime_error("Failed to find any GPUs with Vulkan support!\n");
 		}
 		std::vector<VkPhysicalDevice> devices(deviceCount);
-		vkEnumeratePhysicalDevices(_instance, &deviceCount, devices.data());
+		vkEnumeratePhysicalDevices(_instance.Native(), &deviceCount, devices.data());
 
 		for (const auto& device : devices)
 		{
@@ -599,7 +480,7 @@ private:
 		std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 		for (uint32_t queueFamily : uniqueQueueFamilies)
 		{
-			queueCreateInfos.push_back(Eugenix::Render::Vulkan::QueueInfo(indices.graphicsFamily.value(), 1, queuePriority));
+			queueCreateInfos.push_back(Eugenix::Render::Vulkan::QueueInfo(indices.graphicsFamily.value(), 1, &queuePriority));
 		}
 
 		// NOTE: check in isDeviceSuitable
@@ -1556,7 +1437,7 @@ private:
 
 	void createSurface()
 	{
-		if (glfwCreateWindowSurface(_instance, _window, nullptr, &_surface) != VK_SUCCESS)
+		if (glfwCreateWindowSurface(_instance.Native(), _window, nullptr, &_surface) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create window surface!\n");
 		}
@@ -1779,11 +1660,9 @@ private:
 
 		vkDestroyDevice(_device, nullptr);
 
-		if (enableValidationLayers)
-			DestroyDebugUtilsMessengerEXT(_instance, _debugMessenger, nullptr);
+		vkDestroySurfaceKHR(_instance.Native(), _surface, nullptr);
 
-		vkDestroySurfaceKHR(_instance, _surface, nullptr);
-		vkDestroyInstance(_instance, nullptr);
+		Cleanup();
 
 		glfwDestroyWindow(_window);
 		glfwTerminate();

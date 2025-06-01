@@ -1,6 +1,8 @@
 #pragma once
 
+#include <array>
 #include <span>
+#include <vector>
 
 #include "VulkanDebug.h"
 #include "VulkanInclude.h"
@@ -40,21 +42,14 @@ namespace Eugenix
 				return appInfo;
 			}
 
-			inline VkInstanceCreateInfo InstanceInfo(const VkApplicationInfo& appInfo, bool enableValidationLayers, std::span<const char* const> extensions)
+			inline VkInstanceCreateInfo InstanceInfo(const VkApplicationInfo& appInfo, std::span<const char* const> layers, std::span<const char* const> extensions)
 			{
 				VkInstanceCreateInfo instanceInfo{};
 				instanceInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 				instanceInfo.pApplicationInfo = &appInfo;
 
-				if (enableValidationLayers)
-				{
-					instanceInfo.enabledLayerCount = static_cast<uint32_t>(ValidationLayers.size());
-					instanceInfo.ppEnabledLayerNames = ValidationLayers.data();
-				}
-				else
-				{
-					instanceInfo.enabledLayerCount = 0;
-				}
+				instanceInfo.enabledLayerCount = static_cast<uint32_t>(layers.size());
+				instanceInfo.ppEnabledLayerNames = layers.data();
 
 				instanceInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
 				instanceInfo.ppEnabledExtensionNames = extensions.data();
@@ -74,13 +69,13 @@ namespace Eugenix
 				return debugMessengerInfo;
 			}
 
-			inline VkDeviceQueueCreateInfo QueueInfo(uint32_t familyIndex, uint32_t count, float priority)
+			inline VkDeviceQueueCreateInfo QueueInfo(uint32_t familyIndex, uint32_t count, const float* priority)
 			{
 				VkDeviceQueueCreateInfo queueInfo{};
 				queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 				queueInfo.queueFamilyIndex = familyIndex;
 				queueInfo.queueCount = count;
-				queueInfo.pQueuePriorities = &priority;
+				queueInfo.pQueuePriorities = priority;
 
 				return queueInfo;
 			}
