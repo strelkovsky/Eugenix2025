@@ -21,6 +21,9 @@ namespace Eugenix
 
 			private:
 				VkInstance _instance{ VK_NULL_HANDLE };
+				std::vector<VkLayerProperties> _availableLayers;
+				std::vector<VkExtensionProperties> _availableExtensions;
+
 				VkDebugUtilsMessengerEXT _debugMessenger{ VK_NULL_HANDLE };
 			};
 		} // namespace Vulkan

@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 
 #include "Core/Containers.h"
+#include "Core/Log.h"
 #include "Core/Platform.h"
 
 #include "VulkanInitializers.h"
@@ -19,6 +20,26 @@ namespace
 	{
 		VK_EXT_DEBUG_UTILS_EXTENSION_NAME
 	};
+
+	std::vector<VkLayerProperties> getAvailableInstanceLayers()
+	{
+		uint32_t instanceLayerCount = 0;
+		vkEnumerateInstanceLayerProperties(&instanceLayerCount, nullptr);
+		std::vector<VkLayerProperties> availableLayers(instanceLayerCount);
+		vkEnumerateInstanceLayerProperties(&instanceLayerCount, availableLayers.data());
+
+		return availableLayers;
+	}
+
+	std::vector<VkExtensionProperties> getAvailableInstanceExtensions()
+	{
+		uint32_t count = 0;
+		vkEnumerateInstanceExtensionProperties(nullptr, &count, nullptr);
+		std::vector<VkExtensionProperties> extensions(count);
+		vkEnumerateInstanceExtensionProperties(nullptr, &count, extensions.data());
+
+		return extensions;
+	}
 
 	std::vector<const char*> getRequiredLayers(bool enableValidationLayers)
 	{
@@ -68,7 +89,7 @@ namespace
 		std::vector<VkLayerProperties> availableLayers(layerCount);
 		vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
-		for (const char* layerName : desiredLayers)
+		for (auto layerName : desiredLayers)
 		{
 			bool layerFound = false;
 
@@ -119,10 +140,24 @@ namespace
 			return func(instance, messenger, allocator);
 	}
 
-	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT severuty, VkDebugUtilsMessageTypeFlagsEXT type,
+	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT type,
 		const VkDebugUtilsMessengerCallbackDataEXT* data, void*)
 	{
-		std::cerr << "[Vulkan] " << data->pMessage << std::endl;
+		Eugenix::LogSeverity logLevel = Eugenix::LogSeverity::Verbose;
+		if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+			logLevel = Eugenix::LogSeverity::Error;
+		else if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
+			logLevel = Eugenix::LogSeverity::Warning;
+		else if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
+			logLevel = Eugenix::LogSeverity::Info;
+
+		switch (logLevel)
+		{
+		case Eugenix::LogSeverity::Error:   Eugenix::LogError(data->pMessage); break;
+		case Eugenix::LogSeverity::Warning: Eugenix::LogWarn(data->pMessage); break;
+		case Eugenix::LogSeverity::Info:    Eugenix::LogInfo(data->pMessage); break;
+		case Eugenix::LogSeverity::Verbose: Eugenix::LogVerbose(data->pMessage); break;
+		}
 		return VK_FALSE;
 	}
 }
@@ -131,20 +166,37 @@ namespace Eugenix::Render::Vulkan
 {
 	bool Instance::Create(uint32_t apiVersion, bool enableValidationLayers)
 	{
-		if (enableValidationLayers && !layersSupported(validationLayers))
+		std::vector<VkLayerProperties> availableLayers = getAvailableInstanceLayers();
+		LogInfo("Available instance layers:");
+		for (const auto& prop : availableLayers)
+			LogInfo("  ", prop.layerName);
+
+		std::vector<VkExtensionProperties> availableExtensions = getAvailableInstanceExtensions();
+		Eugenix::LogInfo("Available instance extensions:");
+		for (const auto& prop : availableExtensions)
 		{
-			throw std::runtime_error("validation layers requested, but not available!\n");
+			Eugenix::LogInfo("  ", prop.extensionName);
 		}
 
 		const auto requiredLayers = getRequiredLayers(enableValidationLayers);
+		Eugenix::LogInfo("Required layers:");
+		for (const auto& layer : requiredLayers)
+		{
+			Eugenix::LogInfo("  ", layer);
+			if (!layerSupported(layer))
+			{
+				LogError("Unsupported Layer - ", layer);
+			}
+		}
 
 		const auto requiredExtensions = getRequiredExtensions();
-		for (const auto& extension : requiredExtensions)
+		Eugenix::LogInfo("Required extensions:");
+		for (const auto& ext : requiredExtensions)
 		{
-			if (!extensionSupported(extension))
+			Eugenix::LogInfo("  ", ext);
+			if (!extensionSupported(ext))
 			{
-				printf("Required extension %s is not supported!\n", extension);
-				return false;
+				LogError("Unsupported Extension - ", ext);
 			}
 		}
 
