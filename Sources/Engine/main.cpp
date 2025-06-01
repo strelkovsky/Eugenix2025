@@ -25,6 +25,7 @@
 
 #include "Render/Vulkan/VulkanAdapter.h"
 #include "Render/Vulkan/VulkanApp.h"
+#include "Render/Vulkan/VulkanBuffer.h"
 #include "Render/Vulkan/VulkanDebug.h"
 #include "Render/Vulkan/VulkanInitializers.h"
 #include "Render/Vulkan/VulkanSwapchain.h"
@@ -253,13 +254,18 @@ private:
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
 
-	VkBuffer _vertexBuffer;
-	VkDeviceMemory _vertexBufferMemory;
-	VkBuffer _indexBuffer;
-	VkDeviceMemory _indexBufferMemory;
+	Eugenix::Render::Vulkan::Buffer _vertexBuffer;
+	Eugenix::Render::Vulkan::Buffer _indexBuffer;
+
+	Eugenix::Render::Vulkan::Buffer _uniformBuffer;
+
+	//VkBuffer _vertexBuffer;
+	//VkDeviceMemory _vertexBufferMemory;
+	//VkBuffer _indexBuffer;
+	//VkDeviceMemory _indexBufferMemory;
 	
-	VkBuffer _uniformBuffer;
-	VkDeviceMemory _uniformBufferMemory;
+	//VkBuffer _uniformBuffer;
+	//VkDeviceMemory _uniformBufferMemory;
 
 	VkImage _textureImage;
 	VkDeviceMemory _textureImageMemory;
@@ -512,7 +518,7 @@ private:
 		}
 
 		VkDescriptorBufferInfo bufferInfo{};
-		bufferInfo.buffer = _uniformBuffer;
+		bufferInfo.buffer = _uniformBuffer.buffer;
 		bufferInfo.offset = 0;
 		bufferInfo.range = sizeof(UniformBufferObject);
 
@@ -653,8 +659,8 @@ private:
 		obj1.modelMatrix = glm::scale(obj1.modelMatrix, glm::vec3(0.5f));
 		obj1.modelMatrix = glm::rotate(obj1.modelMatrix, glm::radians(-90.0f), glm::vec3(1, 0, 0));
 		obj1.modelMatrix = glm::rotate(obj1.modelMatrix, glm::radians(-90.0f), glm::vec3(0, 0, 1));
-		obj1.vertexBuffer = _vertexBuffer;
-		obj1.indexBuffer = _indexBuffer;
+		obj1.vertexBuffer = _vertexBuffer.buffer;
+		obj1.indexBuffer = _indexBuffer.buffer;
 		obj1.indexCount = static_cast<uint32_t>(indices.size());
 		obj1.descriptorSet = _globalDescriptorSet;
 
@@ -663,8 +669,8 @@ private:
 		obj2.modelMatrix = glm::scale(obj2.modelMatrix, glm::vec3(0.5f));
 		obj2.modelMatrix = glm::rotate(obj2.modelMatrix, glm::radians(-90.0f), glm::vec3(1, 0, 0));
 		obj2.modelMatrix = glm::rotate(obj2.modelMatrix, glm::radians(-90.0f), glm::vec3(0, 0, 1));
-		obj2.vertexBuffer = _vertexBuffer;
-		obj2.indexBuffer = _indexBuffer;
+		obj2.vertexBuffer = _vertexBuffer.buffer;
+		obj2.indexBuffer = _indexBuffer.buffer;
 		obj2.indexCount = static_cast<uint32_t>(indices.size());
 		obj2.descriptorSet = _globalDescriptorSet;
 
@@ -801,48 +807,46 @@ private:
 	{
 		VkDeviceSize size = sizeof(Vertex) * vertices.size();
 
-		VkBuffer stagingBuffer;
-		VkDeviceMemory stagingBufferMemory;
+		Eugenix::Render::Vulkan::Buffer stagingBuffer;
 		createBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			stagingBuffer, stagingBufferMemory);
+			stagingBuffer);
 
 		void* data;
-		vkMapMemory(_device.Handle(), stagingBufferMemory, 0, size, 0, &data);
+		vkMapMemory(_device.Handle(), stagingBuffer.memory, 0, size, 0, &data);
 		memcpy(data, vertices.data(), static_cast<size_t>(size));
-		vkUnmapMemory(_device.Handle(), stagingBufferMemory);
+		vkUnmapMemory(_device.Handle(), stagingBuffer.memory);
 
 		createBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			_vertexBuffer, _vertexBufferMemory);
+			_vertexBuffer);
 
-		copyBuffer(stagingBuffer, _vertexBuffer, size);
-		vkDestroyBuffer(_device.Handle(), stagingBuffer, nullptr);
-		vkFreeMemory(_device.Handle(), stagingBufferMemory, nullptr);
+		copyBuffer(stagingBuffer.buffer, _vertexBuffer.buffer, size);
+		vkDestroyBuffer(_device.Handle(), stagingBuffer.buffer, nullptr);
+		vkFreeMemory(_device.Handle(), stagingBuffer.memory, nullptr);
 	}
 
 	void createIndexBuffer()
 	{
 		VkDeviceSize size = sizeof(uint32_t) * indices.size();
 
-		VkBuffer stagingBuffer;
-		VkDeviceMemory stagingBufferMemory;
+		Eugenix::Render::Vulkan::Buffer stagingBuffer;
 		createBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			stagingBuffer, stagingBufferMemory);
+			stagingBuffer);
 
 		void* data;
-		vkMapMemory(_device.Handle(), stagingBufferMemory, 0, size, 0, &data);
+		vkMapMemory(_device.Handle(), stagingBuffer.memory, 0, size, 0, &data);
 		memcpy(data, indices.data(), static_cast<size_t>(size));
-		vkUnmapMemory(_device.Handle(), stagingBufferMemory);
+		vkUnmapMemory(_device.Handle(), stagingBuffer.memory);
 
 		createBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			_indexBuffer, _indexBufferMemory);
+			_indexBuffer);
 
-		copyBuffer(stagingBuffer, _indexBuffer, size);
-		vkDestroyBuffer(_device.Handle(), stagingBuffer, nullptr);
-		vkFreeMemory(_device.Handle(), stagingBufferMemory, nullptr);
+		copyBuffer(stagingBuffer.buffer, _indexBuffer.buffer, size);
+		vkDestroyBuffer(_device.Handle(), stagingBuffer.buffer, nullptr);
+		vkFreeMemory(_device.Handle(), stagingBuffer.memory, nullptr);
 	}
 
 	void createUniformBuffers()
@@ -852,30 +856,29 @@ private:
 
 		createBuffer(size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			_uniformBuffer, _uniformBufferMemory);
+			_uniformBuffer);
 	}
 
-	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
-		VkDeviceMemory& memory)
+	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, Eugenix::Render::Vulkan::Buffer& buffer)
 	{
 		VkBufferCreateInfo bufferInfo = Eugenix::Render::Vulkan::BufferCreateInfo(size, usage, VK_SHARING_MODE_EXCLUSIVE);
-		if (vkCreateBuffer(_device.Handle(), &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
+		if (vkCreateBuffer(_device.Handle(), &bufferInfo, nullptr, &buffer.buffer) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create buffer!\n");
 		}
 
 		VkMemoryRequirements memRequirements;
-		vkGetBufferMemoryRequirements(_device.Handle(), buffer, &memRequirements);
+		vkGetBufferMemoryRequirements(_device.Handle(), buffer.buffer, &memRequirements);
 
 		VkMemoryAllocateInfo allocInfo = Eugenix::Render::Vulkan::MemoryAllocateInfo(memRequirements.size, 
 			findMemoryType(memRequirements.memoryTypeBits, properties));
 
-		if (vkAllocateMemory(_device.Handle(), &allocInfo, nullptr, &memory) != VK_SUCCESS)
+		if (vkAllocateMemory(_device.Handle(), &allocInfo, nullptr, &buffer.memory) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to allocate buffer memory!\n");
 		}
 
-		vkBindBufferMemory(_device.Handle(), buffer, memory, 0);
+		vkBindBufferMemory(_device.Handle(), buffer.buffer, buffer.memory, 0);
 	}
 
 	void copyBuffer(VkBuffer& srcBuffer, VkBuffer& dstBuffer, VkDeviceSize size)
@@ -919,16 +922,15 @@ private:
 
 		VkDeviceSize imageSize = width * height * 4;
 
-		VkBuffer stagingBuffer;
-		VkDeviceMemory stagingBufferMemory;
+		Eugenix::Render::Vulkan::Buffer stagingBuffer;
 		createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			stagingBuffer, stagingBufferMemory);
+			stagingBuffer);
 
 		void* data;
-		vkMapMemory(_device.Handle(), stagingBufferMemory, 0, imageSize, 0, &data);
+		vkMapMemory(_device.Handle(), stagingBuffer.memory, 0, imageSize, 0, &data);
 		memcpy(data, pixels, static_cast<uint32_t>(imageSize));
-		vkUnmapMemory(_device.Handle(), stagingBufferMemory);
+		vkUnmapMemory(_device.Handle(), stagingBuffer.memory);
 		stbi_image_free(pixels);
 
 		createImage(width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
@@ -936,11 +938,11 @@ private:
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, _textureImage, _textureImageMemory);
 
 		transitionImageLayout(_textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-		copyBufferToImage(stagingBuffer, _textureImage, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+		copyBufferToImage(stagingBuffer.buffer, _textureImage, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 		transitionImageLayout(_textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-		vkDestroyBuffer(_device.Handle(), stagingBuffer, nullptr);
-		vkFreeMemory(_device.Handle(), stagingBufferMemory, nullptr);
+		vkDestroyBuffer(_device.Handle(), stagingBuffer.buffer, nullptr);
+		vkFreeMemory(_device.Handle(), stagingBuffer.memory, nullptr);
 	}
 
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout/*, uint32_t mipLevels*/)
@@ -1285,9 +1287,9 @@ private:
 		ubo.proj[1][1] *= -1;
 
 		void* data;
-		vkMapMemory(_device.Handle(), _uniformBufferMemory, 0, sizeof(ubo), 0, &data);
+		vkMapMemory(_device.Handle(), _uniformBuffer.memory, 0, sizeof(ubo), 0, &data);
 		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(_device.Handle(), _uniformBufferMemory);
+		vkUnmapMemory(_device.Handle(), _uniformBuffer.memory);
 	}
 
 	void cleanup()
@@ -1300,11 +1302,11 @@ private:
 		vkDestroyImage(_device.Handle(), _textureImage, nullptr);
 		vkFreeMemory(_device.Handle(), _textureImageMemory, nullptr);
 
-		vkDestroyBuffer(_device.Handle(), _vertexBuffer, nullptr);
-		vkFreeMemory(_device.Handle(), _vertexBufferMemory, nullptr);
+		vkDestroyBuffer(_device.Handle(), _vertexBuffer.buffer, nullptr);
+		vkFreeMemory(_device.Handle(), _vertexBuffer.memory, nullptr);
 
-		vkDestroyBuffer(_device.Handle(), _indexBuffer, nullptr);
-		vkFreeMemory(_device.Handle(), _indexBufferMemory, nullptr);
+		vkDestroyBuffer(_device.Handle(), _indexBuffer.buffer, nullptr);
+		vkFreeMemory(_device.Handle(), _indexBuffer.memory, nullptr);
 
 		vkDestroyDescriptorSetLayout(_device.Handle(), _globalDescriptorSetLayout, nullptr);
 
@@ -1337,8 +1339,8 @@ private:
 		vkDestroyImage(_device.Handle(), _depthImage, nullptr);
 		vkFreeMemory(_device.Handle(), _depthImageMemory, nullptr);
 
-		vkDestroyBuffer(_device.Handle(), _uniformBuffer, nullptr);
-		vkFreeMemory(_device.Handle(), _uniformBufferMemory, nullptr);
+		vkDestroyBuffer(_device.Handle(), _uniformBuffer.buffer, nullptr);
+		vkFreeMemory(_device.Handle(), _uniformBuffer.memory, nullptr);
 
 		vkDestroyDescriptorPool(_device.Handle(), _descriptorPool, nullptr);
 
