@@ -205,9 +205,9 @@ namespace Eugenix::Render::Vulkan
 				
 		VkInstanceCreateInfo instanceInfo = InstanceInfo(appInfo, requiredLayers, requiredExtensions);
 		if (vkCreateInstance(&instanceInfo, nullptr, &_instance) != VK_SUCCESS)
-		{
 			throw std::runtime_error("Failed to create Vulkan instance!\n");
-		}
+
+		LogInfo("Vulkan instance created successfully.");
 
 		if (enableValidationLayers)
 		{
@@ -219,9 +219,9 @@ namespace Eugenix::Render::Vulkan
 				DebugCallback);
 
 			if (CreateDebugUtilsMessengerEXT(_instance, &debugMessengerInfo, nullptr, &_debugMessenger) != VK_SUCCESS)
-			{
 				throw std::runtime_error("Failed to set up debug messenger!\n");
-			}
+
+			LogInfo("Debug messenger initialized.");
 		}
 
 		return true;
@@ -230,9 +230,15 @@ namespace Eugenix::Render::Vulkan
 	void Instance::Destroy()
 	{
 		if (_debugMessenger)
+		{
+			LogInfo("Debug messenger destroyed.");
 			DestroyDebugUtilsMessengerEXT(_instance, _debugMessenger, nullptr);
+		}
 
 		if (_instance)
+		{
+			LogInfo("Vulkan instance destroyed.");
 			vkDestroyInstance(_instance, nullptr);
+		}
 	}
 } // namespace Eugenix::Render::Vulkan
