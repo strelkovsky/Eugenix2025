@@ -261,9 +261,9 @@ public:
 private:
 	GLFWwindow* _window{ nullptr };
 
-	VkDevice _device{ VK_NULL_HANDLE };
-	VkQueue _graphicsQueue{ VK_NULL_HANDLE };
-	VkQueue _presentQueue{ VK_NULL_HANDLE };
+	//VkDevice _device{ VK_NULL_HANDLE };
+	//VkQueue _graphicsQueue{ VK_NULL_HANDLE };
+	//VkQueue _presentQueue{ VK_NULL_HANDLE };
 
 	VkSwapchainKHR _swapchain{ VK_NULL_HANDLE };
 	std::vector<VkImage> _swapchainImages;
@@ -332,7 +332,6 @@ private:
 
 	void init()
 	{
-		createLogicalDevice();
 		createSwapchain();
 		createSwapchainImageViews(); // TODO : merge with createSwapchain	
 		createDescriptorSetLayout();
@@ -400,33 +399,6 @@ private:
 			++i;
 		}
 		return indices;
-	}
-
-	void createLogicalDevice()
-	{
-		Eugenix::Render::Vulkan::QueueFamilyIndices indices = findQueueFamilies(_adapter.Handle());
-
-		const float queuePriority = 1.0f;
-		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos{};
-		std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
-		for (uint32_t queueFamily : uniqueQueueFamilies)
-		{
-			queueCreateInfos.push_back(Eugenix::Render::Vulkan::QueueInfo(indices.graphicsFamily.value(), 1, &queuePriority));
-		}
-
-		// NOTE: check in isDeviceSuitable
-		VkPhysicalDeviceFeatures deviceFeatures{};
-		deviceFeatures.samplerAnisotropy = VK_TRUE;
-
-		VkDeviceCreateInfo createInfo = Eugenix::Render::Vulkan::DeviceInfo(queueCreateInfos, deviceFeatures, DeviceExtensions);
-
-		if (vkCreateDevice(_adapter.Handle(), &createInfo, nullptr, &_device) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create logical device!\n");
-		}
-
-		vkGetDeviceQueue(_device, indices.graphicsFamily.value(), 0, &_graphicsQueue);
-		vkGetDeviceQueue(_device, indices.presentFamily.value(), 0, &_presentQueue);
 	}
 
 	SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice device)
@@ -545,14 +517,14 @@ private:
 		createInfo.clipped = VK_TRUE;
 		createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-		if (vkCreateSwapchainKHR(_device, &createInfo, nullptr, &_swapchain) != VK_SUCCESS)
+		if (vkCreateSwapchainKHR(_device.Handle(), &createInfo, nullptr, &_swapchain) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create swapchain!\n");
 		}
 
-		vkGetSwapchainImagesKHR(_device, _swapchain, &imageCount, nullptr);
+		vkGetSwapchainImagesKHR(_device.Handle(), _swapchain, &imageCount, nullptr);
 		_swapchainImages.resize(imageCount);
-		vkGetSwapchainImagesKHR(_device, _swapchain, &imageCount, _swapchainImages.data());
+		vkGetSwapchainImagesKHR(_device.Handle(), _swapchain, &imageCount, _swapchainImages.data());
 
 		_swapchainImageFormat = surfaceFormat.format;
 		_swapchainExtent = extent;
@@ -579,7 +551,7 @@ private:
 			VkFramebufferCreateInfo framebufferInfo = Eugenix::Render::Vulkan::FrameBufferInfo(_renderPass,
 				attachments, _swapchainExtent, 1);
 
-			if (vkCreateFramebuffer(_device, &framebufferInfo, nullptr, &_swapchainFramebuffers[i]) != VK_SUCCESS)
+			if (vkCreateFramebuffer(_device.Handle(), &framebufferInfo, nullptr, &_swapchainFramebuffers[i]) != VK_SUCCESS)
 			{
 				throw std::runtime_error("Failed to create framebuffer!\n");
 			}
@@ -596,7 +568,7 @@ private:
 			glfwWaitEvents();
 		}
 
-		vkDeviceWaitIdle(_device);
+		vkDeviceWaitIdle(_device.Handle());
 
 		cleanupSwapchain();
 
@@ -669,7 +641,7 @@ private:
 		VkRenderPassCreateInfo renderPassInfo = Eugenix::Render::Vulkan::RenderPassInfo(
 			attachments, subpasses, dependencies);
 
-		if (vkCreateRenderPass(_device, &renderPassInfo, nullptr, &_renderPass) != VK_SUCCESS)
+		if (vkCreateRenderPass(_device.Handle(), &renderPassInfo, nullptr, &_renderPass) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create render pass\n");
 		}
@@ -695,8 +667,7 @@ private:
 		std::array<VkDescriptorSetLayoutBinding, 2> bindings = { uboLayoutBinding, samplerLayoutBinding };
 
 		VkDescriptorSetLayoutCreateInfo layoutInfo = Eugenix::Render::Vulkan::DescriptorSetLayoutInfo(bindings);
-
-		if (vkCreateDescriptorSetLayout(_device, &layoutInfo, nullptr, &_globalDescriptorSetLayout) != VK_SUCCESS)
+		if (vkCreateDescriptorSetLayout(_device.Handle(), &layoutInfo, nullptr, &_globalDescriptorSetLayout) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create descriptor set layout!\n");
 		}
@@ -717,7 +688,7 @@ private:
 		VkDescriptorPoolCreateInfo poolInfo = Eugenix::Render::Vulkan::DescriptorPoolInfo(
 			poolSizes, static_cast<uint32_t>(_swapchainImages.size()));
 
-		if (vkCreateDescriptorPool(_device, &poolInfo, nullptr, &_descriptorPool) != VK_SUCCESS)
+		if (vkCreateDescriptorPool(_device.Handle(), &poolInfo, nullptr, &_descriptorPool) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create descriptor pool!\n");
 		}
@@ -730,7 +701,7 @@ private:
 		VkDescriptorSetAllocateInfo allocInfo = Eugenix::Render::Vulkan::DescriptorSetAllocateInfo(_descriptorPool,
 			1, setLayouts);
 
-		if (vkAllocateDescriptorSets(_device, &allocInfo, &_globalDescriptorSet) != VK_SUCCESS)
+		if (vkAllocateDescriptorSets(_device.Handle(), &allocInfo, &_globalDescriptorSet) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to allocate descriptor sets!\n");
 		}
@@ -752,7 +723,7 @@ private:
 		descriptorWrites[1] = Eugenix::Render::Vulkan::WriteDescriptorSet(_globalDescriptorSet, 1, 0, 1,
 			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, imageInfo);
 
-		vkUpdateDescriptorSets(_device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+		vkUpdateDescriptorSets(_device.Handle(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 	}
 
 	void createGraphicsPipeline()
@@ -835,7 +806,7 @@ private:
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo = Eugenix::Render::Vulkan::PipelineLayoutInfo(setLayouts, 
 			pushConstantRanges);
 
-		if (vkCreatePipelineLayout(_device, &pipelineLayoutInfo, nullptr, &_pipelineLayout) != VK_SUCCESS)
+		if (vkCreatePipelineLayout(_device.Handle(), &pipelineLayoutInfo, nullptr, &_pipelineLayout) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create pipeline layout!\n");
 		}
@@ -844,13 +815,13 @@ private:
 			vertexInputInfo, inputAssembly, viewportState, rasterizer, multisampling, depthStencilAttachment,
 			colorBlending, nullptr, _pipelineLayout, _renderPass, 0, VK_NULL_HANDLE, -1);
 
-		if (vkCreateGraphicsPipelines(_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_graphicsPipeline) != VK_SUCCESS)
+		if (vkCreateGraphicsPipelines(_device.Handle(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_graphicsPipeline) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create graphics pipeline!\n");
 		}
 
-		vkDestroyShaderModule(_device, vertShaderModule, nullptr);
-		vkDestroyShaderModule(_device, fragShaderModule, nullptr);
+		vkDestroyShaderModule(_device.Handle(), vertShaderModule, nullptr);
+		vkDestroyShaderModule(_device.Handle(), fragShaderModule, nullptr);
 	}
 
 	VkShaderModule createShaderModule(const std::vector<char>& code)
@@ -858,7 +829,7 @@ private:
 		VkShaderModuleCreateInfo createInfo = Eugenix::Render::Vulkan::ShaderModuleInfo(code);
 
 		VkShaderModule shaderModule;
-		if (vkCreateShaderModule(_device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
+		if (vkCreateShaderModule(_device.Handle(), &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create shader module!\n");
 		}
@@ -953,7 +924,7 @@ private:
 		VkCommandPoolCreateInfo poolInfo = Eugenix::Render::Vulkan::CommandPoolInfo(queueFamilyIndices.graphicsFamily.value(),
 			VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
-		if (vkCreateCommandPool(_device, &poolInfo, nullptr, &_commandPool) != VK_SUCCESS)
+		if (vkCreateCommandPool(_device.Handle(), &poolInfo, nullptr, &_commandPool) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create command pool!\n");
 		}
@@ -966,7 +937,7 @@ private:
 		VkCommandBufferAllocateInfo allocInfo = Eugenix::Render::Vulkan::CommandBufferAllocateInfo(_commandPool,
 			VK_COMMAND_BUFFER_LEVEL_PRIMARY, MAX_FRAMES_IN_FLIGHT);
 
-		if (vkAllocateCommandBuffers(_device, &allocInfo, commandBuffers.data()) != VK_SUCCESS)
+		if (vkAllocateCommandBuffers(_device.Handle(), &allocInfo, commandBuffers.data()) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to allocate command buffers!\n");
 		}
@@ -984,9 +955,9 @@ private:
 
 		for (auto& frame : _frames)
 		{
-			if (vkCreateSemaphore(_device, &semaphoreInfo, nullptr, &frame.imageAvailable) != VK_SUCCESS ||
-				vkCreateSemaphore(_device, &semaphoreInfo, nullptr, &frame.renderFinished) != VK_SUCCESS ||
-				vkCreateFence(_device, &fenceInfo, nullptr, &frame.inFlight) != VK_SUCCESS)
+			if (vkCreateSemaphore(_device.Handle(), &semaphoreInfo, nullptr, &frame.imageAvailable) != VK_SUCCESS ||
+				vkCreateSemaphore(_device.Handle(), &semaphoreInfo, nullptr, &frame.renderFinished) != VK_SUCCESS ||
+				vkCreateFence(_device.Handle(), &fenceInfo, nullptr, &frame.inFlight) != VK_SUCCESS)
 			{
 				throw std::runtime_error("Failed to create sync objects for a frame!\n");
 			}
@@ -999,7 +970,7 @@ private:
 			VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
 
 		VkCommandBuffer commandBuffer;
-		vkAllocateCommandBuffers(_device, &allocInfo, &commandBuffer);
+		vkAllocateCommandBuffers(_device.Handle(), &allocInfo, &commandBuffer);
 
 		VkCommandBufferBeginInfo beginInfo = Eugenix::Render::Vulkan::CommandBufferBeginInfo(
 			VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
@@ -1016,10 +987,10 @@ private:
 		VkCommandBuffer commandBuffers[] = { commandBuffer };
 		VkSubmitInfo submitInfo = Eugenix::Render::Vulkan::SubmitInfo(commandBuffers);
 
-		vkQueueSubmit(_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-		vkQueueWaitIdle(_graphicsQueue);
+		vkQueueSubmit(_device.GraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
+		vkQueueWaitIdle(_device.GraphicsQueue());
 
-		vkFreeCommandBuffers(_device, _commandPool, 1, &commandBuffer);
+		vkFreeCommandBuffers(_device.Handle(), _commandPool, 1, &commandBuffer);
 	}
 
 	void createVertexBuffer()
@@ -1033,17 +1004,17 @@ private:
 			stagingBuffer, stagingBufferMemory);
 
 		void* data;
-		vkMapMemory(_device, stagingBufferMemory, 0, size, 0, &data);
+		vkMapMemory(_device.Handle(), stagingBufferMemory, 0, size, 0, &data);
 		memcpy(data, vertices.data(), static_cast<size_t>(size));
-		vkUnmapMemory(_device, stagingBufferMemory);
+		vkUnmapMemory(_device.Handle(), stagingBufferMemory);
 
 		createBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			_vertexBuffer, _vertexBufferMemory);
 
 		copyBuffer(stagingBuffer, _vertexBuffer, size);
-		vkDestroyBuffer(_device, stagingBuffer, nullptr);
-		vkFreeMemory(_device, stagingBufferMemory, nullptr);
+		vkDestroyBuffer(_device.Handle(), stagingBuffer, nullptr);
+		vkFreeMemory(_device.Handle(), stagingBufferMemory, nullptr);
 	}
 
 	void createIndexBuffer()
@@ -1057,17 +1028,17 @@ private:
 			stagingBuffer, stagingBufferMemory);
 
 		void* data;
-		vkMapMemory(_device, stagingBufferMemory, 0, size, 0, &data);
+		vkMapMemory(_device.Handle(), stagingBufferMemory, 0, size, 0, &data);
 		memcpy(data, indices.data(), static_cast<size_t>(size));
-		vkUnmapMemory(_device, stagingBufferMemory);
+		vkUnmapMemory(_device.Handle(), stagingBufferMemory);
 
 		createBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			_indexBuffer, _indexBufferMemory);
 
 		copyBuffer(stagingBuffer, _indexBuffer, size);
-		vkDestroyBuffer(_device, stagingBuffer, nullptr);
-		vkFreeMemory(_device, stagingBufferMemory, nullptr);
+		vkDestroyBuffer(_device.Handle(), stagingBuffer, nullptr);
+		vkFreeMemory(_device.Handle(), stagingBufferMemory, nullptr);
 	}
 
 	void createUniformBuffers()
@@ -1084,23 +1055,23 @@ private:
 		VkDeviceMemory& memory)
 	{
 		VkBufferCreateInfo bufferInfo = Eugenix::Render::Vulkan::BufferCreateInfo(size, usage, VK_SHARING_MODE_EXCLUSIVE);
-		if (vkCreateBuffer(_device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
+		if (vkCreateBuffer(_device.Handle(), &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create buffer!\n");
 		}
 
 		VkMemoryRequirements memRequirements;
-		vkGetBufferMemoryRequirements(_device, buffer, &memRequirements);
+		vkGetBufferMemoryRequirements(_device.Handle(), buffer, &memRequirements);
 
 		VkMemoryAllocateInfo allocInfo = Eugenix::Render::Vulkan::MemoryAllocateInfo(memRequirements.size, 
 			findMemoryType(memRequirements.memoryTypeBits, properties));
 
-		if (vkAllocateMemory(_device, &allocInfo, nullptr, &memory) != VK_SUCCESS)
+		if (vkAllocateMemory(_device.Handle(), &allocInfo, nullptr, &memory) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to allocate buffer memory!\n");
 		}
 
-		vkBindBufferMemory(_device, buffer, memory, 0);
+		vkBindBufferMemory(_device.Handle(), buffer, memory, 0);
 	}
 
 	void copyBuffer(VkBuffer& srcBuffer, VkBuffer& dstBuffer, VkDeviceSize size)
@@ -1151,9 +1122,9 @@ private:
 			stagingBuffer, stagingBufferMemory);
 
 		void* data;
-		vkMapMemory(_device, stagingBufferMemory, 0, imageSize, 0, &data);
+		vkMapMemory(_device.Handle(), stagingBufferMemory, 0, imageSize, 0, &data);
 		memcpy(data, pixels, static_cast<uint32_t>(imageSize));
-		vkUnmapMemory(_device, stagingBufferMemory);
+		vkUnmapMemory(_device.Handle(), stagingBufferMemory);
 		stbi_image_free(pixels);
 
 		createImage(width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
@@ -1164,8 +1135,8 @@ private:
 		copyBufferToImage(stagingBuffer, _textureImage, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 		transitionImageLayout(_textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-		vkDestroyBuffer(_device, stagingBuffer, nullptr);
-		vkFreeMemory(_device, stagingBufferMemory, nullptr);
+		vkDestroyBuffer(_device.Handle(), stagingBuffer, nullptr);
+		vkFreeMemory(_device.Handle(), stagingBufferMemory, nullptr);
 	}
 
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout/*, uint32_t mipLevels*/)
@@ -1258,7 +1229,7 @@ private:
 		createInfo.subresourceRange.layerCount = 1;
 
 		VkImageView imageView;
-		if (vkCreateImageView(_device, &createInfo, nullptr, &imageView) != VK_SUCCESS)
+		if (vkCreateImageView(_device.Handle(), &createInfo, nullptr, &imageView) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create image views!\n");
 		}
@@ -1283,23 +1254,23 @@ private:
 		imageInfo.usage = usage;
 		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		if (vkCreateImage(_device, &imageInfo, nullptr, &image) != VK_SUCCESS)
+		if (vkCreateImage(_device.Handle(), &imageInfo, nullptr, &image) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create image!\n");
 		}
 
 		VkMemoryRequirements memRequirements;
-		vkGetImageMemoryRequirements(_device, image, &memRequirements);
+		vkGetImageMemoryRequirements(_device.Handle(), image, &memRequirements);
 		VkMemoryAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		allocInfo.allocationSize = memRequirements.size;
 		allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
-		if (vkAllocateMemory(_device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
+		if (vkAllocateMemory(_device.Handle(), &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to allocate image memory!\n");
 		}
 
-		vkBindImageMemory(_device, image, imageMemory, 0);
+		vkBindImageMemory(_device.Handle(), image, imageMemory, 0);
 	}
 
 	void createTextureSampler()
@@ -1322,7 +1293,7 @@ private:
 		samplerInfo.minLod = 0.0f;
 		samplerInfo.maxLod = 0.0f;
 
-		if (vkCreateSampler(_device, &samplerInfo, nullptr, &_textureSampler) != VK_SUCCESS)
+		if (vkCreateSampler(_device.Handle(), &samplerInfo, nullptr, &_textureSampler) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create texture sampler!\n");
 		}
@@ -1375,7 +1346,7 @@ private:
 			drawFrame();
 			updateFPS(_window);
 		}
-		vkDeviceWaitIdle(_device);
+		vkDeviceWaitIdle(_device.Handle());
 	}
 
 	void updateFPS(GLFWwindow* window)
@@ -1403,10 +1374,10 @@ private:
 	{
 		auto& frame = _frames[_currentFrame];
 
-		vkWaitForFences(_device, 1, &frame.inFlight, VK_TRUE, UINT64_MAX);
+		vkWaitForFences(_device.Handle(), 1, &frame.inFlight, VK_TRUE, UINT64_MAX);
 
 		uint32_t imageIndex{};
-		VkResult acquireResult = vkAcquireNextImageKHR(_device, _swapchain, UINT64_MAX, frame.imageAvailable, VK_NULL_HANDLE, &imageIndex);
+		VkResult acquireResult = vkAcquireNextImageKHR(_device.Handle(), _swapchain, UINT64_MAX, frame.imageAvailable, VK_NULL_HANDLE, &imageIndex);
 		if (acquireResult == VK_ERROR_OUT_OF_DATE_KHR || acquireResult == VK_SUBOPTIMAL_KHR || _resized)
 		{
 			_resized = false;
@@ -1420,7 +1391,7 @@ private:
 		updatePerFrameData();
 		updateUniformBuffer(imageIndex);
 
-		vkResetFences(_device, 1, &frame.inFlight);
+		vkResetFences(_device.Handle(), 1, &frame.inFlight);
 		vkResetCommandBuffer(frame.commandBuffer,0);
 		recordCommandBuffer(frame.commandBuffer, imageIndex);
 
@@ -1438,7 +1409,7 @@ private:
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = signalSemaphores;
 		
-		if (vkQueueSubmit(_graphicsQueue, 1, &submitInfo, frame.inFlight) != VK_SUCCESS)
+		if (vkQueueSubmit(_device.GraphicsQueue(), 1, &submitInfo, frame.inFlight) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to submit draw command buffer!\n");
 		}
@@ -1453,7 +1424,7 @@ private:
 		presentInfo.pSwapchains = swapchains;
 		presentInfo.pImageIndices = &imageIndex;
 
-		VkResult result{ vkQueuePresentKHR(_presentQueue, &presentInfo) };
+		VkResult result{ vkQueuePresentKHR(_device.PresentQueue(), &presentInfo)};
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || _resized)
 		{
 			_resized = false;
@@ -1537,38 +1508,38 @@ private:
 		ubo.proj[1][1] *= -1;
 
 		void* data;
-		vkMapMemory(_device, _uniformBufferMemory, 0, sizeof(ubo), 0, &data);
+		vkMapMemory(_device.Handle(), _uniformBufferMemory, 0, sizeof(ubo), 0, &data);
 		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(_device, _uniformBufferMemory);
+		vkUnmapMemory(_device.Handle(), _uniformBufferMemory);
 	}
 
 	void cleanup()
 	{
 		cleanupSwapchain();
 
-		vkDestroySampler(_device, _textureSampler, nullptr);
+		vkDestroySampler(_device.Handle(), _textureSampler, nullptr);
 
-		vkDestroyImageView(_device, _textureImageView, nullptr);
-		vkDestroyImage(_device, _textureImage, nullptr);
-		vkFreeMemory(_device, _textureImageMemory, nullptr);
+		vkDestroyImageView(_device.Handle(), _textureImageView, nullptr);
+		vkDestroyImage(_device.Handle(), _textureImage, nullptr);
+		vkFreeMemory(_device.Handle(), _textureImageMemory, nullptr);
 
-		vkDestroyImageView(_device, _depthImageView, nullptr);
-		vkDestroyImage(_device, _depthImage, nullptr);
-		vkFreeMemory(_device, _depthImageMemory, nullptr);
+		vkDestroyImageView(_device.Handle(), _depthImageView, nullptr);
+		vkDestroyImage(_device.Handle(), _depthImage, nullptr);
+		vkFreeMemory(_device.Handle(), _depthImageMemory, nullptr);
 
-		vkDestroyBuffer(_device, _vertexBuffer, nullptr);
-		vkFreeMemory(_device, _vertexBufferMemory, nullptr);
+		vkDestroyBuffer(_device.Handle(), _vertexBuffer, nullptr);
+		vkFreeMemory(_device.Handle(), _vertexBufferMemory, nullptr);
 
-		vkDestroyBuffer(_device, _indexBuffer, nullptr);
-		vkFreeMemory(_device, _indexBufferMemory, nullptr);
+		vkDestroyBuffer(_device.Handle(), _indexBuffer, nullptr);
+		vkFreeMemory(_device.Handle(), _indexBufferMemory, nullptr);
 
-		vkDestroyDescriptorSetLayout(_device, _globalDescriptorSetLayout, nullptr);
+		vkDestroyDescriptorSetLayout(_device.Handle(), _globalDescriptorSetLayout, nullptr);
 
 		for (auto& frame : _frames)
 		{
-			vkDestroySemaphore(_device, frame.renderFinished, nullptr);
-			vkDestroySemaphore(_device, frame.imageAvailable, nullptr);
-			vkDestroyFence(_device, frame.inFlight, nullptr);
+			vkDestroySemaphore(_device.Handle(), frame.renderFinished, nullptr);
+			vkDestroySemaphore(_device.Handle(), frame.imageAvailable, nullptr);
+			vkDestroyFence(_device.Handle(), frame.inFlight, nullptr);
 		}
 
 		std::vector<VkCommandBuffer> commandBuffers;
@@ -1576,12 +1547,10 @@ private:
 		{
 			commandBuffers.push_back(frame.commandBuffer);
 		}
-		vkFreeCommandBuffers(_device, _commandPool,
+		vkFreeCommandBuffers(_device.Handle(), _commandPool,
 			static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
-		vkDestroyCommandPool(_device, _commandPool, nullptr);
-
-		vkDestroyDevice(_device, nullptr);
+		vkDestroyCommandPool(_device.Handle(), _commandPool, nullptr);
 
 		Cleanup();
 
@@ -1591,26 +1560,26 @@ private:
 
 	void cleanupSwapchain()
 	{
-		vkDestroyBuffer(_device, _uniformBuffer, nullptr);
-		vkFreeMemory(_device, _uniformBufferMemory, nullptr);
+		vkDestroyBuffer(_device.Handle(), _uniformBuffer, nullptr);
+		vkFreeMemory(_device.Handle(), _uniformBufferMemory, nullptr);
 
-		vkDestroyDescriptorPool(_device, _descriptorPool, nullptr);
+		vkDestroyDescriptorPool(_device.Handle(), _descriptorPool, nullptr);
 
 		for (auto framebuffer : _swapchainFramebuffers)
 		{
-			vkDestroyFramebuffer(_device, framebuffer, nullptr);
+			vkDestroyFramebuffer(_device.Handle(), framebuffer, nullptr);
 		}
 
-		vkDestroyPipeline(_device, _graphicsPipeline, nullptr);
-		vkDestroyPipelineLayout(_device, _pipelineLayout, nullptr);
-		vkDestroyRenderPass(_device, _renderPass, nullptr);
+		vkDestroyPipeline(_device.Handle(), _graphicsPipeline, nullptr);
+		vkDestroyPipelineLayout(_device.Handle(), _pipelineLayout, nullptr);
+		vkDestroyRenderPass(_device.Handle(), _renderPass, nullptr);
 
 		for (VkImageView imageView : _swapchainImageViews)
 		{
-			vkDestroyImageView(_device, imageView, nullptr);
+			vkDestroyImageView(_device.Handle(), imageView, nullptr);
 		}
 
-		vkDestroySwapchainKHR(_device, _swapchain, nullptr);
+		vkDestroySwapchainKHR(_device.Handle(), _swapchain, nullptr);
 	}
 };
 

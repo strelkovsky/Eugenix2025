@@ -1,6 +1,7 @@
 #pragma once
 
 #include "VulkanAdapter.h"
+#include "VulkanDevice.h"
 #include "VulkanInstance.h"
 #include "VulkanSurface.h"
 
@@ -30,11 +31,15 @@ namespace Eugenix
 					if (!_adapter.Select(_instance.Handle(), _surface.Handle()))
 						return false;
 
+					if (!_device.Create(_adapter))
+						return false;
+
 					return true;
 				}
 
 				void Cleanup()
 				{
+					_device.Destroy();
 					_surface.Destroy(_instance.Handle());
 					_instance.Destroy();
 				}
@@ -42,6 +47,7 @@ namespace Eugenix
 				Instance _instance;
 				Surface _surface;
 				Adapter _adapter;
+				Device _device;
 			};
 		}
 	} // namespace Render
