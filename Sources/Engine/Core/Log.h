@@ -49,6 +49,10 @@ namespace Eugenix
 			if constexpr (Severity == LogSeverity::Error) SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_INTENSITY);
 			else if constexpr (Severity == LogSeverity::Warning) SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY);
 			else if constexpr (Severity == LogSeverity::Success) SetConsoleTextAttribute(hConsole, FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+#else 
+			if constexpr (Severity == LogSeverity::Error)   std::cerr << "\033[31m";
+			else if constexpr (Severity == LogSeverity::Warning) std::cerr << "\033[33m";
+			else if constexpr (Severity == LogSeverity::Success) std::cerr << "\033[32m";
 #endif
 
 			if constexpr (Severity == LogSeverity::Error)   std::cerr << "[Error] ";
@@ -57,8 +61,11 @@ namespace Eugenix
 			if constexpr (Severity == LogSeverity::Verbose) std::cerr << "[Verbose] ";
 			((std::cerr << std::forward<Args>(args)), ...) << '\n';
 
+// reset color
 #if defined(EUGENIX_PLATFORM_WINDOWS)
 			SetConsoleTextAttribute(hConsole, original);
+#else
+			std::cerr << "\033[0m";
 #endif
 		}
 	}
