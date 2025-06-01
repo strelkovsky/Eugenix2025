@@ -259,14 +259,6 @@ private:
 
 	Eugenix::Render::Vulkan::Buffer _uniformBuffer;
 
-	//VkBuffer _vertexBuffer;
-	//VkDeviceMemory _vertexBufferMemory;
-	//VkBuffer _indexBuffer;
-	//VkDeviceMemory _indexBufferMemory;
-	
-	//VkBuffer _uniformBuffer;
-	//VkDeviceMemory _uniformBufferMemory;
-
 	VkImage _textureImage;
 	VkDeviceMemory _textureImageMemory;
 	VkImageView _textureImageView;
