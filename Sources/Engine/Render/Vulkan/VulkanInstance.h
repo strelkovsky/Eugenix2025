@@ -17,7 +17,7 @@ namespace Eugenix
 				bool Create(uint32_t apiVersion, bool enableValidationLayers);
 				void Destroy();
 
-				VkInstance Native() const { return _instance; };
+				VkInstance Handle() const { return _instance; };
 
 			private:
 				VkInstance _instance{ VK_NULL_HANDLE };

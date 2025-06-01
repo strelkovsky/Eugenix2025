@@ -23,6 +23,7 @@
 #include "Core/Containers.h"
 #include "Core/Platform.h"
 
+#include "Render/Vulkan/VulkanAdapter.h"
 #include "Render/Vulkan/VulkanApp.h"
 #include "Render/Vulkan/VulkanDebug.h"
 #include "Render/Vulkan/VulkanInitializers.h"
@@ -52,17 +53,6 @@ const bool enableValidationLayers{ true };
 #else 
 const bool enableValidationLayers{ false };
 #endif
-
-struct QueueFamilyIndices
-{
-	std::optional<uint32_t> graphicsFamily;
-	std::optional<uint32_t> presentFamily;
-
-	bool isComplete()
-	{
-		return graphicsFamily.has_value() && presentFamily.has_value();
-	}
-};
 
 struct SwapchainSupportDetails
 {
@@ -258,7 +248,7 @@ public:
 	{
 		initWindow();
 
-		if (InitVulkan({}))
+		if (!InitVulkan({}, _window))
 		{
 			throw std::runtime_error("Failed to init Vulkan");
 		}
@@ -270,13 +260,6 @@ public:
 
 private:
 	GLFWwindow* _window{ nullptr };
-
-	//VkInstance _instance{ VK_NULL_HANDLE };
-	//VkDebugUtilsMessengerEXT _debugMessenger{ VK_NULL_HANDLE };
-
-	VkSurfaceKHR _surface{ VK_NULL_HANDLE };
-
-	VkPhysicalDevice _physicalDevice{ VK_NULL_HANDLE };
 
 	VkDevice _device{ VK_NULL_HANDLE };
 	VkQueue _graphicsQueue{ VK_NULL_HANDLE };
@@ -295,11 +278,7 @@ private:
 
 	std::vector<VkFramebuffer> _swapchainFramebuffers;
 	VkCommandPool _commandPool{ VK_NULL_HANDLE };
-	//std::vector<VkCommandBuffer> _commandBuffers;
 
-	//std::vector<VkSemaphore> _imageAvailableSemaphores;
-	//std::vector<VkSemaphore> _renderFinishedSemaphores;
-	//std::vector<VkFence> _inFlightFences;
 	std::array<FrameData, MAX_FRAMES_IN_FLIGHT> _frames;
 	size_t _currentFrame{ 0 };
 	bool _resized{ false };
@@ -353,8 +332,6 @@ private:
 
 	void init()
 	{
-		createSurface();
-		pickPhysicalDevice();
 		createLogicalDevice();
 		createSwapchain();
 		createSwapchainImageViews(); // TODO : merge with createSwapchain	
@@ -375,32 +352,6 @@ private:
 		createSyncObject();
 	}
 
-	void pickPhysicalDevice()
-	{
-		uint32_t deviceCount{ 0 };
-		vkEnumeratePhysicalDevices(_instance.Native(), &deviceCount, nullptr);
-		if (deviceCount == 0)
-		{
-			throw std::runtime_error("Failed to find any GPUs with Vulkan support!\n");
-		}
-		std::vector<VkPhysicalDevice> devices(deviceCount);
-		vkEnumeratePhysicalDevices(_instance.Native(), &deviceCount, devices.data());
-
-		for (const auto& device : devices)
-		{
-			if (isDeviceSuitable(device))
-			{
-				_physicalDevice = device;
-				break;
-			}
-		}
-
-		if (_physicalDevice == VK_NULL_HANDLE)
-		{
-			throw std::runtime_error("Failed to find a suitable GPU!\n");
-		}
-	}
-
 	bool checkDeviceExtensionSupport(VkPhysicalDevice device)
 	{
 		uint32_t extensionCount{ 0 };
@@ -417,29 +368,9 @@ private:
 		return requiredExtensions.empty();
 	}
 
-	bool isDeviceSuitable(VkPhysicalDevice device)
+	Eugenix::Render::Vulkan::QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device)
 	{
-		QueueFamilyIndices indices = findQueueFamilies(device);
-
-		bool extensionsSupported{ checkDeviceExtensionSupport(device) };
-
-		// TODO : print features and other GPU info
-		VkPhysicalDeviceFeatures supportedFeatures;
-		vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
-
-		bool swapchainAdequate{ false };
-		if (extensionsSupported)
-		{
-			SwapchainSupportDetails swapchainSupport = querySwapchainSupport(device);
-			swapchainAdequate = !(swapchainSupport.formats.empty() || swapchainSupport.presentModes.empty());
-		}
-
-		return indices.isComplete() && swapchainAdequate && supportedFeatures.samplerAnisotropy;
-	}
-
-	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device)
-	{
-		QueueFamilyIndices indices;
+		Eugenix::Render::Vulkan::QueueFamilyIndices indices;
 
 		uint32_t queueFamilyCount{ 0 };
 		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
@@ -455,7 +386,7 @@ private:
 			}
 
 			VkBool32 presentSupport{ false };
-			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, _surface, &presentSupport);
+			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, _surface.Handle(), &presentSupport);
 			if (presentSupport)
 			{
 				indices.presentFamily = i;
@@ -473,7 +404,7 @@ private:
 
 	void createLogicalDevice()
 	{
-		QueueFamilyIndices indices = findQueueFamilies(_physicalDevice);
+		Eugenix::Render::Vulkan::QueueFamilyIndices indices = findQueueFamilies(_adapter.Handle());
 
 		const float queuePriority = 1.0f;
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos{};
@@ -489,7 +420,7 @@ private:
 
 		VkDeviceCreateInfo createInfo = Eugenix::Render::Vulkan::DeviceInfo(queueCreateInfos, deviceFeatures, DeviceExtensions);
 
-		if (vkCreateDevice(_physicalDevice, &createInfo, nullptr, &_device) != VK_SUCCESS)
+		if (vkCreateDevice(_adapter.Handle(), &createInfo, nullptr, &_device) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create logical device!\n");
 		}
@@ -502,22 +433,22 @@ private:
 	{
 		SwapchainSupportDetails details;
 
-		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, _surface, &details.capabilities);
+		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, _surface.Handle(), &details.capabilities);
 
 		uint32_t formatCount{ 0 };
-		vkGetPhysicalDeviceSurfaceFormatsKHR(device, _surface, &formatCount, nullptr);
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, _surface.Handle(), &formatCount, nullptr);
 		if (formatCount != 0)
 		{
 			details.formats.resize(formatCount);
-			vkGetPhysicalDeviceSurfaceFormatsKHR(device, _surface, &formatCount, details.formats.data());
+			vkGetPhysicalDeviceSurfaceFormatsKHR(device, _surface.Handle(), &formatCount, details.formats.data());
 		}
 
 		uint32_t presentModeCount{ 0 };
-		vkGetPhysicalDeviceSurfacePresentModesKHR(device, _surface, &presentModeCount, nullptr);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, _surface.Handle(), &presentModeCount, nullptr);
 		if (presentModeCount != 0)
 		{
 			details.presentModes.resize(presentModeCount);
-			vkGetPhysicalDeviceSurfacePresentModesKHR(device, _surface, &presentModeCount, details.presentModes.data());
+			vkGetPhysicalDeviceSurfacePresentModesKHR(device, _surface.Handle(), &presentModeCount, details.presentModes.data());
 		}
 
 		return details;
@@ -577,7 +508,7 @@ private:
 
 	void createSwapchain()
 	{
-		SwapchainSupportDetails swapchainSupport{ querySwapchainSupport(_physicalDevice) };
+		SwapchainSupportDetails swapchainSupport{ querySwapchainSupport(_adapter.Handle()) };
 
 		VkExtent2D extent{ chooseSwapchainExtent(swapchainSupport.capabilities) };
 		VkSurfaceFormatKHR surfaceFormat{ chooseSwapchainSurfaceFormat(swapchainSupport.formats) };
@@ -591,9 +522,9 @@ private:
 		}
 
 		VkSwapchainCreateInfoKHR createInfo = Eugenix::Render::Vulkan::SwapchainInfo(
-			_surface, imageCount, surfaceFormat, extent, 1, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+			_surface.Handle(), imageCount, surfaceFormat, extent, 1, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 
-		QueueFamilyIndices indices{ findQueueFamilies(_physicalDevice) };
+		Eugenix::Render::Vulkan::QueueFamilyIndices indices{ findQueueFamilies(_adapter.Handle()) };
 		uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 		if (indices.graphicsFamily != indices.presentFamily)
 		{
@@ -1017,7 +948,7 @@ private:
 
 	void createCommandPool()
 	{
-		QueueFamilyIndices queueFamilyIndices = findQueueFamilies(_physicalDevice);
+		Eugenix::Render::Vulkan::QueueFamilyIndices queueFamilyIndices = findQueueFamilies(_adapter.Handle());
 
 		VkCommandPoolCreateInfo poolInfo = Eugenix::Render::Vulkan::CommandPoolInfo(queueFamilyIndices.graphicsFamily.value(),
 			VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
@@ -1188,7 +1119,7 @@ private:
 	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const
 	{
 		VkPhysicalDeviceMemoryProperties memProperties;
-		vkGetPhysicalDeviceMemoryProperties(_physicalDevice, &memProperties);
+		vkGetPhysicalDeviceMemoryProperties(_adapter.Handle(), &memProperties);
 
 		for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i)
 		{
@@ -1420,7 +1351,7 @@ private:
 		for (VkFormat format : candidates)
 		{
 			VkFormatProperties props;
-			vkGetPhysicalDeviceFormatProperties(_physicalDevice, format, &props);
+			vkGetPhysicalDeviceFormatProperties(_adapter.Handle(), format, &props);
 
 			if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
 			{
@@ -1433,14 +1364,6 @@ private:
 		}
 
 		throw std::runtime_error("failed to find supported format!\n");
-	}
-
-	void createSurface()
-	{
-		if (glfwCreateWindowSurface(_instance.Native(), _window, nullptr, &_surface) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create window surface!\n");
-		}
 	}
 
 	void mainLoop()
@@ -1659,8 +1582,6 @@ private:
 		vkDestroyCommandPool(_device, _commandPool, nullptr);
 
 		vkDestroyDevice(_device, nullptr);
-
-		vkDestroySurfaceKHR(_instance.Native(), _surface, nullptr);
 
 		Cleanup();
 
