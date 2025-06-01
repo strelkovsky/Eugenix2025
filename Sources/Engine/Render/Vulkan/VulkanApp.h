@@ -4,6 +4,7 @@
 #include "VulkanDevice.h"
 #include "VulkanInstance.h"
 #include "VulkanSurface.h"
+#include "VulkanSwapchain.h"
 
 namespace Eugenix
 {
@@ -34,11 +35,15 @@ namespace Eugenix
 					if (!_device.Create(_adapter))
 						return false;
 
+					if (!_swapchain.Create(_adapter, _surface, _device, window))
+						return false;
+
 					return true;
 				}
 
 				void Cleanup()
 				{
+					_swapchain.Destroy(_device.Handle());
 					_device.Destroy();
 					_surface.Destroy(_instance.Handle());
 					_instance.Destroy();
@@ -48,6 +53,7 @@ namespace Eugenix
 				Surface _surface;
 				Adapter _adapter;
 				Device _device;
+				Swapchain _swapchain;
 			};
 		}
 	} // namespace Render

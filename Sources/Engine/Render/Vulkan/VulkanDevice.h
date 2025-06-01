@@ -15,6 +15,8 @@ namespace Eugenix::Render::Vulkan
 		VkQueue GraphicsQueue() const { return _graphicsQueue; }
 		VkQueue PresentQueue() const { return _presentQueue; }
 
+		VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspect) const;
+
 	private:
 		VkDevice _device{ VK_NULL_HANDLE };
 		VkQueue _graphicsQueue{ VK_NULL_HANDLE };

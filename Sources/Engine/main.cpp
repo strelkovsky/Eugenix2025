@@ -27,39 +27,13 @@
 #include "Render/Vulkan/VulkanApp.h"
 #include "Render/Vulkan/VulkanDebug.h"
 #include "Render/Vulkan/VulkanInitializers.h"
+#include "Render/Vulkan/VulkanSwapchain.h"
 #include "Render/Vulkan/VulkanUtils.h"
 
 #include "IO/IO.h"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
-const int MAX_FRAMES_IN_FLIGHT{ 3 };
-
-namespace
-{
-	inline constexpr const char* DeviceExtensionArray[] =
-	{
-		VK_KHR_SWAPCHAIN_EXTENSION_NAME
-	};
-}
-
-inline constexpr std::span<const char* const> DeviceExtensions
-{
-	DeviceExtensionArray
-};
-
-#ifdef _DEBUG
-const bool enableValidationLayers{ true };
-#else 
-const bool enableValidationLayers{ false };
-#endif
-
-struct SwapchainSupportDetails
-{
-	VkSurfaceCapabilitiesKHR capabilities;
-	std::vector<VkSurfaceFormatKHR> formats;
-	std::vector<VkPresentModeKHR> presentModes;
-};
 
 struct Vertex
 {
@@ -261,17 +235,6 @@ public:
 private:
 	GLFWwindow* _window{ nullptr };
 
-	//VkDevice _device{ VK_NULL_HANDLE };
-	//VkQueue _graphicsQueue{ VK_NULL_HANDLE };
-	//VkQueue _presentQueue{ VK_NULL_HANDLE };
-
-	VkSwapchainKHR _swapchain{ VK_NULL_HANDLE };
-	std::vector<VkImage> _swapchainImages;
-	VkFormat _swapchainImageFormat;
-	VkExtent2D _swapchainExtent;
-
-	std::vector<VkImageView> _swapchainImageViews;
-
 	VkRenderPass _renderPass{ VK_NULL_HANDLE };
 	VkPipelineLayout _pipelineLayout{ VK_NULL_HANDLE };
 	VkPipeline _graphicsPipeline{ VK_NULL_HANDLE };
@@ -279,7 +242,7 @@ private:
 	std::vector<VkFramebuffer> _swapchainFramebuffers;
 	VkCommandPool _commandPool{ VK_NULL_HANDLE };
 
-	std::array<FrameData, MAX_FRAMES_IN_FLIGHT> _frames;
+	std::array<FrameData, Eugenix::Render::Vulkan::Swapchain::MaxFramesInFlight> _frames;
 	size_t _currentFrame{ 0 };
 	bool _resized{ false };
 
@@ -321,7 +284,7 @@ private:
 		glfwSetFramebufferSizeCallback(_window, windowResize);
 
 		glfwSetCursorPosCallback(_window, mouse_callback);
-		glfwSetInputMode(_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // скрываем курсор для "free look"
+		//glfwSetInputMode(_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // скрываем курсор для "free look"
 	}
 
 	static void windowResize(GLFWwindow* window, int width, int height)
@@ -332,8 +295,6 @@ private:
 
 	void init()
 	{
-		createSwapchain();
-		createSwapchainImageViews(); // TODO : merge with createSwapchain	
 		createDescriptorSetLayout();
 		createCommandPool();
 		createTextureImage();
@@ -349,22 +310,6 @@ private:
 		createDescriptorSets();
 		createCommandBuffers();
 		createSyncObject();
-	}
-
-	bool checkDeviceExtensionSupport(VkPhysicalDevice device)
-	{
-		uint32_t extensionCount{ 0 };
-		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
-		std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
-
-		std::set<std::string> requiredExtensions(DeviceExtensions.begin(), DeviceExtensions.end());
-		for (const auto& extension : availableExtensions)
-		{
-			requiredExtensions.erase(extension.extensionName);
-		}
-
-		return requiredExtensions.empty();
 	}
 
 	Eugenix::Render::Vulkan::QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device)
@@ -401,155 +346,16 @@ private:
 		return indices;
 	}
 
-	SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice device)
-	{
-		SwapchainSupportDetails details;
-
-		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, _surface.Handle(), &details.capabilities);
-
-		uint32_t formatCount{ 0 };
-		vkGetPhysicalDeviceSurfaceFormatsKHR(device, _surface.Handle(), &formatCount, nullptr);
-		if (formatCount != 0)
-		{
-			details.formats.resize(formatCount);
-			vkGetPhysicalDeviceSurfaceFormatsKHR(device, _surface.Handle(), &formatCount, details.formats.data());
-		}
-
-		uint32_t presentModeCount{ 0 };
-		vkGetPhysicalDeviceSurfacePresentModesKHR(device, _surface.Handle(), &presentModeCount, nullptr);
-		if (presentModeCount != 0)
-		{
-			details.presentModes.resize(presentModeCount);
-			vkGetPhysicalDeviceSurfacePresentModesKHR(device, _surface.Handle(), &presentModeCount, details.presentModes.data());
-		}
-
-		return details;
-	}
-
-	VkExtent2D chooseSwapchainExtent(const VkSurfaceCapabilitiesKHR& capabilities)
-	{
-		if (capabilities.currentExtent.width != UINT32_MAX)
-		{
-			return capabilities.currentExtent;
-		}
-		else
-		{
-			int width, height;
-			glfwGetFramebufferSize(_window, &width, &height);
-
-			VkExtent2D actualExtent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
-
-			actualExtent.width = std::max(
-				capabilities.minImageExtent.width,
-				std::min(capabilities.maxImageExtent.width, actualExtent.width));
-
-			actualExtent.height = std::max(
-				capabilities.minImageExtent.height,
-				std::min(capabilities.maxImageExtent.height, actualExtent.height));
-
-			return actualExtent;
-		}
-	}
-
-	VkSurfaceFormatKHR chooseSwapchainSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
-	{
-		for (const auto& availableFormat : availableFormats)
-		{
-			if (availableFormat.format == VK_FORMAT_R8G8B8A8_SRGB &&
-				availableFormat.colorSpace == VK_COLORSPACE_SRGB_NONLINEAR_KHR)
-			{
-				return availableFormat;
-			}
-		}
-
-		return availableFormats[0];
-	}
-
-	VkPresentModeKHR chooseSwapchainPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
-	{
-		for (const auto& availablePresentMode : availablePresentModes)
-		{
-			if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
-			{
-				return availablePresentMode;
-			}
-		}
-
-		return VK_PRESENT_MODE_FIFO_KHR;
-	}
-
-	void createSwapchain()
-	{
-		SwapchainSupportDetails swapchainSupport{ querySwapchainSupport(_adapter.Handle()) };
-
-		VkExtent2D extent{ chooseSwapchainExtent(swapchainSupport.capabilities) };
-		VkSurfaceFormatKHR surfaceFormat{ chooseSwapchainSurfaceFormat(swapchainSupport.formats) };
-		VkPresentModeKHR presentMode{ chooseSwapchainPresentMode(swapchainSupport.presentModes) };
-
-		uint32_t imageCount{ swapchainSupport.capabilities.minImageCount + 1 };
-		if (swapchainSupport.capabilities.maxImageCount > 0 &&
-			imageCount > swapchainSupport.capabilities.maxImageCount)
-		{
-			imageCount = swapchainSupport.capabilities.maxImageCount;
-		}
-
-		VkSwapchainCreateInfoKHR createInfo = Eugenix::Render::Vulkan::SwapchainInfo(
-			_surface.Handle(), imageCount, surfaceFormat, extent, 1, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-
-		Eugenix::Render::Vulkan::QueueFamilyIndices indices{ findQueueFamilies(_adapter.Handle()) };
-		uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
-		if (indices.graphicsFamily != indices.presentFamily)
-		{
-			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-			createInfo.queueFamilyIndexCount = 2;
-			createInfo.pQueueFamilyIndices = queueFamilyIndices;
-		}
-		else
-		{
-			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-			createInfo.queueFamilyIndexCount = 0;
-			createInfo.pQueueFamilyIndices = nullptr;
-		}
-
-		createInfo.preTransform = swapchainSupport.capabilities.currentTransform;
-		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-		createInfo.presentMode = presentMode;
-		createInfo.clipped = VK_TRUE;
-		createInfo.oldSwapchain = VK_NULL_HANDLE;
-
-		if (vkCreateSwapchainKHR(_device.Handle(), &createInfo, nullptr, &_swapchain) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create swapchain!\n");
-		}
-
-		vkGetSwapchainImagesKHR(_device.Handle(), _swapchain, &imageCount, nullptr);
-		_swapchainImages.resize(imageCount);
-		vkGetSwapchainImagesKHR(_device.Handle(), _swapchain, &imageCount, _swapchainImages.data());
-
-		_swapchainImageFormat = surfaceFormat.format;
-		_swapchainExtent = extent;
-	}
-
-	void createSwapchainImageViews()
-	{
-		_swapchainImageViews.resize(_swapchainImages.size());
-
-		for (size_t i = 0; i < _swapchainImages.size(); ++i)
-		{
-			_swapchainImageViews[i] = createImageView(_swapchainImages[i], _swapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
-		}
-	}
-
 	void createFramebuffers()
 	{
-		_swapchainFramebuffers.resize(_swapchainImageViews.size());
+		_swapchainFramebuffers.resize(_swapchain.ImageViews().size());
 
-		for (size_t i = 0; i < _swapchainImages.size(); ++i)
+		for (size_t i = 0; i < _swapchain.Images().size(); ++i)
 		{
-			std::array<VkImageView, 2> attachments = { _swapchainImageViews[i], _depthImageView };
+			std::array<VkImageView, 2> attachments = { _swapchain.ImageViews()[i], _depthImageView };
 
 			VkFramebufferCreateInfo framebufferInfo = Eugenix::Render::Vulkan::FrameBufferInfo(_renderPass,
-				attachments, _swapchainExtent, 1);
+				attachments, _swapchain.Extent(), 1);
 
 			if (vkCreateFramebuffer(_device.Handle(), &framebufferInfo, nullptr, &_swapchainFramebuffers[i]) != VK_SUCCESS)
 			{
@@ -572,11 +378,7 @@ private:
 
 		cleanupSwapchain();
 
-		createSwapchain();
-		createSwapchainImageViews();
-		createTextureImage();
-		createTextureImageView();
-		createTextureSampler();
+		_swapchain.Create(_adapter, _surface, _device, _window);
 		createDepthResources();
 		createRenderPass();
 		createFramebuffers();
@@ -586,12 +388,15 @@ private:
 		createDescriptorSets();
 		
 		createCommandBuffers();
+		createSyncObject();
+
+		_currentFrame = 0;
 	}
 
 	void createRenderPass()
 	{
 		VkAttachmentDescription colorAttachment{};
-		colorAttachment.format = _swapchainImageFormat;
+		colorAttachment.format = _swapchain.Format();
 		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -679,14 +484,14 @@ private:
 
 		// ubo pool size
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSizes[0].descriptorCount = static_cast<uint32_t>(_swapchainImages.size());
+		poolSizes[0].descriptorCount = static_cast<uint32_t>(_swapchain.Images().size());
 
 		// sampler pool size
 		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[1].descriptorCount = static_cast<uint32_t>(_swapchainImages.size());
+		poolSizes[1].descriptorCount = static_cast<uint32_t>(_swapchain.Images().size());
 
 		VkDescriptorPoolCreateInfo poolInfo = Eugenix::Render::Vulkan::DescriptorPoolInfo(
-			poolSizes, static_cast<uint32_t>(_swapchainImages.size()));
+			poolSizes, static_cast<uint32_t>(_swapchain.Images().size()));
 
 		if (vkCreateDescriptorPool(_device.Handle(), &poolInfo, nullptr, &_descriptorPool) != VK_SUCCESS)
 		{
@@ -754,8 +559,8 @@ private:
 		VkViewport viewport{};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(_swapchainExtent.width);
-		viewport.height = static_cast<float>(_swapchainExtent.height);
+		viewport.width = static_cast<float>(_swapchain.Extent().width);
+		viewport.height = static_cast<float>(_swapchain.Extent().height);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 
@@ -763,7 +568,7 @@ private:
 
 		VkRect2D scissor{};
 		scissor.offset = { 0, 0 };
-		scissor.extent = _swapchainExtent;
+		scissor.extent = _swapchain.Extent();
 
 		std::array<VkRect2D, 1> scissors = { scissor };
 
@@ -932,17 +737,17 @@ private:
 
 	void createCommandBuffers()
 	{
-		std::vector<VkCommandBuffer> commandBuffers(MAX_FRAMES_IN_FLIGHT);
+		std::vector<VkCommandBuffer> commandBuffers(Eugenix::Render::Vulkan::Swapchain::MaxFramesInFlight);
 
 		VkCommandBufferAllocateInfo allocInfo = Eugenix::Render::Vulkan::CommandBufferAllocateInfo(_commandPool,
-			VK_COMMAND_BUFFER_LEVEL_PRIMARY, MAX_FRAMES_IN_FLIGHT);
+			VK_COMMAND_BUFFER_LEVEL_PRIMARY, Eugenix::Render::Vulkan::Swapchain::MaxFramesInFlight);
 
 		if (vkAllocateCommandBuffers(_device.Handle(), &allocInfo, commandBuffers.data()) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to allocate command buffers!\n");
 		}
 
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+		for (size_t i = 0; i < Eugenix::Render::Vulkan::Swapchain::MaxFramesInFlight; ++i)
 		{
 			_frames[i].commandBuffer = commandBuffers[i];
 		}
@@ -975,7 +780,6 @@ private:
 		VkCommandBufferBeginInfo beginInfo = Eugenix::Render::Vulkan::CommandBufferBeginInfo(
 			VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 		vkBeginCommandBuffer(commandBuffer, &beginInfo);
-		//VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo));
 
 		return commandBuffer;
 	}
@@ -1206,35 +1010,7 @@ private:
 
 	void createTextureImageView()
 	{
-		_textureImageView = createImageView(_textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
-	}
-
-	VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspect)
-	{
-		VkImageViewCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		createInfo.image = image;
-		createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		createInfo.format = format;
-
-		createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-
-		createInfo.subresourceRange.aspectMask = aspect;
-		createInfo.subresourceRange.baseMipLevel = 0;
-		createInfo.subresourceRange.levelCount = 1;
-		createInfo.subresourceRange.baseArrayLayer = 0;
-		createInfo.subresourceRange.layerCount = 1;
-
-		VkImageView imageView;
-		if (vkCreateImageView(_device.Handle(), &createInfo, nullptr, &imageView) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create image views!\n");
-		}
-
-		return imageView;
+		_textureImageView = _device.CreateImageView(_textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
 	}
 
 	void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
@@ -1303,8 +1079,8 @@ private:
 	{
 		VkFormat depthFormat = findDepthFormat();
 
-		createImage(_swapchainExtent.width, _swapchainExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, _depthImage, _depthImageMemory);
-		_depthImageView = createImageView(_depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+		createImage(_swapchain.Extent().width, _swapchain.Extent().height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, _depthImage, _depthImageMemory);
+		_depthImageView = _device.CreateImageView(_depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 	}
 
 	VkFormat findDepthFormat()
@@ -1377,11 +1153,13 @@ private:
 		vkWaitForFences(_device.Handle(), 1, &frame.inFlight, VK_TRUE, UINT64_MAX);
 
 		uint32_t imageIndex{};
-		VkResult acquireResult = vkAcquireNextImageKHR(_device.Handle(), _swapchain, UINT64_MAX, frame.imageAvailable, VK_NULL_HANDLE, &imageIndex);
+		VkResult acquireResult = vkAcquireNextImageKHR(_device.Handle(), _swapchain.Handle(), UINT64_MAX, frame.imageAvailable, VK_NULL_HANDLE, &imageIndex);
+
 		if (acquireResult == VK_ERROR_OUT_OF_DATE_KHR || acquireResult == VK_SUBOPTIMAL_KHR || _resized)
 		{
 			_resized = false;
 			recreateSwapchain();
+			return;
 		}
 		else if (acquireResult != VK_SUCCESS)
 		{
@@ -1419,7 +1197,7 @@ private:
 		presentInfo.waitSemaphoreCount = 1;
 		presentInfo.pWaitSemaphores = signalSemaphores;
 
-		VkSwapchainKHR swapchains[] = { _swapchain };
+		VkSwapchainKHR swapchains[] = { _swapchain.Handle()};
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = swapchains;
 		presentInfo.pImageIndices = &imageIndex;
@@ -1435,7 +1213,7 @@ private:
 			throw std::runtime_error("Rendering failed!\n");
 		}
 
-		_currentFrame = (_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+		_currentFrame = (_currentFrame + 1) % Eugenix::Render::Vulkan::Swapchain::MaxFramesInFlight;
 	}
 
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
@@ -1453,7 +1231,7 @@ private:
 		renderPassInfo.renderPass = _renderPass;
 		renderPassInfo.framebuffer = _swapchainFramebuffers[imageIndex];
 		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent = _swapchainExtent;
+		renderPassInfo.renderArea.extent = _swapchain.Extent();
 		std::array<VkClearValue, 2> clearValues{};
 		clearValues[0].color = { 0.5f, 0.0f, 0.25f, 1.0f };
 		clearValues[1].depthStencil = { 1.0f, 0 };
@@ -1463,7 +1241,6 @@ private:
 		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline);
 
-		//VkBuffer vertexBuffers[] = { _vertexBuffer };
 		VkDeviceSize offsets[] = { 0 };
 
 		for (const auto& renderable : _renderables)
@@ -1504,7 +1281,7 @@ private:
 	{
 		UniformBufferObject ubo{};
 		ubo.view = camera.getViewMatrix();
-		ubo.proj = glm::perspective(glm::radians(45.0f), float(_swapchainExtent.width) / float(_swapchainExtent.height), 0.1f, 100.0f);
+		ubo.proj = glm::perspective(glm::radians(45.0f), float(_swapchain.Extent().width) / float(_swapchain.Extent().height), 0.1f, 100.0f);
 		ubo.proj[1][1] *= -1;
 
 		void* data;
@@ -1523,10 +1300,6 @@ private:
 		vkDestroyImage(_device.Handle(), _textureImage, nullptr);
 		vkFreeMemory(_device.Handle(), _textureImageMemory, nullptr);
 
-		vkDestroyImageView(_device.Handle(), _depthImageView, nullptr);
-		vkDestroyImage(_device.Handle(), _depthImage, nullptr);
-		vkFreeMemory(_device.Handle(), _depthImageMemory, nullptr);
-
 		vkDestroyBuffer(_device.Handle(), _vertexBuffer, nullptr);
 		vkFreeMemory(_device.Handle(), _vertexBufferMemory, nullptr);
 
@@ -1534,13 +1307,6 @@ private:
 		vkFreeMemory(_device.Handle(), _indexBufferMemory, nullptr);
 
 		vkDestroyDescriptorSetLayout(_device.Handle(), _globalDescriptorSetLayout, nullptr);
-
-		for (auto& frame : _frames)
-		{
-			vkDestroySemaphore(_device.Handle(), frame.renderFinished, nullptr);
-			vkDestroySemaphore(_device.Handle(), frame.imageAvailable, nullptr);
-			vkDestroyFence(_device.Handle(), frame.inFlight, nullptr);
-		}
 
 		std::vector<VkCommandBuffer> commandBuffers;
 		for (const auto& frame : _frames)
@@ -1560,6 +1326,17 @@ private:
 
 	void cleanupSwapchain()
 	{
+		for (auto& frame : _frames)
+		{
+			vkDestroySemaphore(_device.Handle(), frame.renderFinished, nullptr);
+			vkDestroySemaphore(_device.Handle(), frame.imageAvailable, nullptr);
+			vkDestroyFence(_device.Handle(), frame.inFlight, nullptr);
+		}
+
+		vkDestroyImageView(_device.Handle(), _depthImageView, nullptr);
+		vkDestroyImage(_device.Handle(), _depthImage, nullptr);
+		vkFreeMemory(_device.Handle(), _depthImageMemory, nullptr);
+
 		vkDestroyBuffer(_device.Handle(), _uniformBuffer, nullptr);
 		vkFreeMemory(_device.Handle(), _uniformBufferMemory, nullptr);
 
@@ -1574,12 +1351,7 @@ private:
 		vkDestroyPipelineLayout(_device.Handle(), _pipelineLayout, nullptr);
 		vkDestroyRenderPass(_device.Handle(), _renderPass, nullptr);
 
-		for (VkImageView imageView : _swapchainImageViews)
-		{
-			vkDestroyImageView(_device.Handle(), imageView, nullptr);
-		}
-
-		vkDestroySwapchainKHR(_device.Handle(), _swapchain, nullptr);
+		_swapchain.Destroy(_device.Handle());
 	}
 };
 
