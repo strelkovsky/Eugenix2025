@@ -391,7 +391,6 @@ private:
 		createRenderPass();
 		createFramebuffers();
 		createGraphicsPipeline();
-		createUniformBuffers();
 		createDescriptorPool();
 		createDescriptorSets();
 		
@@ -1339,6 +1338,9 @@ private:
 		vkDestroyImage(_device.Handle(), _textureImage, nullptr);
 		vkFreeMemory(_device.Handle(), _textureImageMemory, nullptr);
 
+		vkDestroyBuffer(_device.Handle(), _uniformBuffer.buffer, nullptr);
+		vkFreeMemory(_device.Handle(), _uniformBuffer.memory, nullptr);
+
 		vkDestroyBuffer(_device.Handle(), _vertexBuffer.buffer, nullptr);
 		vkFreeMemory(_device.Handle(), _vertexBuffer.memory, nullptr);
 
@@ -1376,9 +1378,6 @@ private:
 		vkDestroyImageView(_device.Handle(), _depthImageView, nullptr);
 		vkDestroyImage(_device.Handle(), _depthImage, nullptr);
 		vkFreeMemory(_device.Handle(), _depthImageMemory, nullptr);
-
-		vkDestroyBuffer(_device.Handle(), _uniformBuffer.buffer, nullptr);
-		vkFreeMemory(_device.Handle(), _uniformBuffer.memory, nullptr);
 
 		vkDestroyDescriptorPool(_device.Handle(), _descriptorPool, nullptr);
 
