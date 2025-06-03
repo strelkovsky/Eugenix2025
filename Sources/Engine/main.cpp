@@ -248,8 +248,10 @@ private:
 	bool _resized{ false };
 
 	VkDescriptorPool _descriptorPool{ VK_NULL_HANDLE };
-	VkDescriptorSetLayout _globalDescriptorSetLayout;
+	VkDescriptorSetLayout _globalDescriptorSetLayout;  // set = 0 (view/proj)
+	VkDescriptorSetLayout _materialDescriptorSetLayout;  // set = 1 (sampler)
 	VkDescriptorSet _globalDescriptorSet;
+	VkDescriptorSet _materialDescriptorSet;
 
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
@@ -293,7 +295,7 @@ private:
 
 	void init()
 	{
-		createDescriptorSetLayout();
+		createDescriptorSetLayouts();
 		createCommandPool();
 		createTextureImage();
 		createTextureImageView();
@@ -450,7 +452,7 @@ private:
 		}
 	}
 
-	void createDescriptorSetLayout()
+	void createDescriptorSetLayouts()
 	{
 		// Ubo
 		VkDescriptorSetLayoutBinding uboLayoutBinding{};
@@ -460,6 +462,23 @@ private:
 		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
 		// Sampler
+		//VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+		//samplerLayoutBinding.binding = 1;
+		//samplerLayoutBinding.descriptorCount = 1;
+		//samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		//samplerLayoutBinding.pImmutableSamplers = nullptr;
+		//samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		//std::array<VkDescriptorSetLayoutBinding, 2> bindings = { uboLayoutBinding, samplerLayoutBinding };
+		std::array<VkDescriptorSetLayoutBinding, 1> bindings = {uboLayoutBinding};
+
+		VkDescriptorSetLayoutCreateInfo layoutInfo = Eugenix::Render::Vulkan::DescriptorSetLayoutInfo(bindings);
+		if (vkCreateDescriptorSetLayout(_device.Handle(), &layoutInfo, nullptr, &_globalDescriptorSetLayout) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create descriptor set layout!\n");
+		}
+
+		// Sampler
 		VkDescriptorSetLayoutBinding samplerLayoutBinding{};
 		samplerLayoutBinding.binding = 1;
 		samplerLayoutBinding.descriptorCount = 1;
@@ -467,10 +486,10 @@ private:
 		samplerLayoutBinding.pImmutableSamplers = nullptr;
 		samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-		std::array<VkDescriptorSetLayoutBinding, 2> bindings = { uboLayoutBinding, samplerLayoutBinding };
+		bindings = { samplerLayoutBinding };
 
-		VkDescriptorSetLayoutCreateInfo layoutInfo = Eugenix::Render::Vulkan::DescriptorSetLayoutInfo(bindings);
-		if (vkCreateDescriptorSetLayout(_device.Handle(), &layoutInfo, nullptr, &_globalDescriptorSetLayout) != VK_SUCCESS)
+		layoutInfo = Eugenix::Render::Vulkan::DescriptorSetLayoutInfo(bindings);
+		if (vkCreateDescriptorSetLayout(_device.Handle(), &layoutInfo, nullptr, &_materialDescriptorSetLayout) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create descriptor set layout!\n");
 		}
@@ -482,14 +501,14 @@ private:
 
 		// ubo pool size
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSizes[0].descriptorCount = static_cast<uint32_t>(_swapchain.Images().size());
+		poolSizes[0].descriptorCount = 1;
 
 		// sampler pool size
 		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[1].descriptorCount = static_cast<uint32_t>(_swapchain.Images().size());
+		poolSizes[1].descriptorCount = 100;
 
 		VkDescriptorPoolCreateInfo poolInfo = Eugenix::Render::Vulkan::DescriptorPoolInfo(
-			poolSizes, static_cast<uint32_t>(_swapchain.Images().size()));
+			poolSizes, static_cast<uint32_t>(100 + 1));
 
 		if (vkCreateDescriptorPool(_device.Handle(), &poolInfo, nullptr, &_descriptorPool) != VK_SUCCESS)
 		{
@@ -509,6 +528,17 @@ private:
 			throw std::runtime_error("Failed to allocate descriptor sets!\n");
 		}
 
+
+		setLayouts = { _materialDescriptorSetLayout };
+
+		VkDescriptorSetAllocateInfo samplerAllocInfo = Eugenix::Render::Vulkan::DescriptorSetAllocateInfo(_descriptorPool,
+			1, setLayouts);
+
+		if (vkAllocateDescriptorSets(_device.Handle(), &samplerAllocInfo, &_materialDescriptorSet) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to allocate descriptor sets!\n");
+		}
+
 		VkDescriptorBufferInfo bufferInfo{};
 		bufferInfo.buffer = _uniformBuffer.buffer;
 		bufferInfo.offset = 0;
@@ -523,7 +553,7 @@ private:
 
 		descriptorWrites[0] = Eugenix::Render::Vulkan::WriteDescriptorSet(_globalDescriptorSet, 0, 0, 1,
 			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, bufferInfo);
-		descriptorWrites[1] = Eugenix::Render::Vulkan::WriteDescriptorSet(_globalDescriptorSet, 1, 0, 1,
+		descriptorWrites[1] = Eugenix::Render::Vulkan::WriteDescriptorSet(_materialDescriptorSet, 1, 0, 1,
 			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, imageInfo);
 
 		vkUpdateDescriptorSets(_device.Handle(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
@@ -604,7 +634,11 @@ private:
 		pushConstantRange.offset = 0;
 		pushConstantRange.size = sizeof(glm::mat4);
 
-		std::array<VkDescriptorSetLayout, 1> setLayouts = { _globalDescriptorSetLayout };
+		std::array<VkDescriptorSetLayout, 2> setLayouts = 
+		{ 
+			_globalDescriptorSetLayout,
+			_materialDescriptorSetLayout
+		};
 		std::array<VkPushConstantRange, 1> pushConstantRanges = { pushConstantRange };
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo = Eugenix::Render::Vulkan::PipelineLayoutInfo(setLayouts, 
 			pushConstantRanges);
@@ -1245,6 +1279,9 @@ private:
 			vkCmdPushConstants(commandBuffer, _pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &renderable.modelMatrix);
 
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_globalDescriptorSet, 0, nullptr);
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 1, 1, &_materialDescriptorSet, 0, nullptr);
+
+
 
 			vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(renderable.indexCount), 1, 0, 0, 0);
 		}
