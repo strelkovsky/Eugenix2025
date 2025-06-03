@@ -305,15 +305,12 @@ private:
 	{
 		createDescriptorSetLayouts();
 		createCommandPool();
-		createTextureImage();
-		createTextureImageView();
-		createTextureSampler();
+		initResources();
 		createDepthResources();
 		createRenderPass();
 		createFramebuffers();
 		createGraphicsPipeline();
 		initRenderables();
-		createUniformBuffers();
 		createDescriptorPool();
 		createDescriptorSets();
 		createCommandBuffers();
@@ -941,6 +938,14 @@ private:
 		}
 
 		throw std::runtime_error("failed to find suitable memory type\n");
+	}
+
+	void initResources()
+	{
+		createTextureImage();
+		createTextureImageView();
+		createTextureSampler();
+		createUniformBuffers();
 	}
 
 	void createTextureImage()
