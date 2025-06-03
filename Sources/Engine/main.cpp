@@ -1346,6 +1346,7 @@ private:
 		vkFreeMemory(_device.Handle(), _indexBuffer.memory, nullptr);
 
 		vkDestroyDescriptorSetLayout(_device.Handle(), _globalDescriptorSetLayout, nullptr);
+		vkDestroyDescriptorSetLayout(_device.Handle(), _materialDescriptorSetLayout, nullptr);
 
 		std::vector<VkCommandBuffer> commandBuffers;
 		for (const auto& frame : _frames)
