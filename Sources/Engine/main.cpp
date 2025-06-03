@@ -105,6 +105,14 @@ struct UniformBufferObject
 
 struct Renderable 
 {
+	void Draw() const
+	{
+	}
+
+	void UploatToGPU()
+	{
+	}
+
 	glm::mat4 modelMatrix;
 	VkBuffer vertexBuffer;
 	VkBuffer indexBuffer;
