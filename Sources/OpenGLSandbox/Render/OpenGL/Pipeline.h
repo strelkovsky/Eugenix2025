@@ -49,10 +49,10 @@ namespace Eugenix
 				{
 					GLint logLength;
 					glGetProgramiv(_handle, GL_INFO_LOG_LENGTH, &logLength);
-					std::vector<char> shaderLog(logLength);
-					glGetProgramInfoLog(_handle, logLength, nullptr, shaderLog.data());
+					std::vector<char> programLog(logLength);
+					glGetProgramInfoLog(_handle, logLength, nullptr, programLog.data());
 
-					EUGENIX_ERROR("Program link error");
+					LogError("Pipeline link error - ", programLog.data());
 				}
 			}
 		};

@@ -51,7 +51,7 @@ namespace Eugenix
 					std::vector<char> shaderLog(logLength);
 					glGetShaderInfoLog(_handle, logLength, nullptr, shaderLog.data());
 
-					EUGENIX_ERROR("Shader compile-time error");
+					LogError("Shader compile error - ", shaderLog.data());
 				}
 			}
 
