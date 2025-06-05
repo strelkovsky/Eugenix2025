@@ -19,12 +19,17 @@ namespace Eugenix
 
 				VkInstance Handle() const { return _instance; };
 
+				bool LayerSupported(const char* layerName) const;
+				bool ExtensionSupported(const char* extensionName) const;
+
 			private:
 				VkInstance _instance{ VK_NULL_HANDLE };
 				std::vector<VkLayerProperties> _availableLayers;
 				std::vector<VkExtensionProperties> _availableExtensions;
 
+#if EUGENIX_DEBUG
 				VkDebugUtilsMessengerEXT _debugMessenger{ VK_NULL_HANDLE };
+#endif
 			};
 		} // namespace Vulkan
 	} // namespace Render

@@ -11,6 +11,7 @@
 
 namespace
 {
+#ifdef EUGENIX_DEBUG
 	static constexpr std::array validationLayers = 
 	{
 		"VK_LAYER_KHRONOS_validation"
@@ -20,6 +21,7 @@ namespace
 	{
 		VK_EXT_DEBUG_UTILS_EXTENSION_NAME
 	};
+#endif
 
 	std::vector<VkLayerProperties> getAvailableInstanceLayers()
 	{
@@ -45,7 +47,7 @@ namespace
 	{
 		std::vector<const char*> layers;
 
-#if EUGENIX_DEBUG
+#ifdef EUGENIX_DEBUG
 		Eugenix::AppendSpan(layers, std::span<const char* const>(validationLayers));
 #endif // EUGENIX_DEBUG
 
@@ -60,72 +62,14 @@ namespace
 		const char** glfwExtensions{ glfwGetRequiredInstanceExtensions(&glfwExtensionCount) };
 		std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
-#if EUGENIX_DEBUG
+#ifdef EUGENIX_DEBUG
 		Eugenix::AppendSpan(extensions, std::span<const char* const>(debugExtensions));
 #endif // EUGENIX_DEBUG
 
 		return extensions;
 	}
 
-	bool layerSupported(const char* layer)
-	{
-		uint32_t instanceLayerCount = 0;
-		vkEnumerateInstanceLayerProperties(&instanceLayerCount, nullptr);
-		std::vector<VkLayerProperties> availableLayers(instanceLayerCount);
-		vkEnumerateInstanceLayerProperties(&instanceLayerCount, availableLayers.data());
-
-		for (const auto& i : availableLayers)
-		{
-			if (strcmp(i.layerName, layer) == 0)
-				return true;
-		}
-		return false;
-	}
-
-	bool layersSupported(std::span<const char* const> desiredLayers)
-	{
-		uint32_t layerCount;
-		vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-		std::vector<VkLayerProperties> availableLayers(layerCount);
-		vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-
-		for (auto layerName : desiredLayers)
-		{
-			bool layerFound = false;
-
-			for (const auto& layerProperties : availableLayers)
-			{
-				if (strcmp(layerName, layerProperties.layerName) == 0)
-				{
-					layerFound = true;
-					break;
-				}
-			}
-
-			if (!layerFound)
-			{
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-	bool extensionSupported(const char* extension)
-	{
-		uint32_t count = 0;
-		vkEnumerateInstanceExtensionProperties(nullptr, &count, nullptr);
-		std::vector<VkExtensionProperties> extensions(count);
-		vkEnumerateInstanceExtensionProperties(nullptr, &count, extensions.data());
-
-		for (const auto& prop : extensions)
-		{
-			if (strcmp(prop.extensionName, extension) == 0)
-				return true;
-		}
-		return false;
-	}
-
+#ifdef EUGENIX_DEBUG
 	VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* info, 
 		const VkAllocationCallbacks* allocator, VkDebugUtilsMessengerEXT* messenger)
 	{
@@ -160,20 +104,21 @@ namespace
 		}
 		return VK_FALSE;
 	}
+#endif
 }
 
 namespace Eugenix::Render::Vulkan
 {
 	bool Instance::Create(uint32_t apiVersion, bool enableValidationLayers)
 	{
-		std::vector<VkLayerProperties> availableLayers = getAvailableInstanceLayers();
+		_availableLayers = getAvailableInstanceLayers();
 		LogInfo("Available instance layers:");
-		for (const auto& prop : availableLayers)
+		for (const auto& prop : _availableLayers)
 			LogInfo("  ", prop.layerName);
 
-		std::vector<VkExtensionProperties> availableExtensions = getAvailableInstanceExtensions();
+		_availableExtensions = getAvailableInstanceExtensions();
 		Eugenix::LogInfo("Available instance extensions:");
-		for (const auto& prop : availableExtensions)
+		for (const auto& prop : _availableExtensions)
 		{
 			Eugenix::LogInfo("  ", prop.extensionName);
 		}
@@ -183,7 +128,7 @@ namespace Eugenix::Render::Vulkan
 		for (const auto& layer : requiredLayers)
 		{
 			Eugenix::LogInfo("  ", layer);
-			if (!layerSupported(layer))
+			if (!LayerSupported(layer))
 			{
 				LogError("Unsupported Layer - ", layer);
 			}
@@ -194,7 +139,7 @@ namespace Eugenix::Render::Vulkan
 		for (const auto& ext : requiredExtensions)
 		{
 			Eugenix::LogInfo("  ", ext);
-			if (!extensionSupported(ext))
+			if (!ExtensionSupported(ext))
 			{
 				LogError("Unsupported Extension - ", ext);
 			}
@@ -209,6 +154,7 @@ namespace Eugenix::Render::Vulkan
 
 		LogSuccess("Vulkan instance created successfully.");
 
+#ifdef EUGENIX_DEBUG
 		if (enableValidationLayers)
 		{
 			VkDebugUtilsMessengerCreateInfoEXT debugMessengerInfo = DebugMessengerInfo(
@@ -223,22 +169,45 @@ namespace Eugenix::Render::Vulkan
 
 			LogSuccess("Debug messenger initialized.");
 		}
+#endif
 
 		return true;
 	}
 
 	void Instance::Destroy()
 	{
+#ifdef EUGENIX_DEBUG
 		if (_debugMessenger)
 		{
 			LogSuccess("Debug messenger destroyed.");
 			DestroyDebugUtilsMessengerEXT(_instance, _debugMessenger, nullptr);
 		}
+#endif
 
 		if (_instance)
 		{
 			LogSuccess("Vulkan instance destroyed.");
 			vkDestroyInstance(_instance, nullptr);
 		}
+	}
+
+	bool Instance::LayerSupported(const char* layerName) const
+	{
+		for (const auto& i : _availableLayers)
+		{
+			if (strcmp(i.layerName, layerName) == 0)
+				return true;
+		}
+		return false;
+	}
+
+	bool Instance::ExtensionSupported(const char* extensionName) const
+	{
+		for (const auto& prop : _availableExtensions)
+		{
+			if (strcmp(prop.extensionName, extensionName) == 0)
+				return true;
+		}
+		return false;
 	}
 } // namespace Eugenix::Render::Vulkan
