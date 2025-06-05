@@ -149,7 +149,10 @@ namespace Eugenix::Render::Vulkan
 			"Eugenix Engine", VK_MAKE_VERSION(1, 0, 0), apiVersion);
 				
 		VkInstanceCreateInfo instanceInfo = InstanceInfo(appInfo, requiredLayers, requiredExtensions);
-		if (vkCreateInstance(&instanceInfo, nullptr, &_instance) != VK_SUCCESS)
+		auto res = vkCreateInstance(&instanceInfo, nullptr, &_instance);
+		if (res == VK_ERROR_INCOMPATIBLE_DRIVER)
+			throw std::runtime_error("Cannot find a compatible Vulkan driver (ICD).");
+		else if (res != VK_SUCCESS)
 			throw std::runtime_error("Failed to create Vulkan instance!\n");
 
 		LogSuccess("Vulkan instance created successfully.");
