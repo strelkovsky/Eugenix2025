@@ -14,7 +14,7 @@ namespace Eugenix::Render::Vulkan
 		vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 		if (deviceCount == 0)
 		{
-			LogError("No Vulkan-compatible GPUs found.");
+			LogError("No Vulkan-compatible GPUs found. Make sure your drivers are up to date and that you are not pending a reboot.");
 			return false;
 		}
 
