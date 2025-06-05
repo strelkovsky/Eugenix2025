@@ -97,10 +97,10 @@ namespace
 
 		switch (logLevel)
 		{
-		case Eugenix::LogSeverity::Error:   Eugenix::LogError(data->pMessage); break;
-		case Eugenix::LogSeverity::Warning: Eugenix::LogWarn(data->pMessage); break;
-		case Eugenix::LogSeverity::Info:    Eugenix::LogInfo(data->pMessage); break;
-		case Eugenix::LogSeverity::Verbose: Eugenix::LogVerbose(data->pMessage); break;
+		case Eugenix::LogSeverity::Error:   Eugenix::LogError("Vulkan: ", data->pMessage); break;
+		case Eugenix::LogSeverity::Warning: Eugenix::LogWarn("Vulkan: ", data->pMessage); break;
+		case Eugenix::LogSeverity::Info:    Eugenix::LogInfo("Vulkan: ", data->pMessage); break;
+		case Eugenix::LogSeverity::Verbose: Eugenix::LogVerbose("Vulkan: ", data->pMessage); break;
 		}
 		return VK_FALSE;
 	}
