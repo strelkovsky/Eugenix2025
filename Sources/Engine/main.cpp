@@ -7,9 +7,6 @@
 #include <unordered_map>
 #include <vector>
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
@@ -32,9 +29,6 @@
 #include "Render/Vulkan/VulkanUtils.h"
 
 #include "IO/IO.h"
-
-const uint32_t WIDTH = 800;
-const uint32_t HEIGHT = 600;
 
 struct Vertex
 {
@@ -187,63 +181,164 @@ float lastX = 0.0f, lastY = 0.0f;
 bool firstMouse = true;
 float deltaTime = 0.0f, lastFrame = 0.0f;
 
-void mouse_callback(GLFWwindow* window, double xpos, double ypos)
-{
-	if (firstMouse)
-	{
-		lastX = (float)xpos;
-		lastY = (float)ypos;
-		firstMouse = false;
-	}
-
-	float xoffset = (float)xpos - lastX;
-	float yoffset = lastY - (float)ypos;
-
-	lastX = (float)xpos;
-	lastY = (float)ypos;
-
-	camera.processMouse(xoffset, yoffset);
-}
-
-void processInput(GLFWwindow* window)
-{
-	auto deltaTime = 0.001f;
-
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		camera.processKeyboard('W', deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		camera.processKeyboard('S', deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		camera.processKeyboard('A', deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		camera.processKeyboard('D', deltaTime);
-
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) 
-	{
-		glfwSetWindowShouldClose(window, 1);
-	}
-}
-
 class SampleApp final : public Eugenix::Render::Vulkan::VulkanApp
 {
-public:
-	void run()
+protected:
+	bool onInit() override
 	{
-		initWindow();
+		createDescriptorSetLayouts();
+		createCommandPool();
+		initResources();
+		createDepthResources();
+		createRenderPass();
+		createFramebuffers();
+		createGraphicsPipeline();
+		initRenderables();
+		createDescriptorPool();
+		createDescriptorSets();
+		createCommandBuffers();
+		createSyncObject();
 
-		if (!InitVulkan({}, _window))
+		return true;
+	}
+
+	void onCursorMove(double xpos, double ypos) override
+	{
+		if (firstMouse)
 		{
-			throw std::runtime_error("Failed to init Vulkan");
+			lastX = (float)xpos;
+			lastY = (float)ypos;
+			firstMouse = false;
 		}
-		
-		init();
-		mainLoop();
-		cleanup();
+
+		float xoffset = (float)xpos - lastX;
+		float yoffset = lastY - (float)ypos;
+
+		lastX = (float)xpos;
+		lastY = (float)ypos;
+
+		camera.processMouse(xoffset, yoffset);
+	}
+
+	void onUpdate(float deltaTime) override
+	{
+		if (KeyPress(GLFW_KEY_W))
+			camera.processKeyboard('W', deltaTime);
+		if (KeyPress(GLFW_KEY_S))
+			camera.processKeyboard('S', deltaTime);
+		if (KeyPress(GLFW_KEY_A))
+			camera.processKeyboard('A', deltaTime);
+		if (KeyPress(GLFW_KEY_D))
+			camera.processKeyboard('D', deltaTime);
+	}
+
+	void onRender() override
+	{
+		auto& frame = _frames[_currentFrame];
+
+		vkWaitForFences(_device.Handle(), 1, &frame.inFlight, VK_TRUE, UINT64_MAX);
+
+		uint32_t imageIndex{};
+		VkResult acquireResult = vkAcquireNextImageKHR(_device.Handle(), _swapchain.Handle(), UINT64_MAX, frame.imageAvailable, VK_NULL_HANDLE, &imageIndex);
+
+		if (acquireResult == VK_ERROR_OUT_OF_DATE_KHR || acquireResult == VK_SUBOPTIMAL_KHR || _resized)
+		{
+			_resized = false;
+			recreateSwapchain();
+			return;
+		}
+		else if (acquireResult != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to acquire swap chain image!\n");
+		}
+
+		updatePerFrameData();
+		updateUniformBuffer(imageIndex);
+
+		vkResetFences(_device.Handle(), 1, &frame.inFlight);
+		vkResetCommandBuffer(frame.commandBuffer, 0);
+		recordCommandBuffer(frame.commandBuffer, imageIndex);
+
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		VkSemaphore waitSemaphores[] = { frame.imageAvailable };
+		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+
+		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.pWaitSemaphores = waitSemaphores;
+		submitInfo.pWaitDstStageMask = waitStages;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &frame.commandBuffer;
+		VkSemaphore signalSemaphores[] = { frame.renderFinished };
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = signalSemaphores;
+
+		if (vkQueueSubmit(_device.GraphicsQueue(), 1, &submitInfo, frame.inFlight) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to submit draw command buffer!\n");
+		}
+
+		VkPresentInfoKHR presentInfo{};
+		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		presentInfo.waitSemaphoreCount = 1;
+		presentInfo.pWaitSemaphores = signalSemaphores;
+
+		VkSwapchainKHR swapchains[] = { _swapchain.Handle() };
+		presentInfo.swapchainCount = 1;
+		presentInfo.pSwapchains = swapchains;
+		presentInfo.pImageIndices = &imageIndex;
+
+		VkResult result{ vkQueuePresentKHR(_device.PresentQueue(), &presentInfo) };
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || _resized)
+		{
+			_resized = false;
+			recreateSwapchain();
+		}
+		else if (result != VK_SUCCESS)
+		{
+			throw std::runtime_error("Rendering failed!\n");
+		}
+
+		_currentFrame = (_currentFrame + 1) % Eugenix::Render::Vulkan::Swapchain::MaxFramesInFlight;
+	}
+
+	void onCleanup() override
+	{
+		cleanupSwapchain();
+
+		vkDestroySampler(_device.Handle(), _textureSampler, nullptr);
+
+		vkDestroyImageView(_device.Handle(), _textureImageView, nullptr);
+		vkDestroyImage(_device.Handle(), _textureImage, nullptr);
+		vkFreeMemory(_device.Handle(), _textureImageMemory, nullptr);
+
+		vkDestroyBuffer(_device.Handle(), _uniformBuffer.buffer, nullptr);
+		vkFreeMemory(_device.Handle(), _uniformBuffer.memory, nullptr);
+
+		vkDestroyBuffer(_device.Handle(), _vertexBuffer.buffer, nullptr);
+		vkFreeMemory(_device.Handle(), _vertexBuffer.memory, nullptr);
+
+		vkDestroyBuffer(_device.Handle(), _indexBuffer.buffer, nullptr);
+		vkFreeMemory(_device.Handle(), _indexBuffer.memory, nullptr);
+
+		vkDestroyDescriptorSetLayout(_device.Handle(), _globalDescriptorSetLayout, nullptr);
+		vkDestroyDescriptorSetLayout(_device.Handle(), _materialDescriptorSetLayout, nullptr);
+
+		std::vector<VkCommandBuffer> commandBuffers;
+		for (const auto& frame : _frames)
+		{
+			commandBuffers.push_back(frame.commandBuffer);
+		}
+		vkFreeCommandBuffers(_device.Handle(), _commandPool,
+			static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+
+		vkDestroyCommandPool(_device.Handle(), _commandPool, nullptr);
+
+		glfwDestroyWindow(_window);
+		glfwTerminate();
 	}
 
 private:
-	GLFWwindow* _window{ nullptr };
-
 	VkRenderPass _renderPass{ VK_NULL_HANDLE };
 	VkPipelineLayout _pipelineLayout{ VK_NULL_HANDLE };
 	VkPipeline _graphicsPipeline{ VK_NULL_HANDLE };
@@ -253,7 +348,6 @@ private:
 
 	std::array<FrameData, Eugenix::Render::Vulkan::Swapchain::MaxFramesInFlight> _frames;
 	size_t _currentFrame{ 0 };
-	bool _resized{ false };
 
 	VkDescriptorPool _descriptorPool{ VK_NULL_HANDLE };
 	VkDescriptorSetLayout _globalDescriptorSetLayout;  // set = 0 (view/proj)
@@ -280,42 +374,6 @@ private:
 
 	double _lastTime;
 	int _frameCount{0};
-
-	void initWindow()
-	{
-		glfwInit();
-		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-
-		_window = glfwCreateWindow(WIDTH, HEIGHT, "Eugenix", nullptr, nullptr);
-		glfwSetWindowUserPointer(_window, this);
-		glfwSetFramebufferSizeCallback(_window, windowResize);
-
-		glfwSetCursorPosCallback(_window, mouse_callback);
-		//glfwSetInputMode(_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // скрываем курсор для "free look"
-	}
-
-	static void windowResize(GLFWwindow* window, int width, int height)
-	{
-		auto parent = reinterpret_cast<SampleApp*>(glfwGetWindowUserPointer(window));
-		parent->_resized = true;
-	}
-
-	void init()
-	{
-		createDescriptorSetLayouts();
-		createCommandPool();
-		initResources();
-		createDepthResources();
-		createRenderPass();
-		createFramebuffers();
-		createGraphicsPipeline();
-		initRenderables();
-		createDescriptorPool();
-		createDescriptorSets();
-		createCommandBuffers();
-		createSyncObject();
-	}
 
 	Eugenix::Render::Vulkan::QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device)
 	{
@@ -531,7 +589,6 @@ private:
 		{
 			throw std::runtime_error("Failed to allocate descriptor sets!\n");
 		}
-
 
 		setLayouts = { _materialDescriptorSetLayout };
 
@@ -1153,109 +1210,6 @@ private:
 		throw std::runtime_error("failed to find supported format!\n");
 	}
 
-	void mainLoop()
-	{
-		while (!glfwWindowShouldClose(_window))
-		{
-			glfwPollEvents();
-			processInput(_window);
-			drawFrame();
-			updateFPS(_window);
-		}
-		vkDeviceWaitIdle(_device.Handle());
-	}
-
-	void updateFPS(GLFWwindow* window)
-	{
-		double currentTime = glfwGetTime();
-		double delta = currentTime - _lastTime;
-
-		_frameCount++;
-		if (delta >= 1.0) // if last update was more than one second ago
-		{
-			double fps = double(_frameCount) / delta;
-
-			std::stringstream ss;
-			ss << "Eugenix. FPS: " << fps;
-
-			glfwSetWindowTitle(window, ss.str().c_str());
-
-			_frameCount = 0;
-
-			_lastTime = currentTime;
-		}
-	}
-
-	void drawFrame()
-	{
-		auto& frame = _frames[_currentFrame];
-
-		vkWaitForFences(_device.Handle(), 1, &frame.inFlight, VK_TRUE, UINT64_MAX);
-
-		uint32_t imageIndex{};
-		VkResult acquireResult = vkAcquireNextImageKHR(_device.Handle(), _swapchain.Handle(), UINT64_MAX, frame.imageAvailable, VK_NULL_HANDLE, &imageIndex);
-
-		if (acquireResult == VK_ERROR_OUT_OF_DATE_KHR || acquireResult == VK_SUBOPTIMAL_KHR || _resized)
-		{
-			_resized = false;
-			recreateSwapchain();
-			return;
-		}
-		else if (acquireResult != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to acquire swap chain image!\n");
-		}
-
-		updatePerFrameData();
-		updateUniformBuffer(imageIndex);
-
-		vkResetFences(_device.Handle(), 1, &frame.inFlight);
-		vkResetCommandBuffer(frame.commandBuffer,0);
-		recordCommandBuffer(frame.commandBuffer, imageIndex);
-
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		VkSemaphore waitSemaphores[] = { frame.imageAvailable };
-		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-
-		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = waitSemaphores;
-		submitInfo.pWaitDstStageMask = waitStages;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &frame.commandBuffer;
-		VkSemaphore signalSemaphores[] = { frame.renderFinished };
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = signalSemaphores;
-		
-		if (vkQueueSubmit(_device.GraphicsQueue(), 1, &submitInfo, frame.inFlight) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to submit draw command buffer!\n");
-		}
-
-		VkPresentInfoKHR presentInfo{};
-		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-		presentInfo.waitSemaphoreCount = 1;
-		presentInfo.pWaitSemaphores = signalSemaphores;
-
-		VkSwapchainKHR swapchains[] = { _swapchain.Handle()};
-		presentInfo.swapchainCount = 1;
-		presentInfo.pSwapchains = swapchains;
-		presentInfo.pImageIndices = &imageIndex;
-
-		VkResult result{ vkQueuePresentKHR(_device.PresentQueue(), &presentInfo)};
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || _resized)
-		{
-			_resized = false;
-			recreateSwapchain();
-		}
-		else if (result != VK_SUCCESS)
-		{
-			throw std::runtime_error("Rendering failed!\n");
-		}
-
-		_currentFrame = (_currentFrame + 1) % Eugenix::Render::Vulkan::Swapchain::MaxFramesInFlight;
-	}
-
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
 	{
 		VkCommandBufferBeginInfo beginInfo{};
@@ -1306,7 +1260,6 @@ private:
 		}
 	}
 
-
 	void updatePerFrameData()
 	{
 		static auto lastFrame = (float)glfwGetTime();
@@ -1331,44 +1284,6 @@ private:
 		vkMapMemory(_device.Handle(), _uniformBuffer.memory, 0, sizeof(ubo), 0, &data);
 		memcpy(data, &ubo, sizeof(ubo));
 		vkUnmapMemory(_device.Handle(), _uniformBuffer.memory);
-	}
-
-	void cleanup()
-	{
-		cleanupSwapchain();
-
-		vkDestroySampler(_device.Handle(), _textureSampler, nullptr);
-
-		vkDestroyImageView(_device.Handle(), _textureImageView, nullptr);
-		vkDestroyImage(_device.Handle(), _textureImage, nullptr);
-		vkFreeMemory(_device.Handle(), _textureImageMemory, nullptr);
-
-		vkDestroyBuffer(_device.Handle(), _uniformBuffer.buffer, nullptr);
-		vkFreeMemory(_device.Handle(), _uniformBuffer.memory, nullptr);
-
-		vkDestroyBuffer(_device.Handle(), _vertexBuffer.buffer, nullptr);
-		vkFreeMemory(_device.Handle(), _vertexBuffer.memory, nullptr);
-
-		vkDestroyBuffer(_device.Handle(), _indexBuffer.buffer, nullptr);
-		vkFreeMemory(_device.Handle(), _indexBuffer.memory, nullptr);
-
-		vkDestroyDescriptorSetLayout(_device.Handle(), _globalDescriptorSetLayout, nullptr);
-		vkDestroyDescriptorSetLayout(_device.Handle(), _materialDescriptorSetLayout, nullptr);
-
-		std::vector<VkCommandBuffer> commandBuffers;
-		for (const auto& frame : _frames)
-		{
-			commandBuffers.push_back(frame.commandBuffer);
-		}
-		vkFreeCommandBuffers(_device.Handle(), _commandPool,
-			static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
-
-		vkDestroyCommandPool(_device.Handle(), _commandPool, nullptr);
-
-		Cleanup();
-
-		glfwDestroyWindow(_window);
-		glfwTerminate();
 	}
 
 	void cleanupSwapchain()
@@ -1402,6 +1317,6 @@ private:
 int main()
 {
 	SampleApp app;
-	app.run();
+	app.Run({});
 	return 0;
 }
