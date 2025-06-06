@@ -378,15 +378,6 @@ private:
 		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-		// Sampler
-		//VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-		//samplerLayoutBinding.binding = 1;
-		//samplerLayoutBinding.descriptorCount = 1;
-		//samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		//samplerLayoutBinding.pImmutableSamplers = nullptr;
-		//samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-		//std::array<VkDescriptorSetLayoutBinding, 2> bindings = { uboLayoutBinding, samplerLayoutBinding };
 		std::array<VkDescriptorSetLayoutBinding, 1> bindings = {uboLayoutBinding};
 
 		VkDescriptorSetLayoutCreateInfo layoutInfo = Eugenix::Render::Vulkan::DescriptorSetLayoutInfo(bindings);
