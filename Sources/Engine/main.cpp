@@ -78,6 +78,8 @@ protected:
 			_camera.processKeyboard('A', deltaTime);
 		if (KeyPress(GLFW_KEY_D))
 			_camera.processKeyboard('D', deltaTime);
+
+		updatePerFrameData(deltaTime);
 	}
 
 	void onRender() override
@@ -100,7 +102,6 @@ protected:
 			throw std::runtime_error("Failed to acquire swap chain image!\n");
 		}
 
-		updatePerFrameData();
 		updateUniformBuffer(imageIndex);
 
 		vkResetFences(_device.Handle(), 1, &frame.inFlight);
@@ -1104,15 +1105,8 @@ private:
 		}
 	}
 
-	void updatePerFrameData()
+	void updatePerFrameData(float deltaTime)
 	{
-		static auto lastFrame = (float)glfwGetTime();
-
-		// TODO : move deltaTime to VulkanApp
-		float currentFrame = (float)glfwGetTime();
-		auto deltaTime = currentFrame - lastFrame;
-		lastFrame = currentFrame;
-
 		_renderables[0].modelMatrix = glm::rotate(_renderables[0].modelMatrix, deltaTime, glm::vec3(0, 0, 1));
 		_renderables[1].modelMatrix = glm::rotate(_renderables[1].modelMatrix, deltaTime, glm::vec3(0, 0, 1));
 	}
