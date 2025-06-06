@@ -1,11 +1,4 @@
-#include <array>
 #include <chrono>
-#include <iostream>
-#include <optional>
-#include <set>
-#include <stdexcept>
-#include <unordered_map>
-#include <vector>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -16,6 +9,12 @@
 #include <stb_image.h>
 
 #include <tiny_obj_loader.h>
+
+#include "Apps/StartDemoApp/Camera.h"
+#include "Apps/StartDemoApp/FrameData.h"
+#include "Apps/StartDemoApp/Renderable.h"
+#include "Apps/StartDemoApp/Vertex.h"
+#include "Apps/StartDemoApp/UBO.h"
 
 #include "Core/Containers.h"
 #include "Core/Platform.h"
@@ -29,157 +28,6 @@
 #include "Render/Vulkan/VulkanUtils.h"
 
 #include "IO/IO.h"
-
-struct Vertex
-{
-	glm::vec3 pos;
-	glm::vec3 normal;
-	glm::vec2 texCoord;
-
-	static VkVertexInputBindingDescription getBindingDescription()
-	{
-		VkVertexInputBindingDescription bindingDesc{};
-
-		bindingDesc.binding = 0;
-		bindingDesc.stride = sizeof(Vertex);
-		bindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-		return bindingDesc;
-	}
-
-	static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions()
-	{
-		std::array<VkVertexInputAttributeDescription, 3> attributeDesc{};
-
-		//position
-		attributeDesc[0].binding = 0;
-		attributeDesc[0].location = 0;
-		attributeDesc[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-		attributeDesc[0].offset = offsetof(Vertex, pos);
-
-		//normal
-		attributeDesc[1].binding = 0;
-		attributeDesc[1].location = 1;
-		attributeDesc[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-		attributeDesc[1].offset = offsetof(Vertex, normal);
-
-		//color
-		attributeDesc[2].binding = 0;
-		attributeDesc[2].location = 2;
-		attributeDesc[2].format = VK_FORMAT_R32G32_SFLOAT;
-		attributeDesc[2].offset = offsetof(Vertex, texCoord);
-
-		return attributeDesc;
-	}
-
-	bool operator==(const Vertex& other) const
-	{
-		return pos == other.pos && normal == other.normal && texCoord == other.texCoord;
-	}
-};
-
-namespace std
-{
-	template<> struct hash<Vertex>
-	{
-		size_t operator()(Vertex const& vertex) const
-		{
-			return ((hash<glm::vec3>()(vertex.pos) ^
-				(hash<glm::vec3>()(vertex.normal) << 1)) >> 1) ^
-				(hash<glm::vec2>()(vertex.texCoord) << 1);
-		}
-	};
-}
-
-struct UniformBufferObject
-{
-	glm::mat4 view;
-	glm::mat4 proj;
-};
-
-struct Renderable 
-{
-	void Draw() const
-	{
-	}
-
-	void UploatToGPU()
-	{
-	}
-
-	glm::mat4 modelMatrix;
-	VkBuffer vertexBuffer;
-	VkBuffer indexBuffer;
-	uint32_t indexCount;
-	VkDescriptorSet descriptorSet;
-};
-
-std::vector<Renderable> _renderables;
-
-struct FrameData
-{
-	VkSemaphore imageAvailable;
-	VkSemaphore renderFinished;
-	VkFence inFlight;
-	VkCommandBuffer commandBuffer;
-};
-
-class Camera {
-public:
-	glm::vec3 position = { 0.0f, 5.0f, 0.0f };
-	glm::vec3 front = { 0.0f, 0.0f, -1.0f };
-	glm::vec3 up = { 0.0f, 1.0f, 0.0f };
-	glm::vec3 right = { 1.0f, 0.0f, 0.0f };
-	glm::vec3 worldUp = { 0.0f, 1.0f, 0.0f };
-
-	float yaw = -90.0f;
-	float pitch = -90.0f;
-
-	float moveSpeed = 2.5f;
-	float mouseSensitivity = 0.1f;
-
-	Camera() { updateVectors(); }
-
-	glm::mat4 getViewMatrix() const {
-		return glm::lookAt(position, position + front, up);
-	}
-
-	void processKeyboard(char key, float deltaTime) {
-		float velocity = moveSpeed * deltaTime;
-		if (key == 'W') position += front * velocity;
-		if (key == 'S') position -= front * velocity;
-		if (key == 'A') position -= right * velocity;
-		if (key == 'D') position += right * velocity;
-	}
-
-	void processMouse(float xoffset, float yoffset) {
-		xoffset *= mouseSensitivity;
-		yoffset *= mouseSensitivity;
-
-		yaw += xoffset;
-		pitch += yoffset;
-
-		pitch = glm::clamp(pitch, -89.0f, 89.0f);
-
-		updateVectors();
-	}
-
-private:
-	void updateVectors() {
-		glm::vec3 f;
-		f.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-		f.y = sin(glm::radians(pitch));
-		f.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-		front = glm::normalize(f);
-		right = glm::normalize(glm::cross(front, worldUp));
-		up = glm::normalize(glm::cross(right, front));
-	}
-};
-
-Camera camera;
-float lastX = 0.0f, lastY = 0.0f;
-bool firstMouse = true;
-float deltaTime = 0.0f, lastFrame = 0.0f;
 
 class SampleApp final : public Eugenix::Render::Vulkan::VulkanApp
 {
@@ -204,32 +52,32 @@ protected:
 
 	void onCursorMove(double xpos, double ypos) override
 	{
-		if (firstMouse)
+		if (_firstMouse)
 		{
-			lastX = (float)xpos;
-			lastY = (float)ypos;
-			firstMouse = false;
+			_lastX = (float)xpos;
+			_lastY = (float)ypos;
+			_firstMouse = false;
 		}
 
-		float xoffset = (float)xpos - lastX;
-		float yoffset = lastY - (float)ypos;
+		float xoffset = (float)xpos - _lastX;
+		float yoffset = _lastY - (float)ypos;
 
-		lastX = (float)xpos;
-		lastY = (float)ypos;
+		_lastX = (float)xpos;
+		_lastY = (float)ypos;
 
-		camera.processMouse(xoffset, yoffset);
+		_camera.processMouse(xoffset, yoffset);
 	}
 
 	void onUpdate(float deltaTime) override
 	{
 		if (KeyPress(GLFW_KEY_W))
-			camera.processKeyboard('W', deltaTime);
+			_camera.processKeyboard('W', deltaTime);
 		if (KeyPress(GLFW_KEY_S))
-			camera.processKeyboard('S', deltaTime);
+			_camera.processKeyboard('S', deltaTime);
 		if (KeyPress(GLFW_KEY_A))
-			camera.processKeyboard('A', deltaTime);
+			_camera.processKeyboard('A', deltaTime);
 		if (KeyPress(GLFW_KEY_D))
-			camera.processKeyboard('D', deltaTime);
+			_camera.processKeyboard('D', deltaTime);
 	}
 
 	void onRender() override
@@ -374,6 +222,13 @@ private:
 
 	double _lastTime;
 	int _frameCount{0};
+
+	Camera _camera;
+	float _lastX = 0.0f, _lastY = 0.0f;
+	bool _firstMouse = true;
+	float _deltaTime = 0.0f, _lastFrame = 0.0f;
+
+	std::vector<Renderable> _renderables;
 
 	Eugenix::Render::Vulkan::QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device)
 	{
@@ -1247,8 +1102,6 @@ private:
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_globalDescriptorSet, 0, nullptr);
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 1, 1, &_materialDescriptorSet, 0, nullptr);
 
-
-
 			vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(renderable.indexCount), 1, 0, 0, 0);
 		}
 
@@ -1276,7 +1129,7 @@ private:
 	void updateUniformBuffer(uint32_t currentImage)
 	{
 		UniformBufferObject ubo{};
-		ubo.view = camera.getViewMatrix();
+		ubo.view = _camera.getViewMatrix();
 		ubo.proj = glm::perspective(glm::radians(45.0f), float(_swapchain.Extent().width) / float(_swapchain.Extent().height), 0.1f, 100.0f);
 		ubo.proj[1][1] *= -1;
 
