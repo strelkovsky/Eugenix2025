@@ -1,5 +1,7 @@
 #pragma once
 
+#include <sstream>
+
 #include "Core/Log.h"
 
 #include "VulkanAdapter.h"

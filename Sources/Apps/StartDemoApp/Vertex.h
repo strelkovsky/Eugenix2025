@@ -3,6 +3,7 @@
 #include <array>
 
 #include <glm/glm.hpp>
+#include <glm/gtx/hash.hpp>
 
 #include "Render/Vulkan/VulkanInclude.h"
 
