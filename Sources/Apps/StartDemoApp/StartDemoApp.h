@@ -26,7 +26,6 @@ protected:
 	bool onInit() override
 	{
 		createDescriptorSetLayouts();
-		createCommandPool();
 		initResources();
 		createDepthResources();
 		createRenderPass();
@@ -184,7 +183,6 @@ private:
 	VkPipeline _graphicsPipeline{ VK_NULL_HANDLE };
 
 	std::vector<VkFramebuffer> _swapchainFramebuffers;
-	VkCommandPool _commandPool{ VK_NULL_HANDLE };
 
 	std::array<FrameData, Eugenix::Render::Vulkan::Swapchain::MaxFramesInFlight> _frames;
 	size_t _currentFrame{ 0 };
@@ -221,40 +219,6 @@ private:
 	float _deltaTime = 0.0f, _lastFrame = 0.0f;
 
 	std::vector<Renderable> _renderables;
-
-	Eugenix::Render::Vulkan::QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device)
-	{
-		Eugenix::Render::Vulkan::QueueFamilyIndices indices;
-
-		uint32_t queueFamilyCount{ 0 };
-		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
-
-		int i{ 0 };
-		for (const auto& queueFamily : queueFamilies)
-		{
-			if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-			{
-				indices.graphicsFamily = i;
-			}
-
-			VkBool32 presentSupport{ false };
-			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, _surface.Handle(), &presentSupport);
-			if (presentSupport)
-			{
-				indices.presentFamily = i;
-			}
-
-			if (indices.isComplete())
-			{
-				break;
-			}
-
-			++i;
-		}
-		return indices;
-	}
 
 	void createFramebuffers()
 	{
@@ -650,19 +614,6 @@ private:
 
 				indices.push_back(uniqueVertices[vertex]);
 			}
-		}
-	}
-
-	void createCommandPool()
-	{
-		Eugenix::Render::Vulkan::QueueFamilyIndices queueFamilyIndices = findQueueFamilies(_adapter.Handle());
-
-		VkCommandPoolCreateInfo poolInfo = Eugenix::Render::Vulkan::CommandPoolInfo(queueFamilyIndices.graphicsFamily.value(),
-			VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-
-		if (vkCreateCommandPool(_device.Handle(), &poolInfo, nullptr, &_commandPool) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create command pool!\n");
 		}
 	}
 

@@ -6,6 +6,7 @@
 
 #include "VulkanAdapter.h"
 #include "VulkanDevice.h"
+#include "VulkanInitializers.h"
 #include "VulkanInstance.h"
 #include "VulkanSurface.h"
 #include "VulkanSwapchain.h"
@@ -104,6 +105,8 @@ namespace Eugenix
 				Device _device;
 				Swapchain _swapchain;
 
+				VkCommandPool _commandPool{ VK_NULL_HANDLE };
+
 				bool _resized{ false };
 
 			private:
@@ -162,6 +165,8 @@ namespace Eugenix
 					if (!_swapchain.Create(_adapter, _surface, _device, window))
 						return false;
 
+					createCommandPool();
+
 					return true;
 				}
 
@@ -171,6 +176,18 @@ namespace Eugenix
 					_device.Destroy();
 					_surface.Destroy(_instance.Handle());
 					_instance.Destroy();
+				}
+
+				void createCommandPool()
+				{
+					QueueFamilyIndices queueFamilyIndices = _adapter.Indices();
+
+					VkCommandPoolCreateInfo poolInfo = CommandPoolInfo(queueFamilyIndices.graphicsFamily.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+
+					if (vkCreateCommandPool(_device.Handle(), &poolInfo, nullptr, &_commandPool) != VK_SUCCESS)
+					{
+						throw std::runtime_error("Failed to create command pool!\n");
+					}
 				}
 
 				void updateFPS()
