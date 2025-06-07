@@ -427,7 +427,7 @@ namespace Eugenix
 				return submitInfo;
 			}
 
-			inline VkBufferCreateInfo BufferCreateInfo(VkDeviceSize size, VkBufferUsageFlags usage, VkSharingMode mode)
+			inline VkBufferCreateInfo BufferCreateInfo(VkDeviceSize size, VkBufferUsageFlags usage, VkSharingMode mode = VK_SHARING_MODE_EXCLUSIVE)
 			{
 				VkBufferCreateInfo bufferCreateInfo{};
 				bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;

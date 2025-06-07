@@ -786,7 +786,7 @@ private:
 
 	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, Eugenix::Render::Vulkan::Buffer& buffer)
 	{
-		VkBufferCreateInfo bufferInfo = Eugenix::Render::Vulkan::BufferCreateInfo(size, usage, VK_SHARING_MODE_EXCLUSIVE);
+		VkBufferCreateInfo bufferInfo = Eugenix::Render::Vulkan::BufferCreateInfo(size, usage);
 		if (vkCreateBuffer(_device.Handle(), &bufferInfo, nullptr, &buffer.buffer) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create buffer!\n");
