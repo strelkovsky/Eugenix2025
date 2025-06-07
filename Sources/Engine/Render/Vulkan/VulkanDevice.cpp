@@ -16,14 +16,16 @@ namespace
 
 namespace Eugenix::Render::Vulkan
 {
-	bool Device::Create(const Adapter& adapter)
+	bool Device::Create(Adapter& adapter)
 	{
+		_adapter = &adapter;
+
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos{};
 		const float queuePriority = 1.0f;
 
 		std::set<uint32_t> uniqueQueueFamilies = 
 		{ 
-			adapter.Indices().graphicsFamily.value(), adapter.Indices().presentFamily.value()
+			_adapter->Indices().graphicsFamily.value(), _adapter->Indices().presentFamily.value()
 		};
 
 		for (uint32_t queueFamily : uniqueQueueFamilies)
@@ -36,7 +38,7 @@ namespace Eugenix::Render::Vulkan
 
 		VkDeviceCreateInfo createInfo = DeviceInfo(queueCreateInfos, deviceFeatures, deviceExtensions);
 
-		if (vkCreateDevice(adapter.Handle(), &createInfo, nullptr, &_device) != VK_SUCCESS)
+		if (vkCreateDevice(_adapter->Handle(), &createInfo, nullptr, &_device) != VK_SUCCESS)
 		{
 			LogError("Failed to create logical device.");
 			return false;
@@ -44,8 +46,8 @@ namespace Eugenix::Render::Vulkan
 
 		LogSuccess("Vulkan logical device created successfully.");
 
-		vkGetDeviceQueue(_device, adapter.Indices().graphicsFamily.value(), 0, &_graphicsQueue);
-		vkGetDeviceQueue(_device, adapter.Indices().presentFamily.value(), 0, &_presentQueue);
+		vkGetDeviceQueue(_device, _adapter->Indices().graphicsFamily.value(), 0, &_graphicsQueue);
+		vkGetDeviceQueue(_device, _adapter->Indices().presentFamily.value(), 0, &_presentQueue);
 
 		return true;
 	}
@@ -88,5 +90,29 @@ namespace Eugenix::Render::Vulkan
 		}
 
 		return imageView;
+	}
+
+	Buffer Device::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) const
+	{
+		Buffer buffer{};
+
+		VkBufferCreateInfo bufferInfo = BufferCreateInfo(size, usage);
+		if (vkCreateBuffer(_device, &bufferInfo, nullptr, &buffer.buffer) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create buffer!\n");
+		}
+
+		VkMemoryRequirements memRequirements;
+		vkGetBufferMemoryRequirements(_device, buffer.buffer, &memRequirements);
+
+		VkMemoryAllocateInfo allocInfo = MemoryAllocateInfo(memRequirements.size, _adapter->FindMemoryType(memRequirements.memoryTypeBits, properties));
+		if (vkAllocateMemory(_device, &allocInfo, nullptr, &buffer.memory) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to allocate buffer memory!\n");
+		}
+
+		vkBindBufferMemory(_device, buffer.buffer, buffer.memory, 0);
+
+		return buffer;
 	}
 } // namespace Eugenix::Render::Vulkan

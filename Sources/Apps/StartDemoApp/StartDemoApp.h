@@ -732,19 +732,16 @@ private:
 	{
 		VkDeviceSize size = sizeof(Vertex) * vertices.size();
 
-		Eugenix::Render::Vulkan::Buffer stagingBuffer;
-		createBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			stagingBuffer);
+		Eugenix::Render::Vulkan::Buffer stagingBuffer = _device.CreateBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
 		void* data;
 		vkMapMemory(_device.Handle(), stagingBuffer.memory, 0, size, 0, &data);
 		memcpy(data, vertices.data(), static_cast<size_t>(size));
 		vkUnmapMemory(_device.Handle(), stagingBuffer.memory);
 
-		createBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			_vertexBuffer);
+		_vertexBuffer = _device.CreateBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 		copyBuffer(stagingBuffer.buffer, _vertexBuffer.buffer, size);
 		vkDestroyBuffer(_device.Handle(), stagingBuffer.buffer, nullptr);
@@ -755,19 +752,16 @@ private:
 	{
 		VkDeviceSize size = sizeof(uint32_t) * indices.size();
 
-		Eugenix::Render::Vulkan::Buffer stagingBuffer;
-		createBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			stagingBuffer);
+		Eugenix::Render::Vulkan::Buffer stagingBuffer = _device.CreateBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
 		void* data;
 		vkMapMemory(_device.Handle(), stagingBuffer.memory, 0, size, 0, &data);
 		memcpy(data, indices.data(), static_cast<size_t>(size));
 		vkUnmapMemory(_device.Handle(), stagingBuffer.memory);
 
-		createBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			_indexBuffer);
+		_indexBuffer = _device.CreateBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 		copyBuffer(stagingBuffer.buffer, _indexBuffer.buffer, size);
 		vkDestroyBuffer(_device.Handle(), stagingBuffer.buffer, nullptr);
@@ -778,32 +772,7 @@ private:
 	{
 		// Camera UBO
 		VkDeviceSize size = sizeof(UniformBufferObject);
-
-		createBuffer(size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			_uniformBuffer);
-	}
-
-	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, Eugenix::Render::Vulkan::Buffer& buffer)
-	{
-		VkBufferCreateInfo bufferInfo = Eugenix::Render::Vulkan::BufferCreateInfo(size, usage);
-		if (vkCreateBuffer(_device.Handle(), &bufferInfo, nullptr, &buffer.buffer) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create buffer!\n");
-		}
-
-		VkMemoryRequirements memRequirements;
-		vkGetBufferMemoryRequirements(_device.Handle(), buffer.buffer, &memRequirements);
-
-		VkMemoryAllocateInfo allocInfo = Eugenix::Render::Vulkan::MemoryAllocateInfo(memRequirements.size,
-			findMemoryType(memRequirements.memoryTypeBits, properties));
-
-		if (vkAllocateMemory(_device.Handle(), &allocInfo, nullptr, &buffer.memory) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to allocate buffer memory!\n");
-		}
-
-		vkBindBufferMemory(_device.Handle(), buffer.buffer, buffer.memory, 0);
+		_uniformBuffer = _device.CreateBuffer(size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 	}
 
 	void copyBuffer(VkBuffer& srcBuffer, VkBuffer& dstBuffer, VkDeviceSize size)
@@ -817,22 +786,6 @@ private:
 		vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
 		endSingleTimeCommands(commandBuffer);
-	}
-
-	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const
-	{
-		VkPhysicalDeviceMemoryProperties memProperties;
-		vkGetPhysicalDeviceMemoryProperties(_adapter.Handle(), &memProperties);
-
-		for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i)
-		{
-			if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
-			{
-				return i;
-			}
-		}
-
-		throw std::runtime_error("failed to find suitable memory type\n");
 	}
 
 	void initResources()
@@ -856,9 +809,8 @@ private:
 		VkDeviceSize imageSize = width * height * 4;
 
 		Eugenix::Render::Vulkan::Buffer stagingBuffer;
-		createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			stagingBuffer);
+		stagingBuffer = _device.CreateBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
 		void* data;
 		vkMapMemory(_device.Handle(), stagingBuffer.memory, 0, imageSize, 0, &data);
@@ -975,7 +927,7 @@ private:
 		VkMemoryAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		allocInfo.allocationSize = memRequirements.size;
-		allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+		allocInfo.memoryTypeIndex = _adapter.FindMemoryType(memRequirements.memoryTypeBits, properties);
 		if (vkAllocateMemory(_device.Handle(), &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to allocate image memory!\n");

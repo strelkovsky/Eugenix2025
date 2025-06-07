@@ -97,11 +97,27 @@ namespace Eugenix::Render::Vulkan
 
 			VkPhysicalDeviceProperties props;
 			vkGetPhysicalDeviceProperties(device, &props);
+
+			vkGetPhysicalDeviceMemoryProperties(_selectedPhysicalDevice, &_memoryProperties);
+
 			LogSuccess("Selected adapter: ", props.deviceName);
 			return true;
 		}
 
-		LogError("No suitable adapter found.");
+		LogError("No suitable adapter found!");
 		return false;
+	}
+
+	uint32_t Adapter::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const
+	{
+		for (uint32_t i = 0; i < _memoryProperties.memoryTypeCount; ++i)
+		{
+			if ((typeFilter & (1 << i)) &&
+				(_memoryProperties.memoryTypes[i].propertyFlags & properties) == properties)
+			{
+				return i;
+			}
+		}
+		throw std::runtime_error("Failed to find suitable memory type!");
 	}
 } // namespace Eugenix::Render::Vulkan
