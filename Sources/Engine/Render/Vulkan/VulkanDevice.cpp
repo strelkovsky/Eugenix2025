@@ -38,7 +38,7 @@ namespace Eugenix::Render::Vulkan
 
 		VkDeviceCreateInfo createInfo = DeviceInfo(queueCreateInfos, deviceFeatures, deviceExtensions);
 
-		VERIFYVULKANRESULT(vkCreateDevice(_adapter->Handle(), &createInfo, nullptr, &_device));
+		VERIFYVULKANRESULT(vkCreateDevice(_adapter->Handle(), &createInfo, EUGENIX_VULKAN_ALLOCATOR, &_device));
 
 		LogSuccess("Vulkan logical device created successfully.");
 
@@ -53,7 +53,7 @@ namespace Eugenix::Render::Vulkan
 		if (_device)
 		{
 			LogSuccess("Logical device destroyed.");
-			vkDestroyDevice(_device, nullptr);
+			vkDestroyDevice(_device, EUGENIX_VULKAN_ALLOCATOR);
 			_device = VK_NULL_HANDLE;
 			_graphicsQueue = VK_NULL_HANDLE;
 			_presentQueue = VK_NULL_HANDLE;
@@ -80,7 +80,7 @@ namespace Eugenix::Render::Vulkan
 		createInfo.subresourceRange.layerCount = 1;
 
 		VkImageView imageView;
-		VERIFYVULKANRESULT(vkCreateImageView(_device, &createInfo, nullptr, &imageView));
+		VERIFYVULKANRESULT(vkCreateImageView(_device, &createInfo, EUGENIX_VULKAN_ALLOCATOR, &imageView));
 
 		return imageView;
 	}
@@ -96,7 +96,7 @@ namespace Eugenix::Render::Vulkan
 		vkGetBufferMemoryRequirements(_device, buffer.buffer, &memRequirements);
 
 		VkMemoryAllocateInfo allocInfo = MemoryAllocateInfo(memRequirements.size, _adapter->FindMemoryType(memRequirements.memoryTypeBits, properties));
-		VERIFYVULKANRESULT(vkAllocateMemory(_device, &allocInfo, nullptr, &buffer.memory));
+		VERIFYVULKANRESULT(vkAllocateMemory(_device, &allocInfo, EUGENIX_VULKAN_ALLOCATOR, &buffer.memory));
 
 		VERIFYVULKANRESULT(vkBindBufferMemory(_device, buffer.buffer, buffer.memory, 0));
 

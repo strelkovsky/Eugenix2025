@@ -114,7 +114,7 @@ namespace Eugenix::Render::Vulkan
 		createInfo.clipped = VK_TRUE;
 		createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-		VERIFYVULKANRESULT(vkCreateSwapchainKHR(device.Handle(), &createInfo, nullptr, &_swapchain));
+		VERIFYVULKANRESULT(vkCreateSwapchainKHR(device.Handle(), &createInfo, EUGENIX_VULKAN_ALLOCATOR, &_swapchain));
 
 		VERIFYVULKANRESULT(vkGetSwapchainImagesKHR(device.Handle(), _swapchain, &imageCount, nullptr));
 		_images.resize(imageCount);
@@ -136,12 +136,12 @@ namespace Eugenix::Render::Vulkan
 		{
 			for (VkImageView view : _imageViews)
 			{
-				vkDestroyImageView(device, view, nullptr);
+				vkDestroyImageView(device, view, EUGENIX_VULKAN_ALLOCATOR);
 			}
 			_imageViews.clear();
 
 			LogSuccess("Swapchain destroyed.");
-			vkDestroySwapchainKHR(device, _swapchain, nullptr);
+			vkDestroySwapchainKHR(device, _swapchain, EUGENIX_VULKAN_ALLOCATOR);
 			_swapchain = VK_NULL_HANDLE;
 		}
 	}

@@ -149,7 +149,7 @@ namespace Eugenix::Render::Vulkan
 			"Eugenix Engine", VK_MAKE_VERSION(1, 0, 0), apiVersion);
 				
 		VkInstanceCreateInfo instanceInfo = InstanceInfo(appInfo, requiredLayers, requiredExtensions);
-		auto res = vkCreateInstance(&instanceInfo, nullptr, &_instance);
+		auto res = vkCreateInstance(&instanceInfo, EUGENIX_VULKAN_ALLOCATOR, &_instance);
 		if (res == VK_ERROR_INCOMPATIBLE_DRIVER)
 			throw std::runtime_error("Cannot find a compatible Vulkan driver (ICD).");
 		else if (res != VK_SUCCESS)
@@ -167,7 +167,7 @@ namespace Eugenix::Render::Vulkan
 				VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
 				DebugCallback);
 
-			VERIFYVULKANRESULT(CreateDebugUtilsMessengerEXT(_instance, &debugMessengerInfo, nullptr, &_debugMessenger));
+			VERIFYVULKANRESULT(CreateDebugUtilsMessengerEXT(_instance, &debugMessengerInfo, EUGENIX_VULKAN_ALLOCATOR, &_debugMessenger));
 
 			LogSuccess("Debug messenger initialized.");
 		}
@@ -182,14 +182,14 @@ namespace Eugenix::Render::Vulkan
 		if (_debugMessenger)
 		{
 			LogSuccess("Debug messenger destroyed.");
-			DestroyDebugUtilsMessengerEXT(_instance, _debugMessenger, nullptr);
+			DestroyDebugUtilsMessengerEXT(_instance, _debugMessenger, EUGENIX_VULKAN_ALLOCATOR);
 		}
 #endif
 
 		if (_instance)
 		{
 			LogSuccess("Vulkan instance destroyed.");
-			vkDestroyInstance(_instance, nullptr);
+			vkDestroyInstance(_instance, EUGENIX_VULKAN_ALLOCATOR);
 		}
 	}
 

@@ -142,23 +142,23 @@ protected:
 	{
 		cleanupSwapchain();
 
-		vkDestroySampler(_device.Handle(), _textureSampler, nullptr);
+		vkDestroySampler(_device.Handle(), _textureSampler, EUGENIX_VULKAN_ALLOCATOR);
 
-		vkDestroyImageView(_device.Handle(), _textureImageView, nullptr);
-		vkDestroyImage(_device.Handle(), _textureImage, nullptr);
-		vkFreeMemory(_device.Handle(), _textureImageMemory, nullptr);
+		vkDestroyImageView(_device.Handle(), _textureImageView, EUGENIX_VULKAN_ALLOCATOR);
+		vkDestroyImage(_device.Handle(), _textureImage, EUGENIX_VULKAN_ALLOCATOR);
+		vkFreeMemory(_device.Handle(), _textureImageMemory, EUGENIX_VULKAN_ALLOCATOR);
 
-		vkDestroyBuffer(_device.Handle(), _uniformBuffer.buffer, nullptr);
-		vkFreeMemory(_device.Handle(), _uniformBuffer.memory, nullptr);
+		vkDestroyBuffer(_device.Handle(), _uniformBuffer.buffer, EUGENIX_VULKAN_ALLOCATOR);
+		vkFreeMemory(_device.Handle(), _uniformBuffer.memory, EUGENIX_VULKAN_ALLOCATOR);
 
-		vkDestroyBuffer(_device.Handle(), _vertexBuffer.buffer, nullptr);
-		vkFreeMemory(_device.Handle(), _vertexBuffer.memory, nullptr);
+		vkDestroyBuffer(_device.Handle(), _vertexBuffer.buffer, EUGENIX_VULKAN_ALLOCATOR);
+		vkFreeMemory(_device.Handle(), _vertexBuffer.memory, EUGENIX_VULKAN_ALLOCATOR);
 
-		vkDestroyBuffer(_device.Handle(), _indexBuffer.buffer, nullptr);
-		vkFreeMemory(_device.Handle(), _indexBuffer.memory, nullptr);
+		vkDestroyBuffer(_device.Handle(), _indexBuffer.buffer, EUGENIX_VULKAN_ALLOCATOR);
+		vkFreeMemory(_device.Handle(), _indexBuffer.memory, EUGENIX_VULKAN_ALLOCATOR);
 
-		vkDestroyDescriptorSetLayout(_device.Handle(), _globalDescriptorSetLayout, nullptr);
-		vkDestroyDescriptorSetLayout(_device.Handle(), _materialDescriptorSetLayout, nullptr);
+		vkDestroyDescriptorSetLayout(_device.Handle(), _globalDescriptorSetLayout, EUGENIX_VULKAN_ALLOCATOR);
+		vkDestroyDescriptorSetLayout(_device.Handle(), _materialDescriptorSetLayout, EUGENIX_VULKAN_ALLOCATOR);
 
 		std::vector<VkCommandBuffer> commandBuffers;
 		for (const auto& frame : _frames)
@@ -168,7 +168,7 @@ protected:
 		vkFreeCommandBuffers(_device.Handle(), _commandPool,
 			static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
-		vkDestroyCommandPool(_device.Handle(), _commandPool, nullptr);
+		vkDestroyCommandPool(_device.Handle(), _commandPool, EUGENIX_VULKAN_ALLOCATOR);
 
 		glfwDestroyWindow(_window);
 		glfwTerminate();
@@ -228,7 +228,7 @@ private:
 			VkFramebufferCreateInfo framebufferInfo = Eugenix::Render::Vulkan::FrameBufferInfo(_renderPass,
 				attachments, _swapchain.Extent(), 1);
 
-			VERIFYVULKANRESULT(vkCreateFramebuffer(_device.Handle(), &framebufferInfo, nullptr, &_swapchainFramebuffers[i]));
+			VERIFYVULKANRESULT(vkCreateFramebuffer(_device.Handle(), &framebufferInfo, EUGENIX_VULKAN_ALLOCATOR, &_swapchainFramebuffers[i]));
 		}
 	}
 
@@ -313,7 +313,7 @@ private:
 		VkRenderPassCreateInfo renderPassInfo = Eugenix::Render::Vulkan::RenderPassInfo(
 			attachments, subpasses, dependencies);
 
-		VERIFYVULKANRESULT(vkCreateRenderPass(_device.Handle(), &renderPassInfo, nullptr, &_renderPass));
+		VERIFYVULKANRESULT(vkCreateRenderPass(_device.Handle(), &renderPassInfo, EUGENIX_VULKAN_ALLOCATOR, &_renderPass));
 	}
 
 	void createDescriptorSetLayouts()
@@ -328,7 +328,7 @@ private:
 		std::array<VkDescriptorSetLayoutBinding, 1> bindings = { uboLayoutBinding };
 
 		VkDescriptorSetLayoutCreateInfo layoutInfo = Eugenix::Render::Vulkan::DescriptorSetLayoutInfo(bindings);
-		VERIFYVULKANRESULT(vkCreateDescriptorSetLayout(_device.Handle(), &layoutInfo, nullptr, &_globalDescriptorSetLayout));
+		VERIFYVULKANRESULT(vkCreateDescriptorSetLayout(_device.Handle(), &layoutInfo, EUGENIX_VULKAN_ALLOCATOR, &_globalDescriptorSetLayout));
 
 		// Sampler
 		VkDescriptorSetLayoutBinding samplerLayoutBinding{};
@@ -341,7 +341,7 @@ private:
 		bindings = { samplerLayoutBinding };
 
 		layoutInfo = Eugenix::Render::Vulkan::DescriptorSetLayoutInfo(bindings);
-		VERIFYVULKANRESULT(vkCreateDescriptorSetLayout(_device.Handle(), &layoutInfo, nullptr, &_materialDescriptorSetLayout));
+		VERIFYVULKANRESULT(vkCreateDescriptorSetLayout(_device.Handle(), &layoutInfo, EUGENIX_VULKAN_ALLOCATOR, &_materialDescriptorSetLayout));
 	}
 
 	void createDescriptorPool()
@@ -358,7 +358,7 @@ private:
 
 		VkDescriptorPoolCreateInfo poolInfo = Eugenix::Render::Vulkan::DescriptorPoolInfo(poolSizes, static_cast<uint32_t>(100 + 1)); // FIXME: hardcoded size
 
-		VERIFYVULKANRESULT(vkCreateDescriptorPool(_device.Handle(), &poolInfo, nullptr, &_descriptorPool));
+		VERIFYVULKANRESULT(vkCreateDescriptorPool(_device.Handle(), &poolInfo, EUGENIX_VULKAN_ALLOCATOR, &_descriptorPool));
 	}
 
 	void createDescriptorSets()
@@ -477,15 +477,15 @@ private:
 
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo = Eugenix::Render::Vulkan::PipelineLayoutInfo(setLayouts,
 			pushConstantRanges);
-		VERIFYVULKANRESULT(vkCreatePipelineLayout(_device.Handle(), &pipelineLayoutInfo, nullptr, &_pipelineLayout));
+		VERIFYVULKANRESULT(vkCreatePipelineLayout(_device.Handle(), &pipelineLayoutInfo, EUGENIX_VULKAN_ALLOCATOR, &_pipelineLayout));
 
 		VkGraphicsPipelineCreateInfo pipelineInfo = Eugenix::Render::Vulkan::PipelineInfo(shaderStages,
 			vertexInputInfo, inputAssembly, viewportState, rasterizer, multisampling, depthStencilAttachment,
 			colorBlending, nullptr, _pipelineLayout, _renderPass, 0, VK_NULL_HANDLE, -1);
-		VERIFYVULKANRESULT(vkCreateGraphicsPipelines(_device.Handle(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_graphicsPipeline));
+		VERIFYVULKANRESULT(vkCreateGraphicsPipelines(_device.Handle(), VK_NULL_HANDLE, 1, &pipelineInfo, EUGENIX_VULKAN_ALLOCATOR, &_graphicsPipeline));
 
-		vkDestroyShaderModule(_device.Handle(), vertShaderModule, nullptr);
-		vkDestroyShaderModule(_device.Handle(), fragShaderModule, nullptr);
+		vkDestroyShaderModule(_device.Handle(), vertShaderModule, EUGENIX_VULKAN_ALLOCATOR);
+		vkDestroyShaderModule(_device.Handle(), fragShaderModule, EUGENIX_VULKAN_ALLOCATOR);
 	}
 
 	VkShaderModule createShaderModule(const std::vector<char>& code)
@@ -493,7 +493,7 @@ private:
 		VkShaderModule shaderModule;
 
 		VkShaderModuleCreateInfo createInfo = Eugenix::Render::Vulkan::ShaderModuleInfo(code);
-		VERIFYVULKANRESULT(vkCreateShaderModule(_device.Handle(), &createInfo, nullptr, &shaderModule));
+		VERIFYVULKANRESULT(vkCreateShaderModule(_device.Handle(), &createInfo, EUGENIX_VULKAN_ALLOCATOR, &shaderModule));
 
 		return shaderModule;
 	}
@@ -600,9 +600,9 @@ private:
 
 		for (auto& frame : _frames)
 		{
-			VERIFYVULKANRESULT(vkCreateSemaphore(_device.Handle(), &semaphoreInfo, nullptr, &frame.imageAvailable));
-			VERIFYVULKANRESULT(vkCreateSemaphore(_device.Handle(), &semaphoreInfo, nullptr, &frame.renderFinished));
-			VERIFYVULKANRESULT(vkCreateFence(_device.Handle(), &fenceInfo, nullptr, &frame.inFlight));
+			VERIFYVULKANRESULT(vkCreateSemaphore(_device.Handle(), &semaphoreInfo, EUGENIX_VULKAN_ALLOCATOR, &frame.imageAvailable));
+			VERIFYVULKANRESULT(vkCreateSemaphore(_device.Handle(), &semaphoreInfo, EUGENIX_VULKAN_ALLOCATOR, &frame.renderFinished));
+			VERIFYVULKANRESULT(vkCreateFence(_device.Handle(), &fenceInfo, EUGENIX_VULKAN_ALLOCATOR, &frame.inFlight));
 		}
 	}
 
@@ -650,8 +650,8 @@ private:
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 		copyBuffer(stagingBuffer.buffer, _vertexBuffer.buffer, size);
-		vkDestroyBuffer(_device.Handle(), stagingBuffer.buffer, nullptr);
-		vkFreeMemory(_device.Handle(), stagingBuffer.memory, nullptr);
+		vkDestroyBuffer(_device.Handle(), stagingBuffer.buffer, EUGENIX_VULKAN_ALLOCATOR);
+		vkFreeMemory(_device.Handle(), stagingBuffer.memory, EUGENIX_VULKAN_ALLOCATOR);
 	}
 
 	void createIndexBuffer()
@@ -670,8 +670,8 @@ private:
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 		copyBuffer(stagingBuffer.buffer, _indexBuffer.buffer, size);
-		vkDestroyBuffer(_device.Handle(), stagingBuffer.buffer, nullptr);
-		vkFreeMemory(_device.Handle(), stagingBuffer.memory, nullptr);
+		vkDestroyBuffer(_device.Handle(), stagingBuffer.buffer, EUGENIX_VULKAN_ALLOCATOR);
+		vkFreeMemory(_device.Handle(), stagingBuffer.memory, EUGENIX_VULKAN_ALLOCATOR);
 	}
 
 	void createUniformBuffers()
@@ -732,8 +732,8 @@ private:
 		copyBufferToImage(stagingBuffer.buffer, _textureImage, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 		transitionImageLayout(_textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-		vkDestroyBuffer(_device.Handle(), stagingBuffer.buffer, nullptr);
-		vkFreeMemory(_device.Handle(), stagingBuffer.memory, nullptr);
+		vkDestroyBuffer(_device.Handle(), stagingBuffer.buffer, EUGENIX_VULKAN_ALLOCATOR);
+		vkFreeMemory(_device.Handle(), stagingBuffer.memory, EUGENIX_VULKAN_ALLOCATOR);
 	}
 
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout/*, uint32_t mipLevels*/)
@@ -831,7 +831,7 @@ private:
 		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		allocInfo.allocationSize = memRequirements.size;
 		allocInfo.memoryTypeIndex = _adapter.FindMemoryType(memRequirements.memoryTypeBits, properties);
-		VERIFYVULKANRESULT(vkAllocateMemory(_device.Handle(), &allocInfo, nullptr, &imageMemory));
+		VERIFYVULKANRESULT(vkAllocateMemory(_device.Handle(), &allocInfo, EUGENIX_VULKAN_ALLOCATOR, &imageMemory));
 
 		VERIFYVULKANRESULT(vkBindImageMemory(_device.Handle(), image, imageMemory, 0));
 	}
@@ -856,7 +856,7 @@ private:
 		samplerInfo.minLod = 0.0f;
 		samplerInfo.maxLod = 0.0f;
 
-		VERIFYVULKANRESULT(vkCreateSampler(_device.Handle(), &samplerInfo, nullptr, &_textureSampler));
+		VERIFYVULKANRESULT(vkCreateSampler(_device.Handle(), &samplerInfo, EUGENIX_VULKAN_ALLOCATOR, &_textureSampler));
 	}
 
 	void createDepthResources()
@@ -962,25 +962,25 @@ private:
 	{
 		for (auto& frame : _frames)
 		{
-			vkDestroySemaphore(_device.Handle(), frame.renderFinished, nullptr);
-			vkDestroySemaphore(_device.Handle(), frame.imageAvailable, nullptr);
-			vkDestroyFence(_device.Handle(), frame.inFlight, nullptr);
+			vkDestroySemaphore(_device.Handle(), frame.renderFinished, EUGENIX_VULKAN_ALLOCATOR);
+			vkDestroySemaphore(_device.Handle(), frame.imageAvailable, EUGENIX_VULKAN_ALLOCATOR);
+			vkDestroyFence(_device.Handle(), frame.inFlight, EUGENIX_VULKAN_ALLOCATOR);
 		}
 
-		vkDestroyImageView(_device.Handle(), _depthImageView, nullptr);
-		vkDestroyImage(_device.Handle(), _depthImage, nullptr);
-		vkFreeMemory(_device.Handle(), _depthImageMemory, nullptr);
+		vkDestroyImageView(_device.Handle(), _depthImageView, EUGENIX_VULKAN_ALLOCATOR);
+		vkDestroyImage(_device.Handle(), _depthImage, EUGENIX_VULKAN_ALLOCATOR);
+		vkFreeMemory(_device.Handle(), _depthImageMemory, EUGENIX_VULKAN_ALLOCATOR);
 
-		vkDestroyDescriptorPool(_device.Handle(), _descriptorPool, nullptr);
+		vkDestroyDescriptorPool(_device.Handle(), _descriptorPool, EUGENIX_VULKAN_ALLOCATOR);
 
 		for (auto framebuffer : _swapchainFramebuffers)
 		{
-			vkDestroyFramebuffer(_device.Handle(), framebuffer, nullptr);
+			vkDestroyFramebuffer(_device.Handle(), framebuffer, EUGENIX_VULKAN_ALLOCATOR);
 		}
 
-		vkDestroyPipeline(_device.Handle(), _graphicsPipeline, nullptr);
-		vkDestroyPipelineLayout(_device.Handle(), _pipelineLayout, nullptr);
-		vkDestroyRenderPass(_device.Handle(), _renderPass, nullptr);
+		vkDestroyPipeline(_device.Handle(), _graphicsPipeline, EUGENIX_VULKAN_ALLOCATOR);
+		vkDestroyPipelineLayout(_device.Handle(), _pipelineLayout, EUGENIX_VULKAN_ALLOCATOR);
+		vkDestroyRenderPass(_device.Handle(), _renderPass, EUGENIX_VULKAN_ALLOCATOR);
 
 		_swapchain.Destroy(_device.Handle());
 	}
