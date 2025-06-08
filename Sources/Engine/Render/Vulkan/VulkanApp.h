@@ -172,6 +172,8 @@ namespace Eugenix
 
 				void cleanupVulkan()
 				{
+					vkDestroyCommandPool(_device.Handle(), _commandPool, nullptr);
+
 					_swapchain.Destroy(_device.Handle());
 					_device.Destroy();
 					_surface.Destroy(_instance.Handle());
