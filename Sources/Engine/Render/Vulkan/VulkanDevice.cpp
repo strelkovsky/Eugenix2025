@@ -38,11 +38,7 @@ namespace Eugenix::Render::Vulkan
 
 		VkDeviceCreateInfo createInfo = DeviceInfo(queueCreateInfos, deviceFeatures, deviceExtensions);
 
-		if (vkCreateDevice(_adapter->Handle(), &createInfo, nullptr, &_device) != VK_SUCCESS)
-		{
-			LogError("Failed to create logical device.");
-			return false;
-		}
+		VERIFYVULKANRESULT(vkCreateDevice(_adapter->Handle(), &createInfo, nullptr, &_device));
 
 		LogSuccess("Vulkan logical device created successfully.");
 
@@ -84,10 +80,7 @@ namespace Eugenix::Render::Vulkan
 		createInfo.subresourceRange.layerCount = 1;
 
 		VkImageView imageView;
-		if (vkCreateImageView(_device, &createInfo, nullptr, &imageView) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create image views!\n");
-		}
+		VERIFYVULKANRESULT(vkCreateImageView(_device, &createInfo, nullptr, &imageView));
 
 		return imageView;
 	}
@@ -97,21 +90,15 @@ namespace Eugenix::Render::Vulkan
 		Buffer buffer{};
 
 		VkBufferCreateInfo bufferInfo = BufferCreateInfo(size, usage);
-		if (vkCreateBuffer(_device, &bufferInfo, nullptr, &buffer.buffer) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create buffer!\n");
-		}
+		VERIFYVULKANRESULT(vkCreateBuffer(_device, &bufferInfo, nullptr, &buffer.buffer));
 
 		VkMemoryRequirements memRequirements;
 		vkGetBufferMemoryRequirements(_device, buffer.buffer, &memRequirements);
 
 		VkMemoryAllocateInfo allocInfo = MemoryAllocateInfo(memRequirements.size, _adapter->FindMemoryType(memRequirements.memoryTypeBits, properties));
-		if (vkAllocateMemory(_device, &allocInfo, nullptr, &buffer.memory) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to allocate buffer memory!\n");
-		}
+		VERIFYVULKANRESULT(vkAllocateMemory(_device, &allocInfo, nullptr, &buffer.memory));
 
-		vkBindBufferMemory(_device, buffer.buffer, buffer.memory, 0);
+		VERIFYVULKANRESULT(vkBindBufferMemory(_device, buffer.buffer, buffer.memory, 0));
 
 		return buffer;
 	}

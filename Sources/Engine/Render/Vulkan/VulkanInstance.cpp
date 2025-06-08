@@ -26,9 +26,9 @@ namespace
 	std::vector<VkLayerProperties> getAvailableInstanceLayers()
 	{
 		uint32_t instanceLayerCount = 0;
-		vkEnumerateInstanceLayerProperties(&instanceLayerCount, nullptr);
+		VERIFYVULKANRESULT(vkEnumerateInstanceLayerProperties(&instanceLayerCount, nullptr));
 		std::vector<VkLayerProperties> availableLayers(instanceLayerCount);
-		vkEnumerateInstanceLayerProperties(&instanceLayerCount, availableLayers.data());
+		VERIFYVULKANRESULT(vkEnumerateInstanceLayerProperties(&instanceLayerCount, availableLayers.data()));
 
 		return availableLayers;
 	}
@@ -36,9 +36,9 @@ namespace
 	std::vector<VkExtensionProperties> getAvailableInstanceExtensions()
 	{
 		uint32_t count = 0;
-		vkEnumerateInstanceExtensionProperties(nullptr, &count, nullptr);
+		VERIFYVULKANRESULT(vkEnumerateInstanceExtensionProperties(nullptr, &count, nullptr));
 		std::vector<VkExtensionProperties> extensions(count);
-		vkEnumerateInstanceExtensionProperties(nullptr, &count, extensions.data());
+		VERIFYVULKANRESULT(vkEnumerateInstanceExtensionProperties(nullptr, &count, extensions.data()));
 
 		return extensions;
 	}
@@ -167,8 +167,7 @@ namespace Eugenix::Render::Vulkan
 				VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
 				DebugCallback);
 
-			if (CreateDebugUtilsMessengerEXT(_instance, &debugMessengerInfo, nullptr, &_debugMessenger) != VK_SUCCESS)
-				throw std::runtime_error("Failed to set up debug messenger!\n");
+			VERIFYVULKANRESULT(CreateDebugUtilsMessengerEXT(_instance, &debugMessengerInfo, nullptr, &_debugMessenger));
 
 			LogSuccess("Debug messenger initialized.");
 		}

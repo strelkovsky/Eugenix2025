@@ -11,7 +11,7 @@ namespace Eugenix::Render::Vulkan
 	bool Adapter::Select(VkInstance instance, VkSurfaceKHR surface)
 	{
 		uint32_t deviceCount = 0;
-		vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+		VERIFYVULKANRESULT(vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr));
 		if (deviceCount == 0)
 		{
 			LogError("No Vulkan-compatible GPUs found. Make sure your drivers are up to date and that you are not pending a reboot.");
@@ -19,7 +19,7 @@ namespace Eugenix::Render::Vulkan
 		}
 
 		std::vector<VkPhysicalDevice> devices(deviceCount);
-		vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+		VERIFYVULKANRESULT(vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data()));
 
 		LogInfo("Available Vulkan adapters:");
 		for (const auto& device : devices)
@@ -71,9 +71,9 @@ namespace Eugenix::Render::Vulkan
 			}
 
 			uint32_t extCount;
-			vkEnumerateDeviceExtensionProperties(device, nullptr, &extCount, nullptr);
+			VERIFYVULKANRESULT(vkEnumerateDeviceExtensionProperties(device, nullptr, &extCount, nullptr));
 			std::vector<VkExtensionProperties> availableExtensions(extCount);
-			vkEnumerateDeviceExtensionProperties(device, nullptr, &extCount, availableExtensions.data());
+			VERIFYVULKANRESULT(vkEnumerateDeviceExtensionProperties(device, nullptr, &extCount, availableExtensions.data()));
 
 			std::set<std::string> required = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 			for (const auto& ext : availableExtensions)

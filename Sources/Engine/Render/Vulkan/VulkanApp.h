@@ -186,10 +186,7 @@ namespace Eugenix
 
 					VkCommandPoolCreateInfo poolInfo = CommandPoolInfo(queueFamilyIndices.graphicsFamily.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
-					if (vkCreateCommandPool(_device.Handle(), &poolInfo, nullptr, &_commandPool) != VK_SUCCESS)
-					{
-						throw std::runtime_error("Failed to create command pool!\n");
-					}
+					VERIFYVULKANRESULT(vkCreateCommandPool(_device.Handle(), &poolInfo, nullptr, &_commandPool));
 				}
 
 				void updateFPS()

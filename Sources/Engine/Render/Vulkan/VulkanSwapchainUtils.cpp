@@ -6,10 +6,10 @@ namespace Eugenix::Render::Vulkan
 	{
 		SwapchainSupportDetails details;
 
-		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
+		VERIFYVULKANRESULT(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities));
 
 		uint32_t formatCount;
-		vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
+		VERIFYVULKANRESULT(vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr));
 		if (formatCount != 0)
 		{
 			details.formats.resize(formatCount);
@@ -17,7 +17,7 @@ namespace Eugenix::Render::Vulkan
 		}
 
 		uint32_t presentModeCount;
-		vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
+		VERIFYVULKANRESULT(vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr));
 		if (presentModeCount != 0)
 		{
 			details.presentModes.resize(presentModeCount);

@@ -94,8 +94,8 @@ protected:
 
 		updateUniformBuffer(imageIndex);
 
-		vkResetFences(_device.Handle(), 1, &frame.inFlight);
-		vkResetCommandBuffer(frame.commandBuffer, 0);
+		VERIFYVULKANRESULT(vkResetFences(_device.Handle(), 1, &frame.inFlight));
+		VERIFYVULKANRESULT(vkResetCommandBuffer(frame.commandBuffer, 0));
 		recordCommandBuffer(frame.commandBuffer, imageIndex);
 
 		VkSubmitInfo submitInfo{};
@@ -112,10 +112,7 @@ protected:
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = signalSemaphores;
 
-		if (vkQueueSubmit(_device.GraphicsQueue(), 1, &submitInfo, frame.inFlight) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to submit draw command buffer!\n");
-		}
+		VERIFYVULKANRESULT(vkQueueSubmit(_device.GraphicsQueue(), 1, &submitInfo, frame.inFlight));
 
 		VkPresentInfoKHR presentInfo{};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -231,10 +228,7 @@ private:
 			VkFramebufferCreateInfo framebufferInfo = Eugenix::Render::Vulkan::FrameBufferInfo(_renderPass,
 				attachments, _swapchain.Extent(), 1);
 
-			if (vkCreateFramebuffer(_device.Handle(), &framebufferInfo, nullptr, &_swapchainFramebuffers[i]) != VK_SUCCESS)
-			{
-				throw std::runtime_error("Failed to create framebuffer!\n");
-			}
+			VERIFYVULKANRESULT(vkCreateFramebuffer(_device.Handle(), &framebufferInfo, nullptr, &_swapchainFramebuffers[i]));
 		}
 	}
 
@@ -319,10 +313,7 @@ private:
 		VkRenderPassCreateInfo renderPassInfo = Eugenix::Render::Vulkan::RenderPassInfo(
 			attachments, subpasses, dependencies);
 
-		if (vkCreateRenderPass(_device.Handle(), &renderPassInfo, nullptr, &_renderPass) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create render pass\n");
-		}
+		VERIFYVULKANRESULT(vkCreateRenderPass(_device.Handle(), &renderPassInfo, nullptr, &_renderPass));
 	}
 
 	void createDescriptorSetLayouts()
@@ -337,10 +328,7 @@ private:
 		std::array<VkDescriptorSetLayoutBinding, 1> bindings = { uboLayoutBinding };
 
 		VkDescriptorSetLayoutCreateInfo layoutInfo = Eugenix::Render::Vulkan::DescriptorSetLayoutInfo(bindings);
-		if (vkCreateDescriptorSetLayout(_device.Handle(), &layoutInfo, nullptr, &_globalDescriptorSetLayout) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create descriptor set layout!\n");
-		}
+		VERIFYVULKANRESULT(vkCreateDescriptorSetLayout(_device.Handle(), &layoutInfo, nullptr, &_globalDescriptorSetLayout));
 
 		// Sampler
 		VkDescriptorSetLayoutBinding samplerLayoutBinding{};
@@ -353,10 +341,7 @@ private:
 		bindings = { samplerLayoutBinding };
 
 		layoutInfo = Eugenix::Render::Vulkan::DescriptorSetLayoutInfo(bindings);
-		if (vkCreateDescriptorSetLayout(_device.Handle(), &layoutInfo, nullptr, &_materialDescriptorSetLayout) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create descriptor set layout!\n");
-		}
+		VERIFYVULKANRESULT(vkCreateDescriptorSetLayout(_device.Handle(), &layoutInfo, nullptr, &_materialDescriptorSetLayout));
 	}
 
 	void createDescriptorPool()
@@ -371,36 +356,22 @@ private:
 		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		poolSizes[1].descriptorCount = 100;
 
-		VkDescriptorPoolCreateInfo poolInfo = Eugenix::Render::Vulkan::DescriptorPoolInfo(
-			poolSizes, static_cast<uint32_t>(100 + 1));
+		VkDescriptorPoolCreateInfo poolInfo = Eugenix::Render::Vulkan::DescriptorPoolInfo(poolSizes, static_cast<uint32_t>(100 + 1)); // FIXME: hardcoded size
 
-		if (vkCreateDescriptorPool(_device.Handle(), &poolInfo, nullptr, &_descriptorPool) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create descriptor pool!\n");
-		}
+		VERIFYVULKANRESULT(vkCreateDescriptorPool(_device.Handle(), &poolInfo, nullptr, &_descriptorPool));
 	}
 
 	void createDescriptorSets()
 	{
 		std::array<VkDescriptorSetLayout, 1> setLayouts = { _globalDescriptorSetLayout };
 
-		VkDescriptorSetAllocateInfo allocInfo = Eugenix::Render::Vulkan::DescriptorSetAllocateInfo(_descriptorPool,
-			1, setLayouts);
-
-		if (vkAllocateDescriptorSets(_device.Handle(), &allocInfo, &_globalDescriptorSet) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to allocate descriptor sets!\n");
-		}
+		VkDescriptorSetAllocateInfo allocInfo = Eugenix::Render::Vulkan::DescriptorSetAllocateInfo(_descriptorPool, 1, setLayouts);
+		VERIFYVULKANRESULT(vkAllocateDescriptorSets(_device.Handle(), &allocInfo, &_globalDescriptorSet));
 
 		setLayouts = { _materialDescriptorSetLayout };
 
-		VkDescriptorSetAllocateInfo samplerAllocInfo = Eugenix::Render::Vulkan::DescriptorSetAllocateInfo(_descriptorPool,
-			1, setLayouts);
-
-		if (vkAllocateDescriptorSets(_device.Handle(), &samplerAllocInfo, &_materialDescriptorSet) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to allocate descriptor sets!\n");
-		}
+		VkDescriptorSetAllocateInfo samplerAllocInfo = Eugenix::Render::Vulkan::DescriptorSetAllocateInfo(_descriptorPool, 1, setLayouts);
+		VERIFYVULKANRESULT(vkAllocateDescriptorSets(_device.Handle(), &samplerAllocInfo, &_materialDescriptorSet));
 
 		VkDescriptorBufferInfo bufferInfo{};
 		bufferInfo.buffer = _uniformBuffer.buffer;
@@ -503,22 +474,15 @@ private:
 			_materialDescriptorSetLayout
 		};
 		std::array<VkPushConstantRange, 1> pushConstantRanges = { pushConstantRange };
+
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo = Eugenix::Render::Vulkan::PipelineLayoutInfo(setLayouts,
 			pushConstantRanges);
-
-		if (vkCreatePipelineLayout(_device.Handle(), &pipelineLayoutInfo, nullptr, &_pipelineLayout) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create pipeline layout!\n");
-		}
+		VERIFYVULKANRESULT(vkCreatePipelineLayout(_device.Handle(), &pipelineLayoutInfo, nullptr, &_pipelineLayout));
 
 		VkGraphicsPipelineCreateInfo pipelineInfo = Eugenix::Render::Vulkan::PipelineInfo(shaderStages,
 			vertexInputInfo, inputAssembly, viewportState, rasterizer, multisampling, depthStencilAttachment,
 			colorBlending, nullptr, _pipelineLayout, _renderPass, 0, VK_NULL_HANDLE, -1);
-
-		if (vkCreateGraphicsPipelines(_device.Handle(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_graphicsPipeline) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create graphics pipeline!\n");
-		}
+		VERIFYVULKANRESULT(vkCreateGraphicsPipelines(_device.Handle(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_graphicsPipeline));
 
 		vkDestroyShaderModule(_device.Handle(), vertShaderModule, nullptr);
 		vkDestroyShaderModule(_device.Handle(), fragShaderModule, nullptr);
@@ -526,13 +490,11 @@ private:
 
 	VkShaderModule createShaderModule(const std::vector<char>& code)
 	{
-		VkShaderModuleCreateInfo createInfo = Eugenix::Render::Vulkan::ShaderModuleInfo(code);
-
 		VkShaderModule shaderModule;
-		if (vkCreateShaderModule(_device.Handle(), &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create shader module!\n");
-		}
+
+		VkShaderModuleCreateInfo createInfo = Eugenix::Render::Vulkan::ShaderModuleInfo(code);
+		VERIFYVULKANRESULT(vkCreateShaderModule(_device.Handle(), &createInfo, nullptr, &shaderModule));
+
 		return shaderModule;
 	}
 
@@ -623,11 +585,7 @@ private:
 
 		VkCommandBufferAllocateInfo allocInfo = Eugenix::Render::Vulkan::CommandBufferAllocateInfo(_commandPool,
 			VK_COMMAND_BUFFER_LEVEL_PRIMARY, Eugenix::Render::Vulkan::Swapchain::MaxFramesInFlight);
-
-		if (vkAllocateCommandBuffers(_device.Handle(), &allocInfo, commandBuffers.data()) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to allocate command buffers!\n");
-		}
+		VERIFYVULKANRESULT(vkAllocateCommandBuffers(_device.Handle(), &allocInfo, commandBuffers.data()));
 
 		for (size_t i = 0; i < Eugenix::Render::Vulkan::Swapchain::MaxFramesInFlight; ++i)
 		{
@@ -642,39 +600,36 @@ private:
 
 		for (auto& frame : _frames)
 		{
-			if (vkCreateSemaphore(_device.Handle(), &semaphoreInfo, nullptr, &frame.imageAvailable) != VK_SUCCESS ||
-				vkCreateSemaphore(_device.Handle(), &semaphoreInfo, nullptr, &frame.renderFinished) != VK_SUCCESS ||
-				vkCreateFence(_device.Handle(), &fenceInfo, nullptr, &frame.inFlight) != VK_SUCCESS)
-			{
-				throw std::runtime_error("Failed to create sync objects for a frame!\n");
-			}
+			VERIFYVULKANRESULT(vkCreateSemaphore(_device.Handle(), &semaphoreInfo, nullptr, &frame.imageAvailable));
+			VERIFYVULKANRESULT(vkCreateSemaphore(_device.Handle(), &semaphoreInfo, nullptr, &frame.renderFinished));
+			VERIFYVULKANRESULT(vkCreateFence(_device.Handle(), &fenceInfo, nullptr, &frame.inFlight));
 		}
 	}
 
 	VkCommandBuffer beginSingleTimeCommands()
 	{
+		VkCommandBuffer commandBuffer;
+
 		VkCommandBufferAllocateInfo allocInfo = Eugenix::Render::Vulkan::CommandBufferAllocateInfo(_commandPool,
 			VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
-
-		VkCommandBuffer commandBuffer;
-		vkAllocateCommandBuffers(_device.Handle(), &allocInfo, &commandBuffer);
+		VERIFYVULKANRESULT(vkAllocateCommandBuffers(_device.Handle(), &allocInfo, &commandBuffer));
 
 		VkCommandBufferBeginInfo beginInfo = Eugenix::Render::Vulkan::CommandBufferBeginInfo(
 			VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-		vkBeginCommandBuffer(commandBuffer, &beginInfo);
+		VERIFYVULKANRESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo));
 
 		return commandBuffer;
 	}
 
 	void endSingleTimeCommands(VkCommandBuffer commandBuffer)
 	{
-		vkEndCommandBuffer(commandBuffer);
+		VERIFYVULKANRESULT(vkEndCommandBuffer(commandBuffer));
 
 		VkCommandBuffer commandBuffers[] = { commandBuffer };
 		VkSubmitInfo submitInfo = Eugenix::Render::Vulkan::SubmitInfo(commandBuffers);
 
-		vkQueueSubmit(_device.GraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
-		vkQueueWaitIdle(_device.GraphicsQueue());
+		VERIFYVULKANRESULT(vkQueueSubmit(_device.GraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE));
+		VERIFYVULKANRESULT(vkQueueWaitIdle(_device.GraphicsQueue()));
 
 		vkFreeCommandBuffers(_device.Handle(), _commandPool, 1, &commandBuffer);
 	}
@@ -687,7 +642,7 @@ private:
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
 		void* data;
-		vkMapMemory(_device.Handle(), stagingBuffer.memory, 0, size, 0, &data);
+		VERIFYVULKANRESULT(vkMapMemory(_device.Handle(), stagingBuffer.memory, 0, size, 0, &data));
 		memcpy(data, vertices.data(), static_cast<size_t>(size));
 		vkUnmapMemory(_device.Handle(), stagingBuffer.memory);
 
@@ -707,7 +662,7 @@ private:
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
 		void* data;
-		vkMapMemory(_device.Handle(), stagingBuffer.memory, 0, size, 0, &data);
+		VERIFYVULKANRESULT(vkMapMemory(_device.Handle(), stagingBuffer.memory, 0, size, 0, &data));
 		memcpy(data, indices.data(), static_cast<size_t>(size));
 		vkUnmapMemory(_device.Handle(), stagingBuffer.memory);
 
@@ -764,7 +719,7 @@ private:
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
 		void* data;
-		vkMapMemory(_device.Handle(), stagingBuffer.memory, 0, imageSize, 0, &data);
+		VERIFYVULKANRESULT(vkMapMemory(_device.Handle(), stagingBuffer.memory, 0, imageSize, 0, &data));
 		memcpy(data, pixels, static_cast<uint32_t>(imageSize));
 		vkUnmapMemory(_device.Handle(), stagingBuffer.memory);
 		stbi_image_free(pixels);
@@ -868,10 +823,7 @@ private:
 		imageInfo.usage = usage;
 		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		if (vkCreateImage(_device.Handle(), &imageInfo, nullptr, &image) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create image!\n");
-		}
+		VERIFYVULKANRESULT(vkCreateImage(_device.Handle(), &imageInfo, nullptr, &image));
 
 		VkMemoryRequirements memRequirements;
 		vkGetImageMemoryRequirements(_device.Handle(), image, &memRequirements);
@@ -879,12 +831,9 @@ private:
 		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		allocInfo.allocationSize = memRequirements.size;
 		allocInfo.memoryTypeIndex = _adapter.FindMemoryType(memRequirements.memoryTypeBits, properties);
-		if (vkAllocateMemory(_device.Handle(), &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to allocate image memory!\n");
-		}
+		VERIFYVULKANRESULT(vkAllocateMemory(_device.Handle(), &allocInfo, nullptr, &imageMemory));
 
-		vkBindImageMemory(_device.Handle(), image, imageMemory, 0);
+		VERIFYVULKANRESULT(vkBindImageMemory(_device.Handle(), image, imageMemory, 0));
 	}
 
 	void createTextureSampler()
@@ -907,10 +856,7 @@ private:
 		samplerInfo.minLod = 0.0f;
 		samplerInfo.maxLod = 0.0f;
 
-		if (vkCreateSampler(_device.Handle(), &samplerInfo, nullptr, &_textureSampler) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create texture sampler!\n");
-		}
+		VERIFYVULKANRESULT(vkCreateSampler(_device.Handle(), &samplerInfo, nullptr, &_textureSampler));
 	}
 
 	void createDepthResources()
@@ -956,10 +902,7 @@ private:
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to begin recording command buffer!\n");
-		}
+		VERIFYVULKANRESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo));
 
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -993,10 +936,7 @@ private:
 
 		vkCmdEndRenderPass(commandBuffer);
 
-		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to record command buffer!\n");
-		}
+		VERIFYVULKANRESULT(vkEndCommandBuffer(commandBuffer));
 	}
 
 	void updatePerFrameData(float deltaTime)
@@ -1013,7 +953,7 @@ private:
 		ubo.proj[1][1] *= -1;
 
 		void* data;
-		vkMapMemory(_device.Handle(), _uniformBuffer.memory, 0, sizeof(ubo), 0, &data);
+		VERIFYVULKANRESULT(vkMapMemory(_device.Handle(), _uniformBuffer.memory, 0, sizeof(ubo), 0, &data));
 		memcpy(data, &ubo, sizeof(ubo));
 		vkUnmapMemory(_device.Handle(), _uniformBuffer.memory);
 	}

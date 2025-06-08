@@ -114,15 +114,11 @@ namespace Eugenix::Render::Vulkan
 		createInfo.clipped = VK_TRUE;
 		createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-		if (vkCreateSwapchainKHR(device.Handle(), &createInfo, nullptr, &_swapchain) != VK_SUCCESS)
-		{
-			LogError("Failed to create swapchain.");
-			return false;
-		}
+		VERIFYVULKANRESULT(vkCreateSwapchainKHR(device.Handle(), &createInfo, nullptr, &_swapchain));
 
-		vkGetSwapchainImagesKHR(device.Handle(), _swapchain, &imageCount, nullptr);
+		VERIFYVULKANRESULT(vkGetSwapchainImagesKHR(device.Handle(), _swapchain, &imageCount, nullptr));
 		_images.resize(imageCount);
-		vkGetSwapchainImagesKHR(device.Handle(), _swapchain, &imageCount, _images.data());
+		VERIFYVULKANRESULT(vkGetSwapchainImagesKHR(device.Handle(), _swapchain, &imageCount, _images.data()));
 
 		_imageViews.resize(_images.size());
 		for (size_t i = 0; i < _images.size(); ++i)
