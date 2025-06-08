@@ -1,6 +1,6 @@
 #pragma once
 
-#include "VulkanInclude.h"
+#include "VulkanCommon.h"
 
 namespace Eugenix::Render::Vulkan
 {

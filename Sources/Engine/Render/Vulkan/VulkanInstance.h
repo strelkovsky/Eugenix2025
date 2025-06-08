@@ -1,6 +1,6 @@
 #pragma once
 
-#include "VulkanInclude.h"
+#include "VulkanCommon.h"
 #include "VulkanUtils.h"
 
 namespace Eugenix

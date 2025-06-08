@@ -5,7 +5,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/hash.hpp>
 
-#include "Render/Vulkan/VulkanInclude.h"
+#include "Render/Vulkan/VulkanCommon.h"
 
 struct Vertex
 {

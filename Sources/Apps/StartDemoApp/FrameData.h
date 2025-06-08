@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Render/Vulkan/VulkanInclude.h"
+#include "Render/Vulkan/VulkanCommon.h"
 
 struct FrameData
 {

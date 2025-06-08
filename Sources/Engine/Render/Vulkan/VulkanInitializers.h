@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "VulkanDebug.h"
-#include "VulkanInclude.h"
+#include "VulkanCommon.h"
 
 namespace
 {

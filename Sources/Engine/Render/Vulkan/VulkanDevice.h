@@ -2,7 +2,7 @@
 
 #include "VulkanAdapter.h"
 #include "VulkanBuffer.h"
-#include "VulkanInclude.h"
+#include "VulkanCommon.h"
 
 namespace Eugenix::Render::Vulkan
 {
