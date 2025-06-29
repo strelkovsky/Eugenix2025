@@ -3,7 +3,9 @@
 #include <glad/glad.h>
 
 #include "Object.h"
-#include "Render/Data.h"
+#include "OpenGLTypes.h"
+
+#include "Core/Data.h"
 
 namespace Eugenix
 {
@@ -22,7 +24,7 @@ namespace Eugenix
 				glDeleteBuffers(1, &_handle);
 			}
 
-			void Storage(const Data& data, uint32_t flag = 0)
+			void Storage(const Core::Data& data, uint32_t flag = 0)
 			{
 				glNamedBufferStorage(_handle, data.size, data.ptr, flag);
 			}

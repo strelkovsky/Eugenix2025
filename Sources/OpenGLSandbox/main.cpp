@@ -3,6 +3,6 @@
 
 int main()
 {
-	SquareApp app;
+	Eugenix::SquareApp app;
 	return app.Run();
 }

@@ -40,18 +40,17 @@ namespace Eugenix
 				1, 2, 3
 			};
 
-			_squareVao.Create();
+			constexpr Render::Attribute position_attribute{ 0, 3, GL_FLOAT, GL_FALSE,  0 };
 
 			_squareVbo.Create();
-			_squareVbo.Storage(Render::MakeData(square_vertices));
+			_squareVbo.Storage(Core::MakeData(square_vertices));
 
 			_squareEbo.Create();
-			_squareEbo.Storage(Render::MakeData(square_elements));
+			_squareEbo.Storage(Core::MakeData(square_elements));
 
+			_squareVao.Create();
 			_squareVao.AttachVertices(_squareVbo.Handle(), sizeof(float) * 3);
 			_squareVao.AttachIndices(_squareEbo.Handle());
-
-			constexpr Render::Attribute position_attribute{ 0, 3, GL_FLOAT, GL_FALSE,  0 };
 			_squareVao.Attribute(position_attribute);
 
 			const auto vsSourceData = Eugenix::IO::FileContent("Shaders/simple.vert");
