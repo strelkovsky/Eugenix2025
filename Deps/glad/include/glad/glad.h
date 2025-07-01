@@ -1809,12 +1809,21 @@ GLAPI PFNGLGETQUERYOBJECTIVPROC glad_glGetQueryObjectiv;
 typedef void (APIENTRYP PFNGLGETQUERYOBJECTUIVPROC)(GLuint id, GLenum pname, GLuint *params);
 GLAPI PFNGLGETQUERYOBJECTUIVPROC glad_glGetQueryObjectuiv;
 #define glGetQueryObjectuiv glad_glGetQueryObjectuiv
+typedef void (APIENTRYP PFNGLBINDBUFFERPROC)(GLenum target, GLuint buffer);
+GLAPI PFNGLBINDBUFFERPROC glad_glBindBuffer;
+#define glBindBuffer glad_glBindBuffer
 typedef void (APIENTRYP PFNGLDELETEBUFFERSPROC)(GLsizei n, const GLuint *buffers);
 GLAPI PFNGLDELETEBUFFERSPROC glad_glDeleteBuffers;
 #define glDeleteBuffers glad_glDeleteBuffers
+typedef void (APIENTRYP PFNGLGENBUFFERSPROC)(GLsizei n, GLuint *buffers);
+GLAPI PFNGLGENBUFFERSPROC glad_glGenBuffers;
+#define glGenBuffers glad_glGenBuffers
 typedef GLboolean (APIENTRYP PFNGLISBUFFERPROC)(GLuint buffer);
 GLAPI PFNGLISBUFFERPROC glad_glIsBuffer;
 #define glIsBuffer glad_glIsBuffer
+typedef void (APIENTRYP PFNGLBUFFERDATAPROC)(GLenum target, GLsizeiptr size, const void *data, GLenum usage);
+GLAPI PFNGLBUFFERDATAPROC glad_glBufferData;
+#define glBufferData glad_glBufferData
 typedef void (APIENTRYP PFNGLBUFFERSUBDATAPROC)(GLenum target, GLintptr offset, GLsizeiptr size, const void *data);
 GLAPI PFNGLBUFFERSUBDATAPROC glad_glBufferSubData;
 #define glBufferSubData glad_glBufferSubData
@@ -1879,6 +1888,9 @@ GLAPI PFNGLDETACHSHADERPROC glad_glDetachShader;
 typedef void (APIENTRYP PFNGLDISABLEVERTEXATTRIBARRAYPROC)(GLuint index);
 GLAPI PFNGLDISABLEVERTEXATTRIBARRAYPROC glad_glDisableVertexAttribArray;
 #define glDisableVertexAttribArray glad_glDisableVertexAttribArray
+typedef void (APIENTRYP PFNGLENABLEVERTEXATTRIBARRAYPROC)(GLuint index);
+GLAPI PFNGLENABLEVERTEXATTRIBARRAYPROC glad_glEnableVertexAttribArray;
+#define glEnableVertexAttribArray glad_glEnableVertexAttribArray
 typedef void (APIENTRYP PFNGLGETACTIVEATTRIBPROC)(GLuint program, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name);
 GLAPI PFNGLGETACTIVEATTRIBPROC glad_glGetActiveAttrib;
 #define glGetActiveAttrib glad_glGetActiveAttrib
@@ -2110,6 +2122,9 @@ GLAPI PFNGLVERTEXATTRIB4UIVPROC glad_glVertexAttrib4uiv;
 typedef void (APIENTRYP PFNGLVERTEXATTRIB4USVPROC)(GLuint index, const GLushort *v);
 GLAPI PFNGLVERTEXATTRIB4USVPROC glad_glVertexAttrib4usv;
 #define glVertexAttrib4usv glad_glVertexAttrib4usv
+typedef void (APIENTRYP PFNGLVERTEXATTRIBPOINTERPROC)(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer);
+GLAPI PFNGLVERTEXATTRIBPOINTERPROC glad_glVertexAttribPointer;
+#define glVertexAttribPointer glad_glVertexAttribPointer
 #endif
 #ifndef GL_VERSION_2_1
 #define GL_VERSION_2_1 1
@@ -2382,6 +2397,9 @@ GLAPI PFNGLBINDVERTEXARRAYPROC glad_glBindVertexArray;
 typedef void (APIENTRYP PFNGLDELETEVERTEXARRAYSPROC)(GLsizei n, const GLuint *arrays);
 GLAPI PFNGLDELETEVERTEXARRAYSPROC glad_glDeleteVertexArrays;
 #define glDeleteVertexArrays glad_glDeleteVertexArrays
+typedef void (APIENTRYP PFNGLGENVERTEXARRAYSPROC)(GLsizei n, GLuint *arrays);
+GLAPI PFNGLGENVERTEXARRAYSPROC glad_glGenVertexArrays;
+#define glGenVertexArrays glad_glGenVertexArrays
 typedef GLboolean (APIENTRYP PFNGLISVERTEXARRAYPROC)(GLuint array);
 GLAPI PFNGLISVERTEXARRAYPROC glad_glIsVertexArray;
 #define glIsVertexArray glad_glIsVertexArray
