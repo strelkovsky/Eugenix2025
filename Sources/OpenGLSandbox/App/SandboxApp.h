@@ -24,6 +24,24 @@ namespace Eugenix
 		virtual void OnRender() {}
 		virtual void OnCleanup() {}
 
+		int Width() const { return _width; }
+		int Height() const { return _height; }
+
+		void SetKeyCallback(GLFWkeyfun callback)
+		{
+			glfwSetKeyCallback(_window, callback);
+		}
+
+		void SetCursorPosCallback(GLFWcursorposfun callback)
+		{
+			glfwSetCursorPosCallback(_window, callback);
+		}
+
+		void SetScrollCallback(GLFWscrollfun callback)
+		{
+			glfwSetScrollCallback(_window, callback);
+		}
+
 	private:
 		GLFWwindow* _window{ nullptr };
 		int _width{};
