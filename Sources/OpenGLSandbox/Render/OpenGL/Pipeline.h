@@ -22,7 +22,7 @@ namespace Eugenix
 				glDeleteProgram(_handle);
 			}
 
-			Pipeline& Attach(ShaderStage& stage)
+			Pipeline& AttachStage(ShaderStage& stage)
 			{
 				glAttachShader(_handle, stage.Handle());
 				return *this;
