@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vector>
+#include <span>
 
 namespace Eugenix::Core
 {
@@ -10,10 +10,10 @@ namespace Eugenix::Core
 		size_t      size{};
 	};
 
-	template <typename type> 
-	static Data MakeData(const std::vector<type>& buffer)
+	template <typename type>
+	static Data MakeData(std::span<const type> span)
 	{
-		return { buffer.data(), buffer.size() * sizeof(type) };
+		return{ span.data(), span.size_bytes() };
 	}
 
 	template <typename type>

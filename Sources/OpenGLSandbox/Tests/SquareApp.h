@@ -43,10 +43,10 @@ namespace Eugenix
 			constexpr Render::Attribute position_attribute{ 0, 3, GL_FLOAT, GL_FALSE,  0 };
 
 			_squareVbo.Create();
-			_squareVbo.Storage(Core::MakeData(square_vertices));
+			_squareVbo.Storage(Core::MakeData(std::span{ square_vertices }));
 
 			_squareEbo.Create();
-			_squareEbo.Storage(Core::MakeData(square_elements));
+			_squareEbo.Storage(Core::MakeData(std::span{ square_elements }));
 
 			_squareVao.Create();
 			_squareVao.AttachVertices(_squareVbo.Handle(), sizeof(float) * 3);
