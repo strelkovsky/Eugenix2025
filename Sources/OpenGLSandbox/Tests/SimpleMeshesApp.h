@@ -90,8 +90,15 @@ namespace Eugenix
 
 			meshes.reserve(2);
 
-			meshes.emplace_back(vertices, indices);
-			meshes.emplace_back(vertices, indices);
+			//constexpr Render::Attribute position_attribute{ 0, 3, GL_FLOAT, GL_FALSE,  0 };
+
+			std::vector<Render::Attribute> attributes
+			{
+				{ 0, 3, GL_FLOAT, GL_FALSE,  0 }
+			};
+
+			meshes.emplace_back(vertices, indices, attributes);
+			meshes.emplace_back(vertices, indices, attributes);
 		}
 
 		void CreatePipelines()

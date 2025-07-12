@@ -14,7 +14,7 @@ namespace Eugenix
 {
 	struct SimpleMesh
 	{
-		SimpleMesh(std::span<const float> vertices, std::span<const uint32_t> indices)
+		SimpleMesh(std::span<const float> vertices, std::span<const uint32_t> indices, std::span<const Render::Attribute> attributes)
 			: indexCount{ static_cast<uint32_t>(indices.size()) }
 		{
 			_vao.Create();
@@ -25,17 +25,19 @@ namespace Eugenix
 			_ibo.Create();
 			_ibo.Storage(Eugenix::Core::MakeData(indices));
 
-			constexpr Eugenix::Render::Attribute position_attribute{ 0, 3, GL_FLOAT, GL_FALSE,  0 };
-
 			_vao.AttachVertices(_vbo, sizeof(glm::vec3));
 			_vao.AttachIndices(_ibo);
-			_vao.Attribute(position_attribute);
+
+			for (const auto& attribute : attributes)
+			{
+				_vao.Attribute(attribute);
+			}
 		}
 
 		void RenderMesh()
 		{
 			_vao.Bind();
-			Eugenix::Render::OpenGL::Commands::DrawIndexed(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT);
+			Render::OpenGL::Commands::DrawIndexed(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT);
 		}
 
 		void ClearMesh()
@@ -54,9 +56,9 @@ namespace Eugenix
 
 		uint32_t indexCount = 0;
 
-		Eugenix::Render::OpenGL::VertexArray _vao{};
-		Eugenix::Render::OpenGL::Buffer _vbo{};
-		Eugenix::Render::OpenGL::Buffer _ibo{};
+		Render::OpenGL::VertexArray _vao{};
+		Render::OpenGL::Buffer _vbo{};
+		Render::OpenGL::Buffer _ibo{};
 	};
 
 	class Camera

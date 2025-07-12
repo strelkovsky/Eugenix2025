@@ -15,8 +15,6 @@
 #include "Render/OpenGL/Pipeline.h"
 #include "Render/OpenGL/VertexArray.h"
 
-Eugenix::Camera camera;
-
 namespace Eugenix
 {
 	class SimpleCameraApp final : public SandboxApp
@@ -31,15 +29,15 @@ namespace Eugenix
 
 			Render::OpenGL::Commands::Clear(0.2f, 0.0f, 0.2f);
 		
-			camera = Camera(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f, 2.0f, 0.1f);
+			_camera = Camera(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f, 2.0f, 0.1f);
 
 			return true;
 		}
 
 		void OnUpdate(float deltaTime) override
 		{
-			camera.keyControl(getKeys(), deltaTime);
-			camera.mouseControl(getXChange(), getYChange());
+			_camera.keyControl(getKeys(), deltaTime);
+			_camera.mouseControl(getXChange(), getYChange());
 		}
 
 		void OnRender() override
@@ -61,9 +59,9 @@ namespace Eugenix
 				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 				model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.75f));
 				glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
-				glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(camera.CalculateViewMatrix()));
+				glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(_camera.CalculateViewMatrix()));
 				glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
-				meshes[0].RenderMesh();
+				_meshes[0].RenderMesh();
 
 				model = glm::mat4(1.0f);
 				model = glm::translate(model, glm::vec3(0.6f, 0.0f, -3.0f));
@@ -72,9 +70,9 @@ namespace Eugenix
 				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 				model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.75f));
 				glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
-				glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(camera.CalculateViewMatrix()));
+				glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(_camera.CalculateViewMatrix()));
 				glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
-				meshes[1].RenderMesh();
+				_meshes[1].RenderMesh();
 			}
 		}
 
@@ -97,10 +95,15 @@ namespace Eugenix
 				0, 1, 2,
 			};
 
-			meshes.reserve(2);
+			_meshes.reserve(2);
 
-			meshes.emplace_back(vertices, indices);
-			meshes.emplace_back(vertices, indices);
+			std::vector<Render::Attribute> attributes
+			{
+				{ 0, 3, GL_FLOAT, GL_FALSE,  0 }
+			};
+
+			_meshes.emplace_back(vertices, indices, attributes);
+			_meshes.emplace_back(vertices, indices, attributes);
 		}
 
 		void CreatePipelines()
@@ -126,7 +129,9 @@ namespace Eugenix
 			uniformProjection = glGetUniformLocation(_pipeline.NativeHandle(), "projection");
 		}
 
-		std::vector<SimpleMesh> meshes;
+		Eugenix::Camera _camera{};
+
+		std::vector<SimpleMesh> _meshes;
 
 		Eugenix::Render::OpenGL::Pipeline _pipeline{};
 		GLuint uniformModel{};
