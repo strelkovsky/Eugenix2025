@@ -7,6 +7,8 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include "TestUtils.h"
+
 // Engine headers
 #include "Engine/IO/IO.h"
 
@@ -56,16 +58,12 @@ namespace Eugenix
 			const auto vsSourceData = Eugenix::IO::FileContent("Shaders/simple.vert");
 			const char* vsSource = vsSourceData.data();
 
-			Render::OpenGL::ShaderStage vertexStage{ Eugenix::Render::ShaderStageType::Vertex };
-			vertexStage.Create();
-			vertexStage.CompileFromSource(vsSource);
+			auto vertexStage = CreateStage(vsSource, Eugenix::Render::ShaderStageType::Vertex);
 
 			const auto fsSourceData = Eugenix::IO::FileContent("Shaders/simple.frag");
 			const char* fsSource = fsSourceData.data();
 
-			Render::OpenGL::ShaderStage fragmentStage{ Eugenix::Render::ShaderStageType::Fragment };
-			fragmentStage.Create();
-			fragmentStage.CompileFromSource(fsSource);
+			auto fragmentStage = CreateStage(fsSource, Eugenix::Render::ShaderStageType::Fragment);
 
 			_squarePipeline.Create();
 			_squarePipeline
