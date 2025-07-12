@@ -42,6 +42,11 @@ namespace Eugenix
 			glfwSetScrollCallback(_window, callback);
 		}
 
+		void SetMouseButtonCallback(GLFWmousebuttonfun callback)
+		{
+			glfwSetMouseButtonCallback(_window, callback);
+		}
+
 	private:
 		GLFWwindow* _window{ nullptr };
 		int _width{};
