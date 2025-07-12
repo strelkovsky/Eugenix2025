@@ -24,7 +24,7 @@ namespace Eugenix
 
 			Pipeline& AttachStage(ShaderStage& stage)
 			{
-				glAttachShader(_handle, stage.Handle());
+				glAttachShader(_handle, stage.NativeHandle());
 				return *this;
 			}
 			
