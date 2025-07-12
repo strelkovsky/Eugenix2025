@@ -24,39 +24,45 @@ namespace Eugenix
 		virtual void OnRender() {}
 		virtual void OnCleanup() {}
 
+		virtual void OnKeyHandle(int key, int code, int action, int mode) { }
+		virtual void OnMouseHandle(double xPos, double yPos) { }
+		virtual void OnMouseButtonHandle(int button, int action, int mods) { }
+
 		int Width() const { return _width; }
 		int Height() const { return _height; }
 
-		void SetKeyCallback(GLFWkeyfun callback)
+		bool* getKeys() { return _keys; };
+		bool* getMouseButtons() { return _buttons; };
+
+		inline GLfloat getXChange()
 		{
-			glfwSetKeyCallback(_window, callback);
+			GLfloat theChange = _xChange;
+			_xChange = 0.0f;
+			return theChange;
 		}
 
-		void SetCursorPosCallback(GLFWcursorposfun callback)
+		inline GLfloat getYChange()
 		{
-			glfwSetCursorPosCallback(_window, callback);
-		}
-
-		void SetScrollCallback(GLFWscrollfun callback)
-		{
-			glfwSetScrollCallback(_window, callback);
-		}
-
-		void SetMouseButtonCallback(GLFWmousebuttonfun callback)
-		{
-			glfwSetMouseButtonCallback(_window, callback);
-		}
-
-		void SetCursorEnterCallback(GLFWcursorenterfun callback)
-		{
-			glfwSetCursorEnterCallback(_window, callback);
+			GLfloat theChange = _yChange;
+			_yChange = 0.0f;
+			return theChange;
 		}
 
 	private:
+		bool initRuntime();
+
 		GLFWwindow* _window{ nullptr };
 		int _width{};
 		int _height{};
 
-		bool initRuntime();
+		bool _keys[1024];
+		bool _buttons[32];
+		bool _mouseFirstMoved{};
+		bool _mouseCursorAboveWindow{};
+
+		GLfloat _lastX{};
+		GLfloat _lastY{};
+		GLfloat _xChange{};
+		GLfloat _yChange{};
 	};
 } // namespace Eugenix

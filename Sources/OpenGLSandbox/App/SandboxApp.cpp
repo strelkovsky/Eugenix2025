@@ -131,6 +131,93 @@ namespace Eugenix
 			glfwTerminate();
 			return false;
 		}
+
+		glfwSetWindowUserPointer(_window, this);
+
+		for (size_t i = 0; i < 1024; i++)
+			_keys[i] = false;
+
+		for (size_t i = 0; i < 32; i++)
+			_buttons[i] = false;
+
+		_mouseFirstMoved = true;
+		_mouseCursorAboveWindow = false;
+
+		glfwSetKeyCallback(_window, [](GLFWwindow* window, int key, int code, int action, int mode)
+			{
+				if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+				{
+					glfwSetWindowShouldClose(window, true);
+				}
+
+				auto* self = static_cast<SandboxApp*>(glfwGetWindowUserPointer(window));
+				if (self)
+				{
+					if (key >= 0 && key < 1024)
+					{
+						if (action == GLFW_PRESS)
+						{
+							self->_keys[key] = true;
+							//printf("Key pressed: %d\n", key);
+						}
+						else if (action == GLFW_RELEASE)
+						{
+							self->_keys[key] = false;
+							//printf("Key released: %d\n", key);
+						}
+					}
+
+					self->OnKeyHandle(key, code, action, mode);
+				}
+			});
+
+		glfwSetCursorPosCallback(_window, [](GLFWwindow* window, double xpos, double ypos)
+			{
+				auto* self = static_cast<SandboxApp*>(glfwGetWindowUserPointer(window));
+				if (self)
+				{
+					if (self->_mouseFirstMoved)
+					{
+						self->_lastX = (GLfloat)xpos;
+						self->_lastY = (GLfloat)ypos;
+						self->_mouseFirstMoved = false;
+					}
+
+					self->_xChange = (GLfloat)xpos - self->_lastX;
+					self->_yChange = self->_lastY - (GLfloat)ypos;
+
+					self->_lastX = (GLfloat)xpos;
+					self->_lastY = (GLfloat)ypos;
+
+					//printf("x:%.2f, y:%.2f\n", xChange, yChange);
+
+					self->OnMouseHandle(xpos, ypos);
+				}
+			});
+
+		glfwSetMouseButtonCallback(_window, [](GLFWwindow* window, int button, int action, int mods)
+			{
+				auto* self = static_cast<SandboxApp*>(glfwGetWindowUserPointer(window));
+				if (self)
+				{
+					if (button >= 0 && button < 32)
+					{
+						if (action == GLFW_PRESS)
+						{
+							self->_buttons[button] = true;
+							//printf("Mouse button pressed: %d\n", button);
+						}
+						else if (action == GLFW_RELEASE)
+						{
+							self->_buttons[button] = false;
+							//printf("Mouse button released: %d\n", button);
+						}
+					}
+
+					self->OnMouseButtonHandle(button, action, mods);
+				}
+			});
+
 		glfwMakeContextCurrent(_window);
 
 		if (!gladLoadGL())
