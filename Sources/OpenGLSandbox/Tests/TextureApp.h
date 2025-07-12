@@ -6,6 +6,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <stb_image.h>
+
 #include "TestUtils.h"
 
 // Sandbox headers
@@ -15,9 +17,84 @@
 #include "Render/OpenGL/Pipeline.h"
 #include "Render/OpenGL/VertexArray.h"
 
+namespace
+{
+	class Texture
+	{
+	public:
+		Texture()
+		{
+			textureID = 0;
+			width = 0;
+			height = 0;
+			bitDepth = 0;
+			fileLocation = "";
+		}
+		Texture(const char* fileLoc)
+			: Texture()
+		{
+			fileLocation = fileLoc;
+		}
+
+		void LoadTexture()
+		{
+			unsigned char* texData = stbi_load(fileLocation, &width, &height, &bitDepth, 0);
+			if (!texData)
+			{
+				printf("Failed to find: '%s'\n", fileLocation);
+				return;
+			}
+
+			glGenTextures(1, &textureID);
+			glBindTexture(GL_TEXTURE_2D, textureID);
+
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, texData);
+			glGenerateMipmap(GL_TEXTURE_2D);
+
+			glBindTexture(GL_TEXTURE_2D, 0);
+			stbi_image_free(texData);
+		}
+
+		void UseTexture()
+		{
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, textureID);
+		}
+
+		void ClearTexture()
+		{
+			glDeleteTextures(1, &textureID);
+			textureID = 0;
+			width = 0;
+			height = 0;
+			bitDepth = 0;
+			fileLocation = "";
+		}
+
+		~Texture()
+		{
+			ClearTexture();
+		}
+
+	private:
+		GLuint textureID;
+		int width;
+		int height;
+		int bitDepth;
+
+		const char* fileLocation;
+
+	};
+}
+
 namespace Eugenix
 {
-	class SimpleCameraApp final : public SandboxApp
+	class TextureApp final : public SandboxApp
 	{
 	protected:
 		bool OnInit() override
@@ -28,8 +105,13 @@ namespace Eugenix
 			glEnable(GL_DEPTH_TEST);
 
 			Render::OpenGL::Commands::Clear(0.2f, 0.0f, 0.2f);
-		
+
 			_camera = Camera(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f, 2.0f, 0.1f);
+
+			brickTexture = Texture("Textures/brick.png");
+			brickTexture.LoadTexture();
+			dirtTexture = Texture("Textures/dirt.png");
+			dirtTexture.LoadTexture();
 
 			return true;
 		}
@@ -61,7 +143,8 @@ namespace Eugenix
 				glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
 				glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(_camera.CalculateViewMatrix()));
 				glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
-				_meshes[0].RenderMesh();
+				brickTexture.UseTexture();
+				meshes[0].RenderMesh();
 
 				model = glm::mat4(1.0f);
 				model = glm::translate(model, glm::vec3(0.6f, 0.0f, -3.0f));
@@ -72,7 +155,8 @@ namespace Eugenix
 				glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
 				glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(_camera.CalculateViewMatrix()));
 				glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
-				_meshes[1].RenderMesh();
+				dirtTexture.UseTexture();
+				meshes[1].RenderMesh();
 			}
 		}
 
@@ -81,10 +165,11 @@ namespace Eugenix
 		{
 			GLfloat vertices[] =
 			{
-				-1.0f, -1.0f, 0.0f,
-				 0.0f, -1.0f, 1.0f,
-				 1.0f, -1.0f, 0.0f,
-				 0.0f,  1.0f, 0.0f,
+				//  X      Y     Z      U     V
+				-1.0f, -1.0f, 0.0f,  0.0f, 0.0f,
+				 0.0f, -1.0f, 1.0f,  0.5f, 0.0f,
+				 1.0f, -1.0f, 0.0f,  1.0f, 0.0f,
+				 0.0f,  1.0f, 0.0f,  0.5f, 1.0f,
 			};
 
 			unsigned int indices[] =
@@ -95,25 +180,26 @@ namespace Eugenix
 				0, 1, 2,
 			};
 
-			_meshes.reserve(2);
+			meshes.reserve(2);
 
 			std::vector<Render::Attribute> attributes
 			{
-				{ 0, 3, GL_FLOAT, GL_FALSE,  0 }
+				{ 0, 3, GL_FLOAT, GL_FALSE,  0 },
+				{ 1, 2, GL_FLOAT, GL_FALSE,  (sizeof(glm::vec3)) }
 			};
 
-			_meshes.emplace_back(vertices, indices, attributes, 3 * sizeof(float));
-			_meshes.emplace_back(vertices, indices, attributes, 3 * sizeof(float));
+			meshes.emplace_back(vertices, indices, attributes, 5 * sizeof(float));
+			meshes.emplace_back(vertices, indices, attributes, 5 * sizeof(float));
 		}
 
 		void CreatePipelines()
 		{
 			_pipeline.Create();
 
-			const auto vsSourceData = Eugenix::IO::FileContent("Shaders/shader.vert");
+			const auto vsSourceData = Eugenix::IO::FileContent("Shaders/texture_shader.vert");
 			const char* vsSource = vsSourceData.data();
 
-			const auto fsSourceData = Eugenix::IO::FileContent("Shaders/shader.frag");
+			const auto fsSourceData = Eugenix::IO::FileContent("Shaders/texture_shader.frag");
 			const char* fsSource = fsSourceData.data();
 
 			auto vertexStage = Eugenix::CreateStage(vsSource, Eugenix::Render::ShaderStageType::Vertex);
@@ -129,13 +215,16 @@ namespace Eugenix
 			uniformProjection = glGetUniformLocation(_pipeline.NativeHandle(), "projection");
 		}
 
-		Eugenix::Camera _camera{};
-
-		std::vector<SimpleMesh> _meshes;
+		std::vector<SimpleMesh> meshes;
 
 		Eugenix::Render::OpenGL::Pipeline _pipeline{};
 		GLuint uniformModel{};
 		GLuint uniformView{};
 		GLuint uniformProjection{};
+
+		Eugenix::Camera _camera{};
+
+		Texture brickTexture{};
+		Texture dirtTexture{};
 	};
 }

@@ -14,7 +14,8 @@ namespace Eugenix
 {
 	struct SimpleMesh
 	{
-		SimpleMesh(std::span<const float> vertices, std::span<const uint32_t> indices, std::span<const Render::Attribute> attributes)
+		// TODO : vertexSize - плохое решение. Возможно передавать Vertex в шаблонном параметре.
+		SimpleMesh(std::span<const float> vertices, std::span<const uint32_t> indices, std::span<const Render::Attribute> attributes, float vertexSize)
 			: indexCount{ static_cast<uint32_t>(indices.size()) }
 		{
 			_vao.Create();
@@ -25,7 +26,7 @@ namespace Eugenix
 			_ibo.Create();
 			_ibo.Storage(Eugenix::Core::MakeData(indices));
 
-			_vao.AttachVertices(_vbo, sizeof(glm::vec3));
+			_vao.AttachVertices(_vbo, vertexSize);
 			_vao.AttachIndices(_ibo);
 
 			for (const auto& attribute : attributes)

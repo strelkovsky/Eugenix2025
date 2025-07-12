@@ -97,8 +97,8 @@ namespace Eugenix
 				{ 0, 3, GL_FLOAT, GL_FALSE,  0 }
 			};
 
-			meshes.emplace_back(vertices, indices, attributes);
-			meshes.emplace_back(vertices, indices, attributes);
+			meshes.emplace_back(vertices, indices, attributes, 3 * sizeof(float));
+			meshes.emplace_back(vertices, indices, attributes, 3 * sizeof(float));
 		}
 
 		void CreatePipelines()
