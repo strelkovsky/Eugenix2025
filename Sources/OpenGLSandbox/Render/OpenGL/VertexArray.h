@@ -6,6 +6,7 @@
 
 #include "Object.h"
 #include "Render/Attribute.h"
+#include "Buffer.h"
 
 namespace Eugenix
 {
@@ -24,16 +25,16 @@ namespace Eugenix
 				glDeleteVertexArrays(1, &_handle);
 			}
 
-			void AttachVertices(GLuint bufferHandle, GLint stride)
+			void AttachVertices(const Buffer& buffer, GLint stride)
 			{
 				//assert(bufferHandle > 0);
-				glVertexArrayVertexBuffer(_handle, 0, bufferHandle, 0, stride);
+				glVertexArrayVertexBuffer(_handle, 0, buffer.NativeHandle(), 0, stride);
 			}
 
-			void AttachIndices(GLuint bufferHandle)
+			void AttachIndices(const Buffer& buffer)
 			{
 				//assert(bufferHandle > 0);
-				glVertexArrayElementBuffer(_handle, bufferHandle);
+				glVertexArrayElementBuffer(_handle, buffer.NativeHandle());
 			}
 
 			void Attribute(const Attribute& attribute)

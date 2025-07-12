@@ -49,8 +49,8 @@ namespace Eugenix
 			_squareEbo.Storage(Core::MakeData(std::span{ square_elements }));
 
 			_squareVao.Create();
-			_squareVao.AttachVertices(_squareVbo.NativeHandle(), sizeof(float) * 3);
-			_squareVao.AttachIndices(_squareEbo.NativeHandle());
+			_squareVao.AttachVertices(_squareVbo, sizeof(float) * 3);
+			_squareVao.AttachIndices(_squareEbo);
 			_squareVao.Attribute(position_attribute);
 
 			const auto vsSourceData = Eugenix::IO::FileContent("Shaders/simple.vert");
