@@ -12,7 +12,7 @@ namespace Eugenix
 			virtual void Create() = 0;
 			virtual void Destroy() = 0;
 
-			[[nodiscard, maybe_unused]] uint32_t Handle() const { return _handle; }
+			[[nodiscard, maybe_unused]] uint32_t NativeHandle() const { return _handle; }
 			[[nodiscard, maybe_unused]] uint32_t Extra() const { return _extra; }
 
 		protected:
