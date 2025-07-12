@@ -6,8 +6,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <stb_image.h>
-
 #include "TestUtils.h"
 
 // Sandbox headers
@@ -16,81 +14,6 @@
 #include "Render/OpenGL/Commands.h"
 #include "Render/OpenGL/Pipeline.h"
 #include "Render/OpenGL/VertexArray.h"
-
-namespace
-{
-	class Texture
-	{
-	public:
-		Texture()
-		{
-			textureID = 0;
-			width = 0;
-			height = 0;
-			bitDepth = 0;
-			fileLocation = "";
-		}
-		Texture(const char* fileLoc)
-			: Texture()
-		{
-			fileLocation = fileLoc;
-		}
-
-		void LoadTexture()
-		{
-			unsigned char* texData = stbi_load(fileLocation, &width, &height, &bitDepth, 0);
-			if (!texData)
-			{
-				printf("Failed to find: '%s'\n", fileLocation);
-				return;
-			}
-
-			glGenTextures(1, &textureID);
-			glBindTexture(GL_TEXTURE_2D, textureID);
-
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, texData);
-			glGenerateMipmap(GL_TEXTURE_2D);
-
-			glBindTexture(GL_TEXTURE_2D, 0);
-			stbi_image_free(texData);
-		}
-
-		void UseTexture()
-		{
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, textureID);
-		}
-
-		void ClearTexture()
-		{
-			glDeleteTextures(1, &textureID);
-			textureID = 0;
-			width = 0;
-			height = 0;
-			bitDepth = 0;
-			fileLocation = "";
-		}
-
-		~Texture()
-		{
-			ClearTexture();
-		}
-
-	private:
-		GLuint textureID;
-		int width;
-		int height;
-		int bitDepth;
-
-		const char* fileLocation;
-
-	};
-}
 
 namespace Eugenix
 {
