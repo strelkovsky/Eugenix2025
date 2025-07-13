@@ -14,6 +14,34 @@
 // TMP bridge beetween tests & sandbox sources
 namespace Eugenix
 {
+	class Light
+	{
+	public:
+		Light()
+		{
+			color = glm::vec3(1.0f, 1.0f, 1.0f);
+			ambientIntensity = 1.0f;
+		}
+		Light(GLfloat red, GLfloat green, GLfloat blue, GLfloat ambIntensity)
+		{
+			color = glm::vec3(red, green, blue);
+			ambientIntensity = ambIntensity;
+		}
+		void UseLight(GLint ambientColorLocation, GLint ambientIntensityLocation)
+		{
+			glUniform3f(ambientColorLocation, color.x, color.y, color.z);
+			glUniform1f(ambientIntensityLocation, ambientIntensity);
+		}
+		~Light()
+		{
+
+		}
+
+	private:
+		glm::vec3 color;
+		GLfloat ambientIntensity;
+	};
+
 	struct SimpleMesh
 	{
 		// TODO : vertexSize - плохое решение. Возможно передавать Vertex в шаблонном параметре.
@@ -115,12 +143,15 @@ namespace Eugenix
 				position += up * velocity;
 			}
 		}
-		void mouseControl(GLfloat xChange, GLfloat yChange)
+		void mouseControl(bool* buttons, GLfloat xChange, GLfloat yChange)
 		{
-			yaw += xChange * turnSpeed;
-			pitch += yChange * turnSpeed;
+			if (buttons[GLFW_MOUSE_BUTTON_RIGHT])
+			{
+				yaw += xChange * turnSpeed;
+				pitch += yChange * turnSpeed;
 
-			update();
+				update();
+			}
 		}
 		glm::mat4 CalculateViewMatrix()
 		{

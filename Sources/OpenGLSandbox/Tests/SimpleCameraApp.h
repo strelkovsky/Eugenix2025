@@ -37,7 +37,7 @@ namespace Eugenix
 		void OnUpdate(float deltaTime) override
 		{
 			_camera.keyControl(getKeys(), deltaTime);
-			_camera.mouseControl(getXChange(), getYChange());
+			_camera.mouseControl(getMouseButtons(), getXChange(), getYChange());
 		}
 
 		void OnRender() override

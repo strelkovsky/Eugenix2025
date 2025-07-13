@@ -15,6 +15,7 @@
 #include "Render/OpenGL/Pipeline.h"
 #include "Render/OpenGL/VertexArray.h"
 
+
 namespace Eugenix
 {
 	class TextureApp final : public SandboxApp
@@ -42,7 +43,7 @@ namespace Eugenix
 		void OnUpdate(float deltaTime) override
 		{
 			_camera.keyControl(getKeys(), deltaTime);
-			_camera.mouseControl(getXChange(), getYChange());
+			_camera.mouseControl(getMouseButtons(), getXChange(), getYChange());
 		}
 
 		void OnRender() override
@@ -141,9 +142,9 @@ namespace Eugenix
 		std::vector<SimpleMesh> meshes;
 
 		Eugenix::Render::OpenGL::Pipeline _pipeline{};
-		GLuint uniformModel{};
-		GLuint uniformView{};
-		GLuint uniformProjection{};
+		GLint uniformModel{};
+		GLint uniformView{};
+		GLint uniformProjection{};
 
 		Eugenix::Camera _camera{};
 
