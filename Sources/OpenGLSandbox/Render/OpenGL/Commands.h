@@ -14,6 +14,11 @@ namespace Eugenix::Render::OpenGL::Commands
 		glClear(mask);
 	}
 
+	void DrawVertices(uint32_t primitiveType, uint32_t verticesCount, uint32_t first = 0)
+	{
+		glDrawArrays(primitiveType, first, verticesCount);
+	}
+
 	void DrawIndexed(uint32_t primitiveType, uint32_t indicesCount, uint32_t indexType)
 	{
 		glDrawElements(primitiveType, indicesCount, indexType, nullptr);

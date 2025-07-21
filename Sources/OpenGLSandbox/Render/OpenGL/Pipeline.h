@@ -40,6 +40,12 @@ namespace Eugenix
 				glUseProgram(_handle);
 			}
 
+			void SetUniform(std::string_view name, glm::vec3& color)
+			{
+				auto location = glGetUniformLocation(_handle, name.data());
+				glUniform4f(location, color.x, color.y, color.z, 1.0f);
+			}
+
 		private:
 			void checkLinkStatus()
 			{
