@@ -94,7 +94,7 @@ namespace Eugenix
 
 			std::vector<Render::Attribute> attributes
 			{
-				{ 0, 3, GL_FLOAT, GL_FALSE,  0 }
+				{ 0, 3, Render::DataType::Float, false, 0 }
 			};
 
 			meshes.emplace_back(vertices, indices, attributes, 3 * sizeof(float));

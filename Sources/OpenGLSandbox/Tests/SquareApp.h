@@ -42,7 +42,7 @@ namespace Eugenix
 				1, 2, 3
 			};
 
-			constexpr Render::Attribute position_attribute{ 0, 3, GL_FLOAT, GL_FALSE,  0 };
+			constexpr Render::Attribute position_attribute{ 0, 3, Render::DataType::Float, GL_FALSE,  0 };
 
 			_squareVbo.Create();
 			_squareVbo.Storage(Core::MakeData(std::span{ square_vertices }));
@@ -87,7 +87,7 @@ namespace Eugenix
 
 			_squareVao.Bind();
 
-			Render::OpenGL::Commands::DrawIndexed(GL_TRIANGLES, 6, GL_UNSIGNED_INT);
+			Render::OpenGL::Commands::DrawIndexed(Render::PrimitiveType::Triangles, 6, Render::DataType::UInt);
 		}
 
 		void OnCleanup() override

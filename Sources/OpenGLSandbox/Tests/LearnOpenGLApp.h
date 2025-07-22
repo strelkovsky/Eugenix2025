@@ -80,8 +80,8 @@ namespace Eugenix
             ebo.Create();
             ebo.Storage(Core::MakeData(std::span { indices }));
 
-            constexpr Render::Attribute position_attribute{ 0, 3, GL_FLOAT, GL_FALSE,  0 };
-            constexpr Render::Attribute uv_attribute{ 1, 2, GL_FLOAT, GL_FALSE,  offsetof(Vertex, uv) };
+            constexpr Render::Attribute position_attribute{ 0, 3, Render::DataType::Float, false, 0 };
+            constexpr Render::Attribute uv_attribute{ 1, 2, Render::DataType::Float, false, offsetof(Vertex, uv) };
 
             _vao.Create();
             _vao.AttachVertices(vbo, sizeof(Vertex));
@@ -116,7 +116,7 @@ namespace Eugenix
             _texture.Bind();
             _vao.Bind();
 
-            Render::OpenGL::Commands::DrawIndexed(GL_TRIANGLES, 6, GL_UNSIGNED_INT);
+            Render::OpenGL::Commands::DrawIndexed(Render::PrimitiveType::Triangles, 6, Render::DataType::UInt);
         }
 
         void OnKeyHandle(int key, int code, int action, int mode) override

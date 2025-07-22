@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#include "Types.h"
+
 namespace Eugenix
 {
 	namespace Render
@@ -10,7 +12,7 @@ namespace Eugenix
 		{
 			uint32_t index{};
 			int32_t  size{};
-			uint32_t type{};
+			DataType type{};
 			bool normalized;
 			uint32_t offset{};
 		};

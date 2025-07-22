@@ -108,8 +108,8 @@ namespace Eugenix
 
 			std::vector<Render::Attribute> attributes
 			{
-				{ 0, 3, GL_FLOAT, GL_FALSE,  0 },
-				{ 1, 2, GL_FLOAT, GL_FALSE,  (sizeof(glm::vec3)) }
+				{ 0, 3, Render::DataType::Float, false, 0 },
+				{ 1, 2, Render::DataType::Float, false, (sizeof(glm::vec3)) }
 			};
 
 			meshes.emplace_back(vertices, indices, attributes, 5 * sizeof(float));

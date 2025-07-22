@@ -196,7 +196,7 @@ namespace Eugenix
 		void RenderMesh()
 		{
 			_vao.Bind();
-			Render::OpenGL::Commands::DrawIndexed(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT);
+			Render::OpenGL::Commands::DrawIndexed(Render::PrimitiveType::Triangles, indexCount, Render::DataType::UInt);
 		}
 
 		void ClearMesh()

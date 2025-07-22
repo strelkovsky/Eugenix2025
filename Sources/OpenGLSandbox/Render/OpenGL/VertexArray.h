@@ -39,7 +39,7 @@ namespace Eugenix
 
 			void Attribute(const Attribute& attribute)
 			{
-				glVertexArrayAttribFormat(_handle, attribute.index, attribute.size, attribute.type, attribute.normalized ? GL_TRUE : GL_FALSE, attribute.offset);
+				glVertexArrayAttribFormat(_handle, attribute.index, attribute.size, to_opengl_type(attribute.type), attribute.normalized ? GL_TRUE : GL_FALSE, attribute.offset);
 				glVertexArrayAttribBinding(_handle, attribute.index, 0);
 				glEnableVertexArrayAttrib(_handle, attribute.index);
 			}

@@ -2,6 +2,8 @@
 
 #include <glad/glad.h>
 
+#include "OpenGLTypes.h"
+
 namespace Eugenix::Render::OpenGL::Commands
 {
 	void Clear(float r, float g, float b)
@@ -14,13 +16,13 @@ namespace Eugenix::Render::OpenGL::Commands
 		glClear(mask);
 	}
 
-	void DrawVertices(uint32_t primitiveType, uint32_t verticesCount, uint32_t first = 0)
+	void DrawVertices(PrimitiveType primitiveType, uint32_t verticesCount, uint32_t first = 0)
 	{
-		glDrawArrays(primitiveType, first, verticesCount);
+		glDrawArrays(to_opengl_type(primitiveType), first, verticesCount);
 	}
 
-	void DrawIndexed(uint32_t primitiveType, uint32_t indicesCount, uint32_t indexType)
+	void DrawIndexed(PrimitiveType primitiveType, uint32_t indicesCount, DataType indexType)
 	{
-		glDrawElements(primitiveType, indicesCount, indexType, nullptr);
+		glDrawElements(to_opengl_type(primitiveType), indicesCount, to_opengl_type(indexType), nullptr);
 	}
 } // Eugenix::Render::Opengl

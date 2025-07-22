@@ -16,6 +16,7 @@
 
 // Sandbox headers
 #include "App/SandboxApp.h"
+#include "Render/Types.h"
 #include "Render/OpenGL/Buffer.h"
 #include "Render/OpenGL/Commands.h"
 #include "Render/OpenGL/Pipeline.h"
@@ -177,9 +178,9 @@ namespace
 
 			std::vector<Eugenix::Render::Attribute> attributes
 			{
-				{ 0, 3, GL_FLOAT, GL_FALSE,  0 },
-				{ 1, 2, GL_FLOAT, GL_FALSE,  (sizeof(glm::vec3)) },
-				{ 2, 3, GL_FLOAT, GL_FALSE,  (sizeof(glm::vec3) + sizeof(glm::vec2)) },
+				{ 0, 3, Eugenix::Render::DataType::Float, false, 0 },
+				{ 1, 2, Eugenix::Render::DataType::Float, false, (sizeof(glm::vec3)) },
+				{ 2, 3, Eugenix::Render::DataType::Float, false, (sizeof(glm::vec3) + sizeof(glm::vec2)) },
 			};
 
 			Eugenix::SimpleMesh* newMesh = new Eugenix::SimpleMesh(vertices, indices, attributes, 8 * sizeof(float));
@@ -574,9 +575,9 @@ namespace Eugenix
 
 			std::vector<Render::Attribute> attributes
 			{
-				{ 0, 3, GL_FLOAT, GL_FALSE,  0 },
-				{ 1, 2, GL_FLOAT, GL_FALSE,  (sizeof(glm::vec3)) },
-				{ 2, 3, GL_FLOAT, GL_FALSE,  (sizeof(glm::vec3) + sizeof(glm::vec2)) },
+				{ 0, 3, Render::DataType::Float, GL_FALSE,  0 },
+				{ 1, 2, Render::DataType::Float, GL_FALSE,  (sizeof(glm::vec3)) },
+				{ 2, 3, Render::DataType::Float, GL_FALSE,  (sizeof(glm::vec3) + sizeof(glm::vec2)) },
 			};
 
 			calcAverageNormals(indices, 12, vertices, 8 * 4 * 6, 8, 5);
