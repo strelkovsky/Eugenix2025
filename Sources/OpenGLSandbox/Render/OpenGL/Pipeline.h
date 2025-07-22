@@ -46,6 +46,12 @@ namespace Eugenix
 				glUniform4f(location, color.x, color.y, color.z, 1.0f);
 			}
 
+			void SetUniform(std::string_view name, int value)
+			{
+				auto location = glGetUniformLocation(_handle, name.data());
+				glUniform1i(location, value);
+			}
+
 		private:
 			void checkLinkStatus()
 			{
