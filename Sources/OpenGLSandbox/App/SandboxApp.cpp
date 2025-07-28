@@ -1,5 +1,6 @@
 #include "SandboxApp.h"
 
+#include "Engine/Core/Platform.h"
 #include "Engine/Core/Time.h"
 
 namespace
@@ -63,6 +64,12 @@ namespace Eugenix
 
 	int SandboxApp::Run()
 	{
+#if EUGENIX_PLATFORM_WINDOWS &&  EUGENIX_DEBUG
+		_CrtSetDbgFlag(_CRTDBG_LEAK_CHECK_DF | _CRTDBG_ALLOC_MEM_DF);
+		_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_FILE);
+		_CrtSetReportFile(_CRT_ASSERT, _CRTDBG_FILE_STDERR);
+#endif
+
 		if (!initRuntime())
 		{
 			std::cout << "Failed to init runtime" << std::endl;
