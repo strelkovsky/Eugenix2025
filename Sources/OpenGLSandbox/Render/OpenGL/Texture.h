@@ -5,10 +5,11 @@
 #include "Object.h"
 
 #include "Assets/Image.h"
+#include "Render/Types.h"
 
 namespace Eugenix::Render::OpenGL
 {
-	class Texture final : public Object
+	class Texture2D final : public Object
 	{
 	public:
 		void Create() override
@@ -39,20 +40,32 @@ namespace Eugenix::Render::OpenGL
 
 			glBindTexture(GL_TEXTURE_2D, _handle);
 
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			Parameter(TextureParam::WrapS, TextureWrapping::Repeat);
+			Parameter(TextureParam::WrapT, TextureWrapping::Repeat);
+			Parameter(TextureParam::MinFilter, TextureFilter::Linear);
+			Parameter(TextureParam::MagFilter, TextureFilter::Linear);
 
-			glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, imageData.width, imageData.height, 0, dataFormat, GL_UNSIGNED_BYTE, imageData.pixels.get());
+			glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, imageData.width, imageData.height, 0, dataFormat, to_opengl_type(DataType::UByte), imageData.pixels.get());
 			glGenerateMipmap(GL_TEXTURE_2D);
 
 			glBindTexture(GL_TEXTURE_2D, 0);
 		}
 
+		// TODO : Sampler
+		void Parameter(TextureParam param, TextureWrapping wrapping)
+		{
+			glTexParameteri(GL_TEXTURE_2D, to_opengl_type(param), to_opengl_type(wrapping));
+		}
+
+		// TODO : Sampler
+		void Parameter(TextureParam param, TextureFilter filter)
+		{
+			glTexParameteri(GL_TEXTURE_2D, to_opengl_type(param), to_opengl_type(filter));
+		}
+
 		void Bind(uint32_t unit = 0)
 		{
-			glActiveTexture(GL_TEXTURE0);
+			glActiveTexture(GL_TEXTURE0 + unit);
 			glBindTexture(GL_TEXTURE_2D, _handle);
 		}
 	};

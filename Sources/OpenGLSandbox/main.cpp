@@ -14,7 +14,7 @@ int main()
 	//Eugenix::SimpleMeshesApp app;
 	//Eugenix::SimpleCameraApp app;
 	//Eugenix::TextureApp app;
-	//Eugenix::LightingApp app;
-	Eugenix::LearnOpenGLApp app;
+	Eugenix::LightingApp app;
+	//Eugenix::LearnOpenGLApp app;
 	return app.Run();
 }

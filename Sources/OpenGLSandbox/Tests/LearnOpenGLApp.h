@@ -139,7 +139,7 @@ namespace Eugenix
     private:
         Assets::ImageLoader _imageLoader{};
 
-        Render::OpenGL::Texture _texture;
+        Render::OpenGL::Texture2D _texture;
 
         Render::OpenGL::VertexArray _vao;
         Render::OpenGL::Pipeline _pipeline;

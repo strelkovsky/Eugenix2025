@@ -16,6 +16,8 @@ namespace Eugenix::Assets
 		{
 			ImageData data{};
 
+			//stbi_set_flip_vertically_on_load(1);
+
 			uint8_t* raw = stbi_load(name.data(), &data.width, &data.height, &data.channels, 0);
 			if (!raw)
 			{

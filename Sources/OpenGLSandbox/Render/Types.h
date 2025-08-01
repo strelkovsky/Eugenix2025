@@ -6,6 +6,7 @@ namespace Eugenix
 	{
 		enum struct DataType
 		{
+			UByte,
 			UInt,
 			Float
 		};
@@ -25,6 +26,29 @@ namespace Eugenix
 		enum struct BufferTarget
 		{
 			Uniform
+		};
+
+		// TODO : rename to SamplerParam when DSA?..
+		enum struct TextureParam
+		{
+			WrapS,
+			WrapT,
+			MinFilter,
+			MagFilter
+		};
+
+		enum struct TextureWrapping
+		{
+			Repeat,
+			MirroredRepeat,
+			ClampToEdge,
+			ClampToBorder,
+		};
+
+		// TODO : check naming
+		enum struct TextureFilter
+		{
+			Linear,
 		};
 	} // namespace Render
 } // namespace Eugenix

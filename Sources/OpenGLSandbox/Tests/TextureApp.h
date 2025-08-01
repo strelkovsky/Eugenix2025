@@ -10,9 +10,11 @@
 
 // Sandbox headers
 #include "App/SandboxApp.h"
+#include "Assets/ImageLoader.h"
 #include "Render/OpenGL/Buffer.h"
 #include "Render/OpenGL/Commands.h"
 #include "Render/OpenGL/Pipeline.h"
+#include "Render/OpenGL/Texture.h"
 #include "Render/OpenGL/VertexArray.h"
 
 
@@ -32,10 +34,15 @@ namespace Eugenix
 
 			_camera = Camera(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f, 2.0f, 0.1f);
 
-			brickTexture = Texture("Textures/brick.png");
-			brickTexture.LoadTexture();
-			dirtTexture = Texture("Textures/dirt.png");
-			dirtTexture.LoadTexture();
+			const auto brickData = _imageLoader.Load("Textures/brick.png");
+			
+			_brickTexture.Create();
+			_brickTexture.Storage(brickData);
+
+			const auto dirtData = _imageLoader.Load("Textures/brick.png");
+
+			_dirtTexture.Create();
+			_dirtTexture.Storage(dirtData);
 
 			return true;
 		}
@@ -67,7 +74,7 @@ namespace Eugenix
 				glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
 				glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(_camera.CalculateViewMatrix()));
 				glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
-				brickTexture.UseTexture();
+				_brickTexture.Bind();
 				meshes[0].RenderMesh();
 
 				model = glm::mat4(1.0f);
@@ -79,7 +86,7 @@ namespace Eugenix
 				glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
 				glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(_camera.CalculateViewMatrix()));
 				glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
-				dirtTexture.UseTexture();
+				_dirtTexture.Bind();
 				meshes[1].RenderMesh();
 			}
 		}
@@ -141,14 +148,16 @@ namespace Eugenix
 
 		std::vector<SimpleMesh> meshes;
 
-		Eugenix::Render::OpenGL::Pipeline _pipeline{};
+		Render::OpenGL::Pipeline _pipeline{};
 		GLint uniformModel{};
 		GLint uniformView{};
 		GLint uniformProjection{};
 
-		Eugenix::Camera _camera{};
+		Camera _camera{};
 
-		Texture brickTexture{};
-		Texture dirtTexture{};
+		Assets::ImageLoader _imageLoader{};
+
+		Render::OpenGL::Texture2D _brickTexture;
+		Render::OpenGL::Texture2D _dirtTexture;
 	};
 }

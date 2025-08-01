@@ -16,10 +16,12 @@
 
 // Sandbox headers
 #include "App/SandboxApp.h"
+#include "Assets/ImageLoader.h"
 #include "Render/Types.h"
 #include "Render/OpenGL/Buffer.h"
 #include "Render/OpenGL/Commands.h"
 #include "Render/OpenGL/Pipeline.h"
+#include "Render/OpenGL/Texture.h"
 #include "Render/OpenGL/VertexArray.h"
 
 namespace
@@ -55,6 +57,8 @@ namespace
 		GLfloat shininess;
 	};
 
+
+	Eugenix::Assets::ImageLoader _imageLoader;
 
 	class Model
 	{
@@ -97,7 +101,7 @@ namespace
 
 				if (materialIndex < textureList.size() && textureList[materialIndex])
 				{
-					textureList[materialIndex]->UseTexture();
+					textureList[materialIndex]->Bind();
 				}
 
 				meshList[i]->RenderMesh();
@@ -211,27 +215,36 @@ namespace
 
 						printf("Texture loaded 'Textures/%s'\n", filename.c_str());
 
-						textureList[i] = new Eugenix::Texture(texPath.c_str());
+						auto imageData = _imageLoader.Load(texPath.c_str());
 
-						if (!textureList[i]->LoadTexture())
+						if (imageData.pixels.get() == nullptr)
 						{
 							printf("Failed to load texture at '%s'\n", texPath.c_str());
 							delete textureList[i];
 							textureList[i] = nullptr;
+						}
+						else
+						{
+							textureList[i] = new Eugenix::Render::OpenGL::Texture2D();
+							textureList[i]->Create();
+							textureList[i]->Storage(imageData);
 						}
 					}
 				}
 
 				if (!textureList[i])
 				{
-					textureList[i] = new Eugenix::Texture("Textures/plain.png");
+					auto imageData = _imageLoader.Load("Textures/plain.png");
+					textureList[i] = new Eugenix::Render::OpenGL::Texture2D();
+					textureList[i]->Create();
+					textureList[i]->Storage(imageData);
 				}
 			}
 		}
 
 	private:
 		std::vector <Eugenix::SimpleMesh*> meshList;
-		std::vector <Eugenix::Texture*> textureList;
+		std::vector <Eugenix::Render::OpenGL::Texture2D*> textureList;
 		std::vector <unsigned int> meshToTexture;
 	};
 }
@@ -252,18 +265,29 @@ namespace Eugenix
 
 			_camera = Camera(glm::vec3(-25.0f, 45.0f, -2.0f), glm::vec3(0.0f, 1.0f, 0.0f), 0.0f, 0.0f, 4.0f, 0.1f);
 
-			brickTexture = Texture("Textures/brick.png");
-			brickTexture.LoadTexture();
-			pyramidTexture = Texture("Textures/pyramid.png");
-			pyramidTexture.LoadTexture();
-			sponzaFloorTexture = Texture("Textures/sponza_floor.jpg");
-			sponzaFloorTexture.LoadTexture();
-			sponzaWallTexture = Texture("Textures/sponza_wall.jpg");
-			sponzaWallTexture.LoadTexture();
-			sponzaCeilTexture = Texture("Textures/sponza_ceiling.jpg");
-			sponzaCeilTexture.LoadTexture();
-			crateTexture = Texture("Textures/crate.png");
-			crateTexture.LoadTexture();
+			auto imageData = _imageLoader.Load("Textures/brick.png");
+			_brickTexture.Create();
+			_brickTexture.Storage(imageData);
+
+			imageData = _imageLoader.Load("Textures/brick.png");
+			_pyramidTexture.Create();
+			_pyramidTexture.Storage(imageData);
+
+			imageData = _imageLoader.Load("Textures/pyramid.png");
+			_brickTexture.Create();
+			_brickTexture.Storage(imageData);
+
+			imageData = _imageLoader.Load("Textures/sponza_floor.jpg");
+			_sponzaFloorTexture.Create();
+			_sponzaFloorTexture.Storage(imageData);
+
+			imageData = _imageLoader.Load("Textures/sponza_wall.jpg");
+			_sponzaWallTexture.Create();
+			_sponzaWallTexture.Storage(imageData);
+
+			imageData = _imageLoader.Load("Textures/crate.png");
+			_crateTexture.Create();
+			_crateTexture.Storage(imageData);
 
 			shinyMaterial = Material(1.0f, 128.0f);
 			dullMaterial = Material(1.0f, 64.0f);
@@ -373,7 +397,7 @@ namespace Eugenix
 				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 				model = glm::scale(model, glm::vec3(2.0f));
 				glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
-				brickTexture.UseTexture();
+				_brickTexture.Bind();
 				shinyMaterial.UseMaterial(uniformSpecularIntensity, uniformShininess);
 				meshes[0].RenderMesh();
 
@@ -385,7 +409,7 @@ namespace Eugenix
 				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 				model = glm::scale(model, glm::vec3(2.0f));
 				glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
-				crateTexture.UseTexture();
+				_crateTexture.Bind();
 				dullMaterial.UseMaterial(uniformSpecularIntensity, uniformShininess);
 				meshes[1].RenderMesh();
 
@@ -394,7 +418,7 @@ namespace Eugenix
 				model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
 				model = glm::scale(model, glm::vec3(1.0f));
 				glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
-				sponzaFloorTexture.UseTexture();
+				_sponzaFloorTexture.Bind();
 				superShinyMaterial.UseMaterial(uniformSpecularIntensity, uniformShininess);
 				meshes[2].RenderMesh();
 
@@ -403,7 +427,7 @@ namespace Eugenix
 				model = glm::translate(model, glm::vec3(0.0f, 10.0f, 0.0f));
 				model = glm::scale(model, glm::vec3(1.0f));
 				glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
-				sponzaFloorTexture.UseTexture();
+				_sponzaFloorTexture.Bind();
 				superShinyMaterial.UseMaterial(uniformSpecularIntensity, uniformShininess);
 				meshes[2].RenderMesh();
 
@@ -412,7 +436,7 @@ namespace Eugenix
 				model = glm::translate(model, glm::vec3(0.0f, 20.0f, 0.0f));
 				model = glm::scale(model, glm::vec3(1.0f));
 				glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
-				sponzaFloorTexture.UseTexture();
+				_sponzaFloorTexture.Bind();
 				superShinyMaterial.UseMaterial(uniformSpecularIntensity, uniformShininess);
 				meshes[2].RenderMesh();
 
@@ -424,7 +448,7 @@ namespace Eugenix
 				model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 				model = glm::scale(model, glm::vec3(1.0f));
 				glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
-				sponzaWallTexture.UseTexture();
+				_sponzaWallTexture.Bind();
 				shinyMaterial.UseMaterial(uniformSpecularIntensity, uniformShininess);
 				meshes[3].RenderMesh();
 
@@ -436,7 +460,7 @@ namespace Eugenix
 				model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 				model = glm::scale(model, glm::vec3(1.0f));
 				glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
-				sponzaWallTexture.UseTexture();
+				_sponzaWallTexture.Bind();
 				shinyMaterial.UseMaterial(uniformSpecularIntensity, uniformShininess);
 				meshes[3].RenderMesh();
 
@@ -448,7 +472,7 @@ namespace Eugenix
 				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 				model = glm::scale(model, glm::vec3(1.0f));
 				glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
-				sponzaWallTexture.UseTexture();
+				_sponzaWallTexture.Bind();
 				shinyMaterial.UseMaterial(uniformSpecularIntensity, uniformShininess);
 				meshes[3].RenderMesh();
 
@@ -458,7 +482,7 @@ namespace Eugenix
 				model = glm::rotate(model, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 				model = glm::scale(model, glm::vec3(1.0f));
 				glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
-				sponzaCeilTexture.UseTexture();
+				_sponzaCeilTexture.Bind();
 				superShinyMaterial.UseMaterial(uniformSpecularIntensity, uniformShininess);
 				meshes[4].RenderMesh();
 
@@ -468,7 +492,7 @@ namespace Eugenix
 				model = glm::rotate(model, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 				model = glm::scale(model, glm::vec3(1.0f));
 				glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
-				sponzaCeilTexture.UseTexture();
+				_sponzaCeilTexture.Bind();
 				superShinyMaterial.UseMaterial(uniformSpecularIntensity, uniformShininess);
 				meshes[4].RenderMesh();
 
@@ -750,12 +774,12 @@ namespace Eugenix
 
 		Eugenix::Camera _camera{};
 
-		Texture brickTexture{};
-		Texture pyramidTexture{};
-		Texture sponzaFloorTexture{};
-		Texture sponzaWallTexture{};
-		Texture sponzaCeilTexture{};
-		Texture crateTexture{};
+		Render::OpenGL::Texture2D _brickTexture;
+		Render::OpenGL::Texture2D _pyramidTexture;
+		Render::OpenGL::Texture2D _sponzaFloorTexture{};
+		Render::OpenGL::Texture2D _sponzaWallTexture{};
+		Render::OpenGL::Texture2D _sponzaCeilTexture{};
+		Render::OpenGL::Texture2D _crateTexture{};
 
 		DirectionalLight mainLight{};
 		PointLight pointLights[MAX_POINT_LIGHTS];
