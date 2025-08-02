@@ -106,7 +106,6 @@ namespace Eugenix
 			ImGui::NewFrame();
 
 			OnDebugUI();
-			ImGui::Begin("Hello, world!");
 
 			ImGui::Render();
 			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
