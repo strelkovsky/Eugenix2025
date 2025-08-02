@@ -20,9 +20,10 @@ namespace Eugenix
 
 	protected:
 		virtual bool OnInit() { return true; }
-		virtual void OnUpdate(float deltaTime) {}
-		virtual void OnRender() {}
-		virtual void OnCleanup() {}
+		virtual void OnUpdate(float deltaTime) { }
+		virtual void OnRender() { }
+		virtual void OnDebugUI() { }
+		virtual void OnCleanup() { }
 
 		virtual void OnKeyHandle(int key, int code, int action, int mode) { }
 		virtual void OnMouseHandle(double xPos, double yPos) { }

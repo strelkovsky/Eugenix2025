@@ -1,5 +1,11 @@
+#include <imgui.h>
+#include <imgui/backends/imgui_impl_glfw.h>
+#include <imgui/backends/imgui_impl_opengl3.h>
+
 #include "SandboxApp.h"
 
+#include "Engine/CompileConfig.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Platform.h"
 #include "Engine/Core/Time.h"
 
@@ -97,6 +103,18 @@ namespace Eugenix
 			OnUpdate(deltaTime.count());
 			OnRender();
 
+#if EUGENIX_DEBUG_UI_ENABLED
+			ImGui_ImplOpenGL3_NewFrame();
+			ImGui_ImplGlfw_NewFrame();
+			ImGui::NewFrame();
+
+			OnDebugUI();
+			ImGui::Begin("Hello, world!");
+
+			ImGui::Render();
+			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+#endif EUGENIX_DEBUG_UI_ENABLED
+
 			glfwSwapBuffers(_window);
 
 			frameCount++;
@@ -114,6 +132,14 @@ namespace Eugenix
 		}
 
 		OnCleanup();
+
+#if EUGENIX_DEBUG_UI_ENABLED
+		ImGui_ImplOpenGL3_Shutdown();
+		ImGui_ImplGlfw_Shutdown();
+		ImGui::DestroyContext();
+#endif
+
+		glfwTerminate();
 
 		return EXIT_SUCCESS;
 	}
@@ -238,6 +264,19 @@ namespace Eugenix
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 		glDebugMessageCallback(debugCallback, nullptr);
 #endif // _DEBUG
+
+#if EUGENIX_DEBUG_UI_ENABLED
+
+		IMGUI_CHECKVERSION();
+		ImGui::CreateContext();
+		ImGuiIO& io = ImGui::GetIO(); (void)io;
+		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
+		ImGui::StyleColorsDark();
+
+		ImGui_ImplGlfw_InitForOpenGL(_window, true);
+		ImGui_ImplOpenGL3_Init("#version 330");
+#endif // EUGENIX_DEBUG_UI_ENABLED
 
 		return true;
 	}
