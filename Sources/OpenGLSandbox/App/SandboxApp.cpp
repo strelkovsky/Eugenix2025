@@ -51,11 +51,8 @@ namespace
 			}
 			}();
 
-		std::cout << source_str << ", "
-			<< type_str << ", "
-			<< severity_str << ", "
-			<< id << ": "
-			<< message << std::endl;
+		// TODO use different log levels
+		Eugenix::LogError("{}, {}, {}, {} {}", source_str, type_str, severity_str, id, message);
 	}
 #endif // EUGENIX_DEBUG
 }
@@ -78,13 +75,13 @@ namespace Eugenix
 
 		if (!initRuntime())
 		{
-			std::cout << "Failed to init runtime" << std::endl;
+			LogError("Failed to init runtime");
 			return EXIT_FAILURE;
 		}
 
 		if (!OnInit())
 		{
-			std::cout << "Failed to init client app" << std::endl;
+			LogError("Failed to init client app");
 			return EXIT_FAILURE;
 		}
 
@@ -148,7 +145,7 @@ namespace Eugenix
 	{
 		if (glfwInit() != GLFW_TRUE)
 		{
-			std::cout << "Failed to init GLFW" << std::endl;
+			LogError("Failed to init GLFW");
 			glfwTerminate();
 			return false;
 		}
@@ -160,7 +157,7 @@ namespace Eugenix
 		_window = glfwCreateWindow(_width, _height, "EugenixSandbox", nullptr, nullptr);
 		if (_window == nullptr)
 		{
-			std::cout << "Failed to create GLFW window" << std::endl;
+			LogError("Failed to create GLFW window");
 			glfwTerminate();
 			return false;
 		}
@@ -255,7 +252,7 @@ namespace Eugenix
 
 		if (!gladLoadGL())
 		{
-			std::cout << "Failed to init GLAD" << std::endl;
+			LogError("Failed to init GLAD");
 			glfwTerminate();
 		}
 
