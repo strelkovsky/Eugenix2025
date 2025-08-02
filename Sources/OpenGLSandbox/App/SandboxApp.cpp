@@ -11,7 +11,7 @@
 
 namespace
 {
-#if _DEBUG
+#if EUGENIX_DEBUG
 	void debugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param)
 	{
 		auto source_str = [source]() -> std::string {
@@ -57,7 +57,7 @@ namespace
 			<< id << ": "
 			<< message << std::endl;
 	}
-#endif // _DEBUG
+#endif // EUGENIX_DEBUG
 }
 
 namespace Eugenix
@@ -259,11 +259,11 @@ namespace Eugenix
 			glfwTerminate();
 		}
 
-#if _DEBUG
+#if EUGENIX_DEBUG
 		glEnable(GL_DEBUG_OUTPUT);
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 		glDebugMessageCallback(debugCallback, nullptr);
-#endif // _DEBUG
+#endif // EUGENIX_DEBUG
 
 #if EUGENIX_DEBUG_UI_ENABLED
 
