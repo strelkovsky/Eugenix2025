@@ -64,20 +64,7 @@ namespace Eugenix
 	private:
 		void createPipeline()
 		{
-			const auto vsSourceData = Eugenix::IO::FileContent("Shaders/simple_pos_color.vert");
-			const char* vsSource = vsSourceData.data();
-
-			auto vertexStage = CreateStage(vsSource, Eugenix::Render::ShaderStageType::Vertex);
-
-			const auto fsSourceData = Eugenix::IO::FileContent("Shaders/simple_pos_color.frag");
-			const char* fsSource = fsSourceData.data();
-
-			auto fragmentStage = CreateStage(fsSource, Eugenix::Render::ShaderStageType::Fragment);
-
-			_pipeline.Create();
-			_pipeline.AttachStage(vertexStage)
-				.AttachStage(fragmentStage)
-				.Build();
+			_pipeline = Eugenix::MakePipeline("Shaders/simple_pos_color.vert", "Shaders/simple_pos_color.frag");
 		}
 
 		void createGeometry()

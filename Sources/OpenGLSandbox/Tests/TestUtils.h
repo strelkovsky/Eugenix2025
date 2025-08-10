@@ -7,7 +7,10 @@
 
 #include <stb_image.h>
 
+#include "Engine/IO/IO.h"
+
 #include "Render/OpenGL/Commands.h"
+#include "Render/OpenGL/Pipeline.h"
 #include "Render/OpenGL/ShaderStage.h"
 #include "Render/OpenGL/VertexArray.h"
 
@@ -179,10 +182,10 @@ namespace Eugenix
 			_vao.Create();
 
 			_vbo.Create();
-			_vbo.Storage(Eugenix::Core::MakeData(vertices));
+			_vbo.Storage(Core::MakeData(vertices));
 
 			_ibo.Create();
-			_ibo.Storage(Eugenix::Core::MakeData(indices));
+			_ibo.Storage(Core::MakeData(indices));
 
 			_vao.AttachVertices(_vbo, vertexSize);
 			_vao.AttachIndices(_ibo);
@@ -414,11 +417,28 @@ namespace Eugenix
 
 	};
 
-	Eugenix::Render::OpenGL::ShaderStage CreateStage(const char* source, Eugenix::Render::ShaderStageType type)
+	Render::OpenGL::ShaderStage CreateStage(const char* source, Render::ShaderStageType type)
 	{
-		Eugenix::Render::OpenGL::ShaderStage stage{ type };
+		Render::OpenGL::ShaderStage stage{ type };
 		stage.Create();
 		stage.CompileFromSource(source);
 		return stage;
+	}
+
+	Render::OpenGL::Pipeline MakePipeline(std::string_view vsPath, std::string_view fsPath)
+	{
+		auto vsData = IO::FileContent(vsPath);
+		auto fsData = IO::FileContent(fsPath);
+
+		auto vs = CreateStage(vsData.data(), Render::ShaderStageType::Vertex);
+		auto fs = CreateStage(fsData.data(), Render::ShaderStageType::Fragment);
+
+		Render::OpenGL::Pipeline p;
+		p.Create();
+		p.AttachStage(vs).AttachStage(fs).Build();
+
+		vs.Destroy();
+		fs.Destroy();
+		return p;
 	}
 }

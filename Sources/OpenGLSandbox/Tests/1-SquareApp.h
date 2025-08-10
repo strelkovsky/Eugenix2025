@@ -55,24 +55,7 @@ namespace Eugenix
 			_squareVao.AttachIndices(_squareEbo);
 			_squareVao.Attribute(position_attribute);
 
-			const auto vsSourceData = Eugenix::IO::FileContent("Shaders/simple_pos.vert");
-			const char* vsSource = vsSourceData.data();
-
-			auto vertexStage = CreateStage(vsSource, Eugenix::Render::ShaderStageType::Vertex);
-
-			const auto fsSourceData = Eugenix::IO::FileContent("Shaders/simple_pos.frag");
-			const char* fsSource = fsSourceData.data();
-
-			auto fragmentStage = CreateStage(fsSource, Eugenix::Render::ShaderStageType::Fragment);
-
-			_squarePipeline.Create();
-			_squarePipeline
-				.AttachStage(vertexStage)
-				.AttachStage(fragmentStage)
-				.Build();
-
-			vertexStage.Destroy();
-			fragmentStage.Destroy();
+			_squarePipeline = Eugenix::MakePipeline("Shaders/simple_pos.vert", "Shaders/simple_pos.frag");
 
 			Render::OpenGL::Commands::Clear(0.2f, 0.3f, 0.3f);
 
