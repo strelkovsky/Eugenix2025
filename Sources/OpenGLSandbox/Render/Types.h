@@ -1,54 +1,51 @@
 #pragma once
 
-namespace Eugenix
+namespace Eugenix::Render
 {
-	namespace Render
+	enum struct DataType
 	{
-		enum struct DataType
-		{
-			UByte,
-			UInt,
-			Float
-		};
+		UByte,
+		UInt,
+		Float
+	};
 
-		enum struct PrimitiveType
-		{
-			Triangles
-		};
+	enum struct PrimitiveType
+	{
+		Triangles
+	};
 
-		enum struct ShaderStageType
-		{
-			Vertex,
-			Fragment,
-			Compute
-		};
+	enum struct ShaderStageType
+	{
+		Vertex,
+		Fragment,
+		Compute
+	};
 
-		enum struct BufferTarget
-		{
-			Uniform
-		};
+	enum struct BufferTarget
+	{
+		Uniform
+	};
 
-		// TODO : rename to SamplerParam when DSA?..
-		enum struct TextureParam
-		{
-			WrapS,
-			WrapT,
-			MinFilter,
-			MagFilter
-		};
+	// TODO : rename to SamplerParam when DSA?..
+	enum struct TextureParam
+	{
+		WrapS,
+		WrapT,
+		MinFilter,
+		MagFilter
+	};
 
-		enum struct TextureWrapping
-		{
-			Repeat,
-			MirroredRepeat,
-			ClampToEdge,
-			ClampToBorder,
-		};
+	enum struct TextureWrapping
+	{
+		Repeat,
+		MirroredRepeat,
+		ClampToEdge,
+		ClampToBorder,
+	};
 
-		// TODO : check naming
-		enum struct TextureFilter
-		{
-			Linear,
-		};
-	} // namespace Render
-} // namespace Eugenix
+	// TODO : check naming
+	enum struct TextureFilter
+	{
+		Linear,
+	};
+} // namespace Eugenix::Render

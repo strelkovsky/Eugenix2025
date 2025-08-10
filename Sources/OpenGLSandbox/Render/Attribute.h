@@ -4,17 +4,14 @@
 
 #include "Types.h"
 
-namespace Eugenix
+namespace Eugenix::Render
 {
-	namespace Render
+	struct Attribute
 	{
-		struct Attribute
-		{
-			uint32_t index{};
-			int32_t  size{};
-			DataType type{};
-			bool normalized;
-			uint32_t offset{};
-		};
-	} // namespace Render
-} // namespace Eugenix
+		uint32_t index{};
+		int32_t  size{};
+		DataType type{};
+		bool normalized;
+		uint32_t offset{};
+	};
+} // namespace Eugenix::Render
