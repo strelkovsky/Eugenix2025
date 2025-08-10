@@ -15,10 +15,4 @@ namespace Eugenix::Core
 	{
 		return{ span.data(), span.size_bytes() };
 	}
-
-	template <typename type>
-	static Data MakeData(const type* ptr)
-	{
-		return { ptr, sizeof(type) };
-	}
 } // namespace Eugenix::Render
