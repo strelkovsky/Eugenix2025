@@ -15,6 +15,7 @@
 #include "Render/OpenGL/Commands.h"
 #include "Render/OpenGL/Pipeline.h"
 #include "Render/OpenGL/Texture.h"
+#include "Render/OpenGL/Sampler.h"
 #include "Render/OpenGL/VertexArray.h"
 
 
@@ -38,11 +39,19 @@ namespace Eugenix
 			
 			_brickTexture.Create();
 			_brickTexture.Storage(brickData);
+			_brickTexture.Update(brickData);
 
 			const auto dirtData = _imageLoader.Load("Textures/brick.png");
 
 			_dirtTexture.Create();
 			_dirtTexture.Storage(dirtData);
+			_dirtTexture.Update(dirtData);
+
+			_sampler.Create();
+			_sampler.Parameter(Render::TextureParam::WrapS, Render::TextureWrapping::Repeat);
+			_sampler.Parameter(Render::TextureParam::WrapT, Render::TextureWrapping::Repeat);
+			_sampler.Parameter(Render::TextureParam::MinFilter, Render::TextureFilter::Linear);
+			_sampler.Parameter(Render::TextureParam::MagFilter, Render::TextureFilter::Linear);
 
 			return true;
 		}
@@ -62,6 +71,8 @@ namespace Eugenix
 			_pipeline.Bind();
 
 			{
+				_sampler.Bind(0);
+
 				// Model matrix
 				glm::mat4 model = glm::mat4(1.0f);
 
@@ -74,6 +85,7 @@ namespace Eugenix
 				glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
 				glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(_camera.CalculateViewMatrix()));
 				glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
+				_sampler.Bind(0);
 				_brickTexture.Bind();
 				meshes[0].RenderMesh();
 
@@ -86,6 +98,7 @@ namespace Eugenix
 				glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
 				glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(_camera.CalculateViewMatrix()));
 				glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
+				_sampler.Bind(0);
 				_dirtTexture.Bind();
 				meshes[1].RenderMesh();
 			}
@@ -159,5 +172,6 @@ namespace Eugenix
 
 		Render::OpenGL::Texture2D _brickTexture;
 		Render::OpenGL::Texture2D _dirtTexture;
+		Render::OpenGL::Sampler _sampler;
 	};
 }

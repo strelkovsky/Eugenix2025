@@ -93,6 +93,7 @@ namespace Eugenix
 
             _texture.Create();
             _texture.Storage(img);
+            _texture.Update(img);
 
             Render::OpenGL::Commands::Clear(0.2f, 0.3f, 0.3f);
 

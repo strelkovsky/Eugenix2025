@@ -10,9 +10,9 @@
 int main()
 {
 	//Eugenix::SquareApp app;
-	Eugenix::SimpleCameraApp app;
+	//Eugenix::SimpleCameraApp app;
 	//Eugenix::TextureApp app;
 	//Eugenix::LightingApp app;
-	//Eugenix::LearnOpenGLApp app;
+	Eugenix::LearnOpenGLApp app;
 	return app.Run();
 }

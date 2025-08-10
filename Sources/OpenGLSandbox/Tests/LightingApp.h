@@ -228,6 +228,7 @@ namespace
 							textureList[i] = new Eugenix::Render::OpenGL::Texture2D();
 							textureList[i]->Create();
 							textureList[i]->Storage(imageData);
+							textureList[i]->Update(imageData);
 						}
 					}
 				}
@@ -238,6 +239,7 @@ namespace
 					textureList[i] = new Eugenix::Render::OpenGL::Texture2D();
 					textureList[i]->Create();
 					textureList[i]->Storage(imageData);
+					textureList[i]->Update(imageData);
 				}
 			}
 		}
@@ -268,26 +270,32 @@ namespace Eugenix
 			auto imageData = _imageLoader.Load("Textures/brick.png");
 			_brickTexture.Create();
 			_brickTexture.Storage(imageData);
+			_brickTexture.Update(imageData);
 
 			imageData = _imageLoader.Load("Textures/brick.png");
 			_pyramidTexture.Create();
 			_pyramidTexture.Storage(imageData);
+			_pyramidTexture.Update(imageData);
 
 			imageData = _imageLoader.Load("Textures/pyramid.png");
 			_brickTexture.Create();
 			_brickTexture.Storage(imageData);
+			_brickTexture.Update(imageData);
 
 			imageData = _imageLoader.Load("Textures/sponza_floor.jpg");
 			_sponzaFloorTexture.Create();
 			_sponzaFloorTexture.Storage(imageData);
+			_sponzaFloorTexture.Update(imageData);
 
 			imageData = _imageLoader.Load("Textures/sponza_wall.jpg");
 			_sponzaWallTexture.Create();
 			_sponzaWallTexture.Storage(imageData);
+			_sponzaWallTexture.Update(imageData);
 
 			imageData = _imageLoader.Load("Textures/crate.png");
 			_crateTexture.Create();
 			_crateTexture.Storage(imageData);
+			_crateTexture.Update(imageData);
 
 			shinyMaterial = Material(1.0f, 128.0f);
 			dullMaterial = Material(1.0f, 64.0f);
