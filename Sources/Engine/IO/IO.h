@@ -2,16 +2,16 @@
 
 #include <cassert>
 #include <fstream>
-#include <string>
+#include <string_view>
 #include <vector>
 
 namespace Eugenix
 {
 	namespace IO
 	{
-        std::vector<char> FileContent(const std::string& path, int32_t mode = 0)
+        std::vector<char> FileContent(std::string_view path, int32_t mode = 0)
         {
-            std::ifstream stream(path, std::ios::ate | mode);
+            std::ifstream stream(std::string(path), std::ios::ate | mode);
             assert(stream.is_open());
 
             const auto size = stream.tellg();
