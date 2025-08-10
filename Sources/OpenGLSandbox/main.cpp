@@ -1,5 +1,6 @@
 // Tests headers
-#include "Tests/SquareApp.h"
+#include "Tests/0-TriangleApp.h"
+#include "Tests/1-SquareApp.h"
 
 #include "Tests/SimpleCameraApp.h"
 #include "Tests/TextureApp.h"
@@ -9,10 +10,11 @@
 
 int main()
 {
+	Eugenix::TriangleApp app;
 	//Eugenix::SquareApp app;
 	//Eugenix::SimpleCameraApp app;
 	//Eugenix::TextureApp app;
 	//Eugenix::LightingApp app;
-	Eugenix::LearnOpenGLApp app;
+	//Eugenix::LearnOpenGLApp app;
 	return app.Run();
 }
