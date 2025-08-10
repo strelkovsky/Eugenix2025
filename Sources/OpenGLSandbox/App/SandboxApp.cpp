@@ -79,7 +79,7 @@ namespace Eugenix
 			return EXIT_FAILURE;
 		}
 
-		if (!OnInit())
+		if (!onInit())
 		{
 			LogError("Failed to init client app");
 			return EXIT_FAILURE;
@@ -97,15 +97,15 @@ namespace Eugenix
 
 			glfwPollEvents();
 
-			OnUpdate(deltaTime.count());
-			OnRender();
+			onUpdate(deltaTime.count());
+			onRender();
 
 #if EUGENIX_DEBUG_UI_ENABLED
 			ImGui_ImplOpenGL3_NewFrame();
 			ImGui_ImplGlfw_NewFrame();
 			ImGui::NewFrame();
 
-			OnDebugUI();
+			onDebugUI();
 
 			ImGui::Render();
 			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -127,7 +127,7 @@ namespace Eugenix
 			}
 		}
 
-		OnCleanup();
+		onCleanup();
 
 #if EUGENIX_DEBUG_UI_ENABLED
 		ImGui_ImplOpenGL3_Shutdown();
@@ -196,7 +196,7 @@ namespace Eugenix
 						}
 					}
 
-					self->OnKeyHandle(key, code, action, mode);
+					self->onKeyHandle(key, code, action, mode);
 				}
 			});
 
@@ -220,7 +220,7 @@ namespace Eugenix
 
 					//printf("x:%.2f, y:%.2f\n", xChange, yChange);
 
-					self->OnMouseHandle(xpos, ypos);
+					self->onMouseHandle(xpos, ypos);
 				}
 			});
 
@@ -243,7 +243,7 @@ namespace Eugenix
 						}
 					}
 
-					self->OnMouseButtonHandle(button, action, mods);
+					self->onMouseButtonHandle(button, action, mods);
 				}
 			});
 

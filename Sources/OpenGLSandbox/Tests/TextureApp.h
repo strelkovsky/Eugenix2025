@@ -24,7 +24,7 @@ namespace Eugenix
 	class TextureApp final : public SandboxApp
 	{
 	protected:
-		bool OnInit() override
+		bool onInit() override
 		{
 			CreateGeometry();
 			CreatePipelines();
@@ -56,18 +56,18 @@ namespace Eugenix
 			return true;
 		}
 
-		void OnUpdate(float deltaTime) override
+		void onUpdate(float deltaTime) override
 		{
 			_camera.keyControl(getKeys(), deltaTime);
 			_camera.mouseControl(getMouseButtons(), getXChange(), getYChange());
 		}
 
-		void OnRender() override
+		void onRender() override
 		{
 			Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 			// Projection matrix
-			glm::mat4 projection = glm::perspective(45.0f, (GLfloat)Width() / (GLfloat)Height(), 0.1f, 100.0f);
+			glm::mat4 projection = glm::perspective(45.0f, (GLfloat)width() / (GLfloat)height(), 0.1f, 100.0f);
 			_pipeline.Bind();
 
 			{

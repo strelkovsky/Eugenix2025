@@ -19,18 +19,18 @@ namespace Eugenix
 		int Run();
 
 	protected:
-		virtual bool OnInit() { return true; }
-		virtual void OnUpdate(float deltaTime) { }
-		virtual void OnRender() { }
-		virtual void OnDebugUI() { }
-		virtual void OnCleanup() { }
+		virtual bool onInit() { return true; }
+		virtual void onUpdate(float deltaTime) { }
+		virtual void onRender() { }
+		virtual void onDebugUI() { }
+		virtual void onCleanup() { }
 
-		virtual void OnKeyHandle(int key, int code, int action, int mode) { }
-		virtual void OnMouseHandle(double xPos, double yPos) { }
-		virtual void OnMouseButtonHandle(int button, int action, int mods) { }
+		virtual void onKeyHandle(int key, int code, int action, int mode) { }
+		virtual void onMouseHandle(double xPos, double yPos) { }
+		virtual void onMouseButtonHandle(int button, int action, int mods) { }
 
-		int Width() const { return _width; }
-		int Height() const { return _height; }
+		int width() const { return _width; }
+		int height() const { return _height; }
 
 		bool* getKeys() { return _keys; };
 		bool* getMouseButtons() { return _buttons; };

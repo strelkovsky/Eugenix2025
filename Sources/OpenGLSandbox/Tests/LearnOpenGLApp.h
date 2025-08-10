@@ -43,7 +43,7 @@ namespace Eugenix
     class LearnOpenGLApp final : public SandboxApp
     {
     protected:
-        bool OnInit() override
+        bool onInit() override
         {
             auto vertexStage = CreateStage(vertexShaderSource, Eugenix::Render::ShaderStageType::Vertex);
             auto fragmentStage = CreateStage(fragmentShaderSource, Eugenix::Render::ShaderStageType::Fragment);
@@ -100,7 +100,7 @@ namespace Eugenix
             return true;
         }
 
-        void OnUpdate(float deltaTime) override
+        void onUpdate(float deltaTime) override
         {
             // Update the uniform color
             //GLfloat timeValue = glfwGetTime();
@@ -108,7 +108,7 @@ namespace Eugenix
             //_pipeline.SetUniform("ourColor", _color);
         }
 
-        void OnRender() override
+        void onRender() override
         {
             Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT);
 
@@ -120,7 +120,7 @@ namespace Eugenix
             Render::OpenGL::Commands::DrawIndexed(Render::PrimitiveType::Triangles, 6, Render::DataType::UInt);
         }
 
-        void OnKeyHandle(int key, int code, int action, int mode) override
+        void onKeyHandle(int key, int code, int action, int mode) override
         {
             if (key == GLFW_KEY_TAB && action == GLFW_PRESS)
             {

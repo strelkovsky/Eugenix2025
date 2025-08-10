@@ -26,7 +26,7 @@ namespace Eugenix
 	class SquareApp final : public SandboxApp
 	{
 	protected:
-		bool OnInit() override
+		bool onInit() override
 		{
 			const std::vector<float> square_vertices
 			{
@@ -55,12 +55,12 @@ namespace Eugenix
 			_squareVao.AttachIndices(_squareEbo);
 			_squareVao.Attribute(position_attribute);
 
-			const auto vsSourceData = Eugenix::IO::FileContent("Shaders/simple.vert");
+			const auto vsSourceData = Eugenix::IO::FileContent("Shaders/simple_pos.vert");
 			const char* vsSource = vsSourceData.data();
 
 			auto vertexStage = CreateStage(vsSource, Eugenix::Render::ShaderStageType::Vertex);
 
-			const auto fsSourceData = Eugenix::IO::FileContent("Shaders/simple.frag");
+			const auto fsSourceData = Eugenix::IO::FileContent("Shaders/simple_pos.frag");
 			const char* fsSource = fsSourceData.data();
 
 			auto fragmentStage = CreateStage(fsSource, Eugenix::Render::ShaderStageType::Fragment);
@@ -79,7 +79,7 @@ namespace Eugenix
 			return true;
 		}
 
-		void OnRender() override
+		void onRender() override
 		{
 			Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT);
 
@@ -90,7 +90,7 @@ namespace Eugenix
 			Render::OpenGL::Commands::DrawIndexed(Render::PrimitiveType::Triangles, 6, Render::DataType::UInt);
 		}
 
-		void OnCleanup() override
+		void onCleanup() override
 		{
 			_squarePipeline.Destroy();
 

@@ -256,7 +256,7 @@ namespace Eugenix
 	class LightingApp final : public SandboxApp
 	{
 	protected:
-		bool OnInit() override
+		bool onInit() override
 		{
 			CreateGeometry();
 			CreatePipelines();
@@ -327,7 +327,7 @@ namespace Eugenix
 			return true;
 		}
 
-		void OnUpdate(float deltaTime) override
+		void onUpdate(float deltaTime) override
 		{
 			glm::vec3 lowerLight = _camera.getCameraPosition();
 			lowerLight.y -= 0.2f;
@@ -337,12 +337,12 @@ namespace Eugenix
 			_camera.mouseControl(getMouseButtons(), getXChange(), getYChange());
 		}
 
-		void OnRender() override
+		void onRender() override
 		{
 			Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 			// Projection matrix
-			glm::mat4 projection = glm::perspective(45.0f, (GLfloat)Width() / (GLfloat)Height(), 0.1f, 200.0f);
+			glm::mat4 projection = glm::perspective(45.0f, (GLfloat)width() / (GLfloat)height(), 0.1f, 200.0f);
 			_pipeline.Bind();
 
 			{
