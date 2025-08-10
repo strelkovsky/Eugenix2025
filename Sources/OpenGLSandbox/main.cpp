@@ -10,8 +10,8 @@
 
 int main()
 {
-	//Eugenix::TriangleApp app;
-	Eugenix::SquareApp app;
+	Eugenix::TriangleApp app;
+	//Eugenix::SquareApp app;
 	//Eugenix::SimpleCameraApp app;
 	//Eugenix::TextureApp app;
 	//Eugenix::LightingApp app;

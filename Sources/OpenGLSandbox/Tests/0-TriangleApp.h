@@ -20,20 +20,15 @@
 #include "Render/OpenGL/ShaderStage.h"
 #include "Render/OpenGL/VertexArray.h"
 #include "Render/Types.h"
+#include "Render/Vertex.h"
 
 namespace
 {
-	struct testVertex
+	const std::vector<Eugenix::Render::Vertex::PosColor> triangle_vertices
 	{
-		glm::vec3 pos;
-		glm::vec3 color;
-	};
-
-	const std::vector<float> triangle_vertices
-	{
-		-1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-		 0.0f,  1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-		 1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f
+		{{-1.0f, -1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+		{{ 0.0f,  1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+		{{ 1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}
 	};
 }
 
@@ -69,16 +64,17 @@ namespace Eugenix
 
 		void createGeometry()
 		{
-			constexpr Render::Attribute position_attribute{ 0, 3, Render::DataType::Float, GL_FALSE,  0 };
-			constexpr Render::Attribute color_attribute{ 1, 3, Render::DataType::Float, GL_FALSE,  sizeof(glm::vec3) };
-
 			_triangleVbo.Create();
 			_triangleVbo.Storage(Core::MakeData(std::span{ triangle_vertices }));
 
 			_triangleVao.Create();
 			_triangleVao.AttachVertices(_triangleVbo, sizeof(float) * 6);
-			_triangleVao.Attribute(position_attribute);
-			_triangleVao.Attribute(color_attribute);
+
+			// TODO : push layout in vertex_array
+			for (const auto& attrib : Render::Vertex::PosColor::layout)
+			{
+				_triangleVao.Attribute(attrib);
+			}
 		}
 
 		Render::OpenGL::VertexArray _triangleVao{};

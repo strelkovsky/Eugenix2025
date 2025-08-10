@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cassert>
+#include <span>
 
 #include <glad/glad.h>
 
