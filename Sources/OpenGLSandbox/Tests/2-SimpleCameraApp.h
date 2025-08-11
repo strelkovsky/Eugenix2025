@@ -108,21 +108,7 @@ namespace Eugenix
 
 		void CreatePipelines()
 		{
-			_pipeline.Create();
-
-			const auto vsSourceData = Eugenix::IO::FileContent("Shaders/shader.vert");
-			const char* vsSource = vsSourceData.data();
-
-			const auto fsSourceData = Eugenix::IO::FileContent("Shaders/shader.frag");
-			const char* fsSource = fsSourceData.data();
-
-			auto vertexStage = Eugenix::CreateStage(vsSource, Eugenix::Render::ShaderStageType::Vertex);
-			auto fragmentStage = Eugenix::CreateStage(fsSource, Eugenix::Render::ShaderStageType::Fragment);
-
-			_pipeline.Create();
-			_pipeline.AttachStage(vertexStage)
-				.AttachStage(fragmentStage)
-				.Build();
+			_pipeline = MakePipeline("Shaders/simple_pos_transform.vert", "Shaders/simple_pos_transform.frag");
 
 			uniformModel = glGetUniformLocation(_pipeline.NativeHandle(), "model");
 			uniformView = glGetUniformLocation(_pipeline.NativeHandle(), "view");
