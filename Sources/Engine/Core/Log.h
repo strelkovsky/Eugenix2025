@@ -30,8 +30,8 @@ namespace Eugenix
 	constexpr LogLevel CurrentLogLevel = static_cast<LogLevel>(EUGENIX_LOG_LEVEL);
 #endif
 
-	template<LogSeverity Severity, typename... Args>
-	void LogFmt(Args&&... args)
+	template<LogSeverity Severity, class... Args>
+	void LogFmt(std::format_string<Args...> fmt, Args&&... args)
 	{
 		if constexpr (
 			(Severity == LogSeverity::Error && CurrentLogLevel >= LogLevel::ErrorOnly) ||
@@ -41,7 +41,7 @@ namespace Eugenix
 			(Severity == LogSeverity::Success && CurrentLogLevel >= LogLevel::All))
 		{
 #if defined(EUGENIX_PLATFORM_WINDOWS)
-			HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+			HANDLE hConsole = GetStdHandle(STD_ERROR_HANDLE);
 			CONSOLE_SCREEN_BUFFER_INFO info;
 			GetConsoleScreenBufferInfo(hConsole, &info);
 
@@ -59,7 +59,8 @@ namespace Eugenix
 			if constexpr (Severity == LogSeverity::Warning) std::cerr << "[Warn] ";
 			if constexpr (Severity == LogSeverity::Info)    std::cerr << "[Info] ";
 			if constexpr (Severity == LogSeverity::Verbose) std::cerr << "[Verbose] ";
-			((std::cerr << std::forward<Args>(args)), ...) << '\n';
+
+			std::cerr << std::format(fmt, std::forward<Args>(args)...) << '\n';
 
 // reset color
 #if defined(EUGENIX_PLATFORM_WINDOWS)
@@ -70,9 +71,9 @@ namespace Eugenix
 		}
 	}
 
-	inline void LogInfo(auto&&... args) { LogFmt<LogSeverity::Info>(std::forward<decltype(args)>(args)...); }
-	inline void LogWarn(auto&&... args) { LogFmt<LogSeverity::Warning>(std::forward<decltype(args)>(args)...); }
-	inline void LogError(auto&&... args) { LogFmt<LogSeverity::Error>(std::forward<decltype(args)>(args)...); }
-	inline void LogVerbose(auto&&... args) { LogFmt<LogSeverity::Verbose>(std::forward<decltype(args)>(args)...); }
-	inline void LogSuccess(auto&&... args) { LogFmt<LogSeverity::Success>(std::forward<decltype(args)>(args)...); }
+	template<class... Args> inline void LogInfo(std::format_string<Args...> fmt, Args&&... args) { LogFmt<Eugenix::LogSeverity::Info   >(fmt, std::forward<Args>(args)...); }
+	template<class... Args> inline void LogWarn(std::format_string<Args...> fmt, Args&&... args) { LogFmt<Eugenix::LogSeverity::Warning>(fmt, std::forward<Args>(args)...); }
+	template<class... Args> inline void LogError(std::format_string<Args...> fmt, Args&&... args) { LogFmt<Eugenix::LogSeverity::Error  >(fmt, std::forward<Args>(args)...); }
+	template<class... Args> inline void LogVerbose(std::format_string<Args...> fmt, Args&&... args) { LogFmt<Eugenix::LogSeverity::Verbose>(fmt, std::forward<Args>(args)...); }
+	template<class... Args> inline void LogSuccess(std::format_string<Args...> fmt, Args&&... args) { LogFmt<Eugenix::LogSeverity::Success>(fmt, std::forward<Args>(args)...); }
 }
