@@ -441,4 +441,47 @@ namespace Eugenix
 		fs.Destroy();
 		return p;
 	}
+
+	int32_t AttribSize()
+	{
+		return 0;
+	}
+
+	// Helpers
+
+	inline int ComponentsFromGLType(GLenum t)
+	{
+		switch (t) {
+		case GL_FLOAT: case GL_INT: case GL_UNSIGNED_INT: case GL_DOUBLE: return 1;
+		case GL_FLOAT_VEC2: case GL_INT_VEC2: case GL_UNSIGNED_INT_VEC2: case GL_DOUBLE_VEC2: return 2;
+		case GL_FLOAT_VEC3: case GL_INT_VEC3: case GL_UNSIGNED_INT_VEC3: case GL_DOUBLE_VEC3: return 3;
+		case GL_FLOAT_VEC4: case GL_INT_VEC4: case GL_UNSIGNED_INT_VEC4: case GL_DOUBLE_VEC4: return 4;
+		default:
+			throw std::runtime_error("Unsupported GLSL attribute type");
+		}
+	}
+
+
+	inline uint32_t BytesPerComponent(Render::DataType dt) 
+	{
+		switch (dt) {
+		case Render::DataType::Float: return 4;
+		case Render::DataType::UInt:   return 4;
+		default: return 0;
+		}
+	}
+
+	Render::Attribute AttributeFromShader(const Render::OpenGL::AttribInfo& attribInfo, uint32_t currentOffset = 0)
+	{
+		Render::Attribute attrib;
+		attrib.normalized = false;
+		attrib.index = attribInfo.location;
+
+		attrib.type = Render::OpenGL::to_native_type(attribInfo.type) ;
+		attrib.size = ComponentsFromGLType(attribInfo.type);
+
+		attrib.offset = currentOffset;
+
+		return attrib;
+	}
 }

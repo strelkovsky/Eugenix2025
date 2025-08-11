@@ -16,8 +16,28 @@ namespace Eugenix::Render::OpenGL
 		case DataType::UInt : return GL_UNSIGNED_INT;
 		case DataType::Float : return GL_FLOAT;
 		}
-		assert(false && "Invalid PrimitiveType");
+		assert(false && "Invalid DataType");
 		return 0;
+	}
+
+	constexpr DataType to_native_type(GLenum type)
+	{
+		switch (type)
+		{
+		case GL_UNSIGNED_BYTE:
+			return DataType::UByte;
+		case GL_UNSIGNED_INT: 
+		case GL_UNSIGNED_INT_VEC2:
+		case GL_UNSIGNED_INT_VEC3:
+		case GL_UNSIGNED_INT_VEC4:
+			return DataType::UInt;
+		case GL_FLOAT: 
+		case GL_FLOAT_VEC2: 
+		case GL_FLOAT_VEC3 : 
+		case GL_FLOAT_VEC4 : 
+			return DataType::Float;
+		}
+		assert(false && "Invalid GLSL attribute type");
 	}
 
 	constexpr GLenum to_opengl_type(PrimitiveType type)

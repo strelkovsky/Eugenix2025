@@ -62,7 +62,7 @@ namespace Eugenix::Render::OpenGL
 			glUniform1i(location, value);
 		}
 
-		const std::vector<AttribInfo>& getAttribs() const
+		const std::vector<AttribInfo>& GetAttribs() const
 		{
 			return _attribs;
 		}
