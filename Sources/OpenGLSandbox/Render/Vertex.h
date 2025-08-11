@@ -47,7 +47,7 @@ namespace Eugenix::Render::Vertex
 		{
 			Render::Attribute{ /*location*/0, /*size*/3, Render::DataType::Float, false, /*offset*/0 },
 			Render::Attribute{ /*location*/1, /*size*/3, Render::DataType::Float, false, /*offset*/sizeof(glm::vec3) },
-			Render::Attribute{ /*location*/1, /*size*/3, Render::DataType::Float, false, /*offset*/sizeof(glm::vec3) + sizeof(glm::vec3) },
+			Render::Attribute{ /*location*/2, /*size*/3, Render::DataType::Float, false, /*offset*/sizeof(glm::vec3) + sizeof(glm::vec3) },
 		};
 	};
 } // namespace Eugenix::Render::Vertex
