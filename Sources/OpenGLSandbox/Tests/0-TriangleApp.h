@@ -20,70 +20,19 @@
 #include "Render/OpenGL/Pipeline.h"
 #include "Render/OpenGL/ShaderStage.h"
 #include "Render/OpenGL/VertexArray.h"
+
+#include "Render/Mesh.h"
 #include "Render/Types.h"
 #include "Render/Vertex.h"
 
 namespace
 {
-	const std::vector<Eugenix::Render::Vertex::PosColor> triangle_vertices
-	{
+	const std::array<Eugenix::Render::Vertex::PosColor, 3> triangle_vertices = 
+	{ {
 		{{-1.0f, -1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
 		{{ 0.0f,  1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
 		{{ 1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}
-	};
-
-//	const std::array<Eugenix::Render::Vertex::PosColor, 3> triangle_vertices2 = 
-//	{ {
-//		{{-1.0f, -1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-//		{{ 0.0f,  1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-//		{{ 1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}
-//	} };
-//
-//	struct Mesh
-//	{
-//	public:
-//		template<class TVertex>
-//		void build(std::span<const TVertex> verts,
-//			std::span<const uint32_t> indices = {})
-//		{
-//			_vbo.Create();
-//			_vbo.Storage(Eugenix::Core::MakeData(verts));
-//
-//			_vao.Create();
-//			_vao.AttachVertices(_vbo, TVertex::stride);
-//			for (auto& a : TVertex::layout) _vao.Attribute(a);
-//
-//			_indexed = !indices.empty();
-//			if (_indexed) {
-//				_ebo.Create();
-//				_ebo.Storage(Eugenix::Core::MakeData(indices));
-//				_vao.AttachIndices(_ebo);
-//				_count = static_cast<uint32_t>(indices.size());
-//			}
-//			else {
-//				_count = static_cast<uint32_t>(verts.size());
-//			}
-//		}
-//
-//		void bind() { _vao.Bind(); }
-//		void drawTriangles() const {
-//			if (_indexed) {
-//				Eugenix::Render::OpenGL::Commands::DrawIndexed(Eugenix::Render::PrimitiveType::Triangles, _count, Eugenix::Render::DataType::UInt);
-//			}
-//			else {
-//				Eugenix::Render::OpenGL::Commands::DrawVertices(Eugenix::Render::PrimitiveType::Triangles, _count);
-//			}
-//		}
-//
-//		void destroy() { _vao.Destroy(); _vbo.Destroy(); _ebo.Destroy(); }
-//
-//	private:
-//		Eugenix::Render::OpenGL::VertexArray _vao{};
-//		Eugenix::Render::OpenGL::Buffer _vbo{};
-//		Eugenix::Render::OpenGL::Buffer _ebo{};
-//		uint32_t _count = 0;
-//		bool _indexed = false;
-//	};
+	} };
 }
 
 namespace Eugenix
@@ -105,11 +54,17 @@ namespace Eugenix
 
 			_pipeline.Bind();
 
-			_triangleVao.Bind();
-			Render::OpenGL::Commands::DrawVertices(Render::PrimitiveType::Triangles, 3);
+			//_triangleVao.Bind();
+			//Render::OpenGL::Commands::DrawVertices(Render::PrimitiveType::Triangles, 3);
 
-			//_mesh.bind();
-			//_mesh.drawTriangles();
+			_mesh.Bind();
+			_mesh.DrawTriangles();
+		}
+		 
+		void onCleanup() override
+		{
+			_pipeline.Destroy();
+			_mesh.Destroy();
 		}
 
 	private:
@@ -140,7 +95,7 @@ namespace Eugenix
 				_triangleVao.Attribute(a);
 			}
 
-			//_mesh.build(std::span{ triangle_vertices2 });
+			_mesh.Build(std::span{ triangle_vertices });
 		}
 
 		Render::OpenGL::VertexArray _triangleVao{};
@@ -148,6 +103,6 @@ namespace Eugenix
 
 		Render::OpenGL::Pipeline _pipeline{};
 
-		Mesh _mesh;
+		Render::Mesh _mesh;
 	};
 }
