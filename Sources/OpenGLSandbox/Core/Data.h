@@ -10,6 +10,12 @@ namespace Eugenix::Core
 		size_t      size{};
 	};
 
+	template <class T, std::size_t N>
+	inline Data MakeData(std::span<const T, N> s) 
+	{
+		return { s.data(), s.size_bytes() };
+	}
+
 	template <typename type>
 	static Data MakeData(std::span<const type> span)
 	{
