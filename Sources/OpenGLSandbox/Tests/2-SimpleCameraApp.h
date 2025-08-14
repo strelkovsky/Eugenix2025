@@ -12,6 +12,7 @@
 #include "App/SandboxApp.h"
 #include "Render/OpenGL/Buffer.h"
 #include "Render/OpenGL/Commands.h"
+#include "Render/Mesh.h"
 #include "Render/OpenGL/Pipeline.h"
 #include "Render/OpenGL/VertexArray.h"
 
@@ -61,7 +62,8 @@ namespace Eugenix
 				glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
 				glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(_camera.CalculateViewMatrix()));
 				glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
-				_meshes[0].RenderMesh();
+				_meshes[0].Bind();
+				_meshes[0].DrawTriangles();
 
 				model = glm::mat4(1.0f);
 				model = glm::translate(model, glm::vec3(0.6f, 0.0f, -3.0f));
@@ -72,22 +74,35 @@ namespace Eugenix
 				glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
 				glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(_camera.CalculateViewMatrix()));
 				glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
-				_meshes[1].RenderMesh();
+				_meshes[1].Bind();
+				_meshes[1].DrawTriangles();
+
+				model = glm::mat4(1.0f);
+				model = glm::translate(model, glm::vec3(0.0f, 0.0f, -3.0f));
+				model = glm::rotate(model, 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+				model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.75f));
+				glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
+				glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(_camera.CalculateViewMatrix()));
+				glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
+				_mesh.Bind();
+				_mesh.DrawTriangles();
 			}
 		}
 
 	private:
 		void CreateGeometry()
 		{
-			GLfloat vertices[] =
-			{
-				-1.0f, -1.0f, 0.0f,
-				 0.0f, -1.0f, 1.0f,
-				 1.0f, -1.0f, 0.0f,
-				 0.0f,  1.0f, 0.0f,
-			};
+			const std::array<Eugenix::Render::Vertex::Pos, 4> verts =
+			{ {
+				{{-1.0f, -1.0f, 0.0f }},
+				{{ 0.0f, -1.0f, 1.0f }},
+				{{ 1.0f, -1.0f, 0.0f }},
+				{{ 0.0f,  1.0f, 0.0f }}
+			} };
 
-			unsigned int indices[] =
+			const std::array<uint32_t, 12> inds
 			{
 				0, 3, 1,
 				1, 3, 2,
@@ -95,15 +110,13 @@ namespace Eugenix
 				0, 1, 2,
 			};
 
-			_meshes.reserve(2);
+			_mesh.Build(std::span{ verts }, std::span{ inds });
 
-			std::vector<Render::Attribute> attributes
-			{
-				{ 0, 3, Render::DataType::Float, false, 0 }
-			};
+			Render::Mesh mesh{};
+			mesh.Build(std::span{ verts }, std::span{ inds });
 
-			_meshes.emplace_back(vertices, indices, attributes, 3 * sizeof(float));
-			_meshes.emplace_back(vertices, indices, attributes, 3 * sizeof(float));
+			_meshes.push_back(mesh);
+			_meshes.push_back(mesh);
 		}
 
 		void CreatePipelines()
@@ -117,7 +130,8 @@ namespace Eugenix
 
 		Eugenix::Camera _camera{};
 
-		std::vector<SimpleMesh> _meshes;
+		std::vector<Render::Mesh> _meshes;
+		Render::Mesh _mesh;
 
 		Eugenix::Render::OpenGL::Pipeline _pipeline{};
 		GLuint uniformModel{};

@@ -21,6 +21,20 @@ namespace Eugenix::Render::Vertex
 		};
 	};
 
+	struct PosUV
+	{
+		glm::vec3 pos;
+		glm::vec2 uv;
+
+		static constexpr uint32_t stride = sizeof(glm::vec3) + sizeof(glm::vec2);
+
+		static constexpr std::array<Render::Attribute, 2> layout =
+		{
+			Render::Attribute{ /*location*/0, /*size*/3, Render::DataType::Float, false, /*offset*/0 },
+			Render::Attribute{ /*location*/1, /*size*/2, Render::DataType::Float, false, /*offset*/sizeof(glm::vec3) },
+		};
+	};
+
 	struct PosColor
 	{
 		glm::vec3 pos;
@@ -47,7 +61,7 @@ namespace Eugenix::Render::Vertex
 		{
 			Render::Attribute{ /*location*/0, /*size*/3, Render::DataType::Float, false, /*offset*/0 },
 			Render::Attribute{ /*location*/1, /*size*/3, Render::DataType::Float, false, /*offset*/sizeof(glm::vec3) },
-			Render::Attribute{ /*location*/2, /*size*/3, Render::DataType::Float, false, /*offset*/sizeof(glm::vec3) + sizeof(glm::vec3) },
+			Render::Attribute{ /*location*/2, /*size*/2, Render::DataType::Float, false, /*offset*/sizeof(glm::vec3) + sizeof(glm::vec3) },
 		};
 	};
 } // namespace Eugenix::Render::Vertex

@@ -1,5 +1,9 @@
 #pragma once
 
+/*
+TODO : why second texture doesn't work?
+*/
+
 #include <span>
 
 #include <glm/glm.hpp>
@@ -87,7 +91,8 @@ namespace Eugenix
 				glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
 				_sampler.Bind(0);
 				_brickTexture.Bind();
-				meshes[0].RenderMesh();
+				_meshes[0].Bind();
+				_meshes[0].DrawTriangles();
 
 				model = glm::mat4(1.0f);
 				model = glm::translate(model, glm::vec3(0.6f, 0.0f, -3.0f));
@@ -100,23 +105,23 @@ namespace Eugenix
 				glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
 				_sampler.Bind(0);
 				_dirtTexture.Bind();
-				meshes[1].RenderMesh();
+				_meshes[1].Bind();
+				_meshes[1].DrawTriangles();
 			}
 		}
 
 	private:
 		void CreateGeometry()
 		{
-			GLfloat vertices[] =
-			{
-				//  X      Y     Z      U     V
-				-1.0f, -1.0f, 0.0f,  0.0f, 0.0f,
-				 0.0f, -1.0f, 1.0f,  0.5f, 0.0f,
-				 1.0f, -1.0f, 0.0f,  1.0f, 0.0f,
-				 0.0f,  1.0f, 0.0f,  0.5f, 1.0f,
-			};
+			const std::array<Eugenix::Render::Vertex::PosUV, 4> verts =
+			{ {
+				{{-1.0f, -1.0f, 0.0f }, { 0.0f, 0.0f }},
+				{{ 0.0f, -1.0f, 1.0f }, { 0.5f, 0.0f }},
+				{{ 1.0f, -1.0f, 0.0f }, { 1.0f, 0.0f }},
+				{{ 0.0f,  1.0f, 0.0f }, { 0.5f, 1.0f }}
+			} };
 
-			unsigned int indices[] =
+			const std::array<uint32_t, 12> inds
 			{
 				0, 3, 1,
 				1, 3, 2,
@@ -124,16 +129,11 @@ namespace Eugenix
 				0, 1, 2,
 			};
 
-			meshes.reserve(2);
+			Render::Mesh mesh{};
+			mesh.Build(std::span{ verts }, std::span{ inds });
 
-			std::vector<Render::Attribute> attributes
-			{
-				{ 0, 3, Render::DataType::Float, false, 0 },
-				{ 1, 2, Render::DataType::Float, false, (sizeof(glm::vec3)) }
-			};
-
-			meshes.emplace_back(vertices, indices, attributes, 5 * sizeof(float));
-			meshes.emplace_back(vertices, indices, attributes, 5 * sizeof(float));
+			_meshes.push_back(mesh);
+			_meshes.push_back(mesh);
 		}
 
 		void CreatePipelines()
@@ -159,7 +159,7 @@ namespace Eugenix
 			uniformProjection = glGetUniformLocation(_pipeline.NativeHandle(), "projection");
 		}
 
-		std::vector<SimpleMesh> meshes;
+		std::vector<Render::Mesh> _meshes;
 
 		Render::OpenGL::Pipeline _pipeline{};
 		GLint uniformModel{};
