@@ -173,56 +173,6 @@ namespace Eugenix
 
 	};
 
-	struct SimpleMesh
-	{
-		// TODO : vertexSize - плохое решение. Возможно передавать Vertex в шаблонном параметре.
-		SimpleMesh(std::span<const float> vertices, std::span<const uint32_t> indices, std::span<const Render::Attribute> attributes, float vertexSize)
-			: indexCount{ static_cast<uint32_t>(indices.size()) }
-		{
-			_vao.Create();
-
-			_vbo.Create();
-			_vbo.Storage(Core::MakeData(vertices));
-
-			_ibo.Create();
-			_ibo.Storage(Core::MakeData(indices));
-
-			_vao.AttachVertices(_vbo, vertexSize);
-			_vao.AttachIndices(_ibo);
-
-			for (const auto& attribute : attributes)
-			{
-				_vao.Attribute(attribute);
-			}
-		}
-
-		void RenderMesh()
-		{
-			_vao.Bind();
-			Render::OpenGL::Commands::DrawIndexed(Render::PrimitiveType::Triangles, indexCount, Render::DataType::UInt);
-		}
-
-		void ClearMesh()
-		{
-			_vbo.Destroy();
-			_ibo.Destroy();
-			_vao.Destroy();
-
-			indexCount = 0;
-		}
-
-		~SimpleMesh()
-		{
-			ClearMesh();
-		}
-
-		uint32_t indexCount = 0;
-
-		Render::OpenGL::VertexArray _vao{};
-		Render::OpenGL::Buffer _vbo{};
-		Render::OpenGL::Buffer _ibo{};
-	};
-
 	class Camera
 	{
 
