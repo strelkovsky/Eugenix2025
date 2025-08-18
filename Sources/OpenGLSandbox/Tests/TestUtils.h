@@ -152,13 +152,10 @@ namespace Eugenix
 		return stage;
 	}
 
-	Render::OpenGL::Pipeline MakePipeline(std::string_view vsPath, std::string_view fsPath)
+	inline Render::OpenGL::Pipeline MakePipeline(const char* vsSource, const char* fsSource)
 	{
-		auto vsData = IO::FileContent(vsPath);
-		auto fsData = IO::FileContent(fsPath);
-
-		auto vs = CreateStage(vsData.data(), Render::ShaderStageType::Vertex);
-		auto fs = CreateStage(fsData.data(), Render::ShaderStageType::Fragment);
+		auto vs = CreateStage(vsSource, Render::ShaderStageType::Vertex);
+		auto fs = CreateStage(fsSource, Render::ShaderStageType::Fragment);
 
 		Render::OpenGL::Pipeline p;
 		p.Create();
@@ -169,9 +166,12 @@ namespace Eugenix
 		return p;
 	}
 
-	int32_t AttribSize()
+	inline Render::OpenGL::Pipeline MakePipelineFromFiles(std::string_view vsPath, std::string_view fsPath)
 	{
-		return 0;
+		auto vsData = IO::FileContent(vsPath);
+		auto fsData = IO::FileContent(fsPath);
+
+		return MakePipeline(vsData.data(), fsData.data());
 	}
 
 	// Helpers

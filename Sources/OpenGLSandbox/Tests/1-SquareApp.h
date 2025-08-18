@@ -55,7 +55,7 @@ namespace Eugenix
 			_squareVao.AttachIndices(_squareEbo);
 			_squareVao.Attribute(position_attribute);
 
-			_squarePipeline = Eugenix::MakePipeline("Shaders/simple_pos.vert", "Shaders/simple_pos.frag");
+			_squarePipeline = Eugenix::MakePipelineFromFiles("Shaders/simple_pos.vert", "Shaders/simple_pos.frag");
 
 			Render::OpenGL::Commands::Clear(0.2f, 0.3f, 0.3f);
 

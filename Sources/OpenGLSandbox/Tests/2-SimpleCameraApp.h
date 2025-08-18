@@ -121,7 +121,7 @@ namespace Eugenix
 
 		void CreatePipelines()
 		{
-			_pipeline = MakePipeline("Shaders/simple_pos_transform.vert", "Shaders/simple_pos_transform.frag");
+			_pipeline = MakePipelineFromFiles("Shaders/simple_pos_transform.vert", "Shaders/simple_pos_transform.frag");
 
 			uniformModel = glGetUniformLocation(_pipeline.NativeHandle(), "model");
 			uniformView = glGetUniformLocation(_pipeline.NativeHandle(), "view");

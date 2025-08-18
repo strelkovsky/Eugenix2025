@@ -70,7 +70,7 @@ namespace Eugenix
 	private:
 		void createPipeline()
 		{
-			_pipeline = Eugenix::MakePipeline("Shaders/simple_pos_color.vert", "Shaders/simple_pos_color.frag");
+			_pipeline = Eugenix::MakePipelineFromFiles("Shaders/simple_pos_color.vert", "Shaders/simple_pos_color.frag");
 		}
 
 		void createGeometry()
