@@ -49,7 +49,7 @@ namespace Eugenix::Render::OpenGL
 				std::vector<char> shaderLog(logLength);
 				glGetShaderInfoLog(_handle, logLength, nullptr, shaderLog.data());
 
-				LogError("Shader compile error - ", shaderLog.data());
+				LogError("Shader compile error - {}", shaderLog.data());
 			}
 		}
 

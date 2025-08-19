@@ -80,7 +80,7 @@ namespace Eugenix::Render::OpenGL
 				std::vector<char> programLog(logLength);
 				glGetProgramInfoLog(_handle, logLength, nullptr, programLog.data());
 
-				LogError("Pipeline link error - ", programLog.data());
+				LogError("Pipeline link error - {}", programLog.data());
 			}
 		}
 
