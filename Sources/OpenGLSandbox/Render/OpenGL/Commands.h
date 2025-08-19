@@ -16,6 +16,16 @@ namespace Eugenix::Render::OpenGL::Commands
 		glClear(mask);
 	}
 
+	inline void Viewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height)
+	{
+		glViewport(x, y, width, height);
+	}
+
+	inline void DepthMask(bool enable)
+	{
+		glDepthMask(enable ? GL_TRUE : GL_FALSE);
+	}
+
 	inline void DrawVertices(PrimitiveType primitiveType, uint32_t verticesCount, uint32_t first = 0)
 	{
 		glDrawArrays(to_opengl_type(primitiveType), first, verticesCount);
