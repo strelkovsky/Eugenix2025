@@ -4,6 +4,8 @@
 
 #include <glad/glad.h>
 
+#include <glm/gtc/type_ptr.hpp>
+
 #include "Object.h"
 #include "ShaderStage.h"
 
@@ -50,16 +52,55 @@ namespace Eugenix::Render::OpenGL
 			glUseProgram(_handle);
 		}
 
-		void SetUniform(std::string_view name, glm::vec3& color)
+		// TODO : cache locations
+
+		// ------------------------------------------------------------------------
+		void setUniformBool(const std::string& name, bool value) const
 		{
 			auto location = glGetUniformLocation(_handle, name.data());
-			glUniform4f(location, color.x, color.y, color.z, 1.0f);
+			glUniform1i(location, (int)value);
 		}
-
+		// ------------------------------------------------------------------------
 		void SetUniform(std::string_view name, int value)
 		{
 			auto location = glGetUniformLocation(_handle, name.data());
 			glUniform1i(location, value);
+		}
+		// ------------------------------------------------------------------------
+		void SetUniform(std::string_view name, float value) const
+		{
+			auto location = glGetUniformLocation(_handle, name.data());
+			glUniform1f(location, value);
+		}
+		// ------------------------------------------------------------------------
+		void SetUniform(std::string_view name, const glm::vec2& value) const
+		{
+			auto location = glGetUniformLocation(_handle, name.data());
+			glUniform2fv(location, 1, &value[0]);
+		}
+		// ------------------------------------------------------------------------
+		void SetUniform(std::string_view name, const glm::vec3& value) const
+		{
+			auto location = glGetUniformLocation(_handle, name.data());
+			glUniform3fv(location, 1, &value[0]);
+		}
+		// ------------------------------------------------------------------------
+		void SetUniform(std::string_view name, const glm::vec4& value) const
+		{
+			auto location = glGetUniformLocation(_handle, name.data());
+			glUniform4fv(location, 1, &value[0]);
+		}
+		// ------------------------------------------------------------------------
+		void SetUniform(std::string_view name, const glm::mat3& mat) const
+		{
+			auto location = glGetUniformLocation(_handle, name.data());
+			glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(mat));
+		}
+		// ------------------------------------------------------------------------
+		void SetUniform(std::string_view name, const glm::mat4& mat) const
+		{
+			auto location = glGetUniformLocation(_handle, name.data());
+			glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(mat));
 		}
 
 		const std::vector<AttribInfo>& GetAttribs() const
