@@ -14,6 +14,9 @@ namespace
 #if EUGENIX_DEBUG
 	void debugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param)
 	{
+		if (id == 131185) // Filter out NVIDIA "Buffer detailed info"
+			return;
+
 		auto source_str = [source]() -> std::string {
 			switch (source)
 			{
