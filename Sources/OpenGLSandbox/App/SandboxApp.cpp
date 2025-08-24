@@ -16,6 +16,8 @@ namespace
 	{
 		if (id == 131185) // Filter out NVIDIA "Buffer detailed info"
 			return;
+		if (id == 131218) // Filter out NVIDIA "Fragment Shader is going to be recompiled"
+			return;
 
 		auto source_str = [source]() -> std::string {
 			switch (source)
