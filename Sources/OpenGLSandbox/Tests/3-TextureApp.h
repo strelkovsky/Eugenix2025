@@ -1,9 +1,5 @@
 #pragma once
 
-/*
-TODO : why second texture doesn't work?
-*/
-
 #include <span>
 
 #include <glm/glm.hpp>
@@ -70,10 +66,11 @@ namespace Eugenix
 		{
 			Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-			// Projection matrix
 			glm::mat4 projection = glm::perspective(45.0f, (GLfloat)width() / (GLfloat)height(), 0.1f, 100.0f);
-			_pipeline.Bind();
+			_pipeline.SetUniform("view", _camera.CalculateViewMatrix());
+			_pipeline.SetUniform("projection", projection);
 
+			_pipeline.Bind();
 			{
 				_sampler.Bind(0);
 
@@ -86,9 +83,7 @@ namespace Eugenix
 				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 				model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.75f));
-				glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
-				glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(_camera.CalculateViewMatrix()));
-				glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
+				_pipeline.SetUniform("model", model);
 				_sampler.Bind(0);
 				_brickTexture.Bind();
 				_meshes[0].Bind();
@@ -100,9 +95,7 @@ namespace Eugenix
 				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 				model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.75f));
-				glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
-				glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(_camera.CalculateViewMatrix()));
-				glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
+				_pipeline.SetUniform("model", model);
 				_sampler.Bind(0);
 				_dirtTexture.Bind();
 				_meshes[1].Bind();
@@ -153,18 +146,11 @@ namespace Eugenix
 			_pipeline.AttachStage(vertexStage)
 				.AttachStage(fragmentStage)
 				.Build();
-
-			uniformModel = glGetUniformLocation(_pipeline.NativeHandle(), "model");
-			uniformView = glGetUniformLocation(_pipeline.NativeHandle(), "view");
-			uniformProjection = glGetUniformLocation(_pipeline.NativeHandle(), "projection");
 		}
 
 		std::vector<Render::Mesh> _meshes;
 
 		Render::OpenGL::Pipeline _pipeline{};
-		GLint uniformModel{};
-		GLint uniformView{};
-		GLint uniformProjection{};
 
 		Camera _camera{};
 

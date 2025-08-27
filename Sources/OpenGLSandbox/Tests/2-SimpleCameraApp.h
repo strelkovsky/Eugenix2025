@@ -45,35 +45,31 @@ namespace Eugenix
 		{
 			Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-			// Projection matrix
 			glm::mat4 projection = glm::perspective(45.0f, (GLfloat)width() / (GLfloat)height(), 0.1f, 100.0f);
-			_pipeline.Bind();
+			_pipeline.SetUniform("view", _camera.CalculateViewMatrix());
+			_pipeline.SetUniform("projection", projection);
 
+			_pipeline.Bind();
 			{
-				// Model matrix
 				glm::mat4 model = glm::mat4(1.0f);
 
 				model = glm::mat4(1.0f);
-				model = glm::translate(model, glm::vec3(-0.6f, 0.0f, -3.0f));
+				model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -3.0f));
 				model = glm::rotate(model, 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
 				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 				model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.75f));
-				glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
-				glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(_camera.CalculateViewMatrix()));
-				glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
+				_pipeline.SetUniform("model", model);
 				_meshes[0].Bind();
 				_meshes[0].DrawTriangles();
 
 				model = glm::mat4(1.0f);
-				model = glm::translate(model, glm::vec3(0.6f, 0.0f, -3.0f));
+				model = glm::translate(model, glm::vec3(1.0f, 0.0f, -3.0f));
 				model = glm::rotate(model, 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
 				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 				model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.75f));
-				glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
-				glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(_camera.CalculateViewMatrix()));
-				glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
+				_pipeline.SetUniform("model", model);
 				_meshes[1].Bind();
 				_meshes[1].DrawTriangles();
 
@@ -83,9 +79,7 @@ namespace Eugenix
 				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 				model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.75f));
-				glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
-				glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(_camera.CalculateViewMatrix()));
-				glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
+				_pipeline.SetUniform("model", model);
 				_mesh.Bind();
 				_mesh.DrawTriangles();
 			}
@@ -122,10 +116,6 @@ namespace Eugenix
 		void CreatePipelines()
 		{
 			_pipeline = MakePipelineFromFiles("Shaders/simple_pos_transform.vert", "Shaders/simple_pos_transform.frag");
-
-			uniformModel = glGetUniformLocation(_pipeline.NativeHandle(), "model");
-			uniformView = glGetUniformLocation(_pipeline.NativeHandle(), "view");
-			uniformProjection = glGetUniformLocation(_pipeline.NativeHandle(), "projection");
 		}
 
 		Eugenix::Camera _camera{};
@@ -134,8 +124,5 @@ namespace Eugenix
 		Render::Mesh _mesh;
 
 		Eugenix::Render::OpenGL::Pipeline _pipeline{};
-		GLuint uniformModel{};
-		GLuint uniformView{};
-		GLuint uniformProjection{};
 	};
 }
