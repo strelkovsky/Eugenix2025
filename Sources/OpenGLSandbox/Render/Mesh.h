@@ -48,7 +48,7 @@ namespace Eugenix::Render
 			_vao.Bind(); 
 		}
 
-		void DrawTriangles() const 
+		void Draw() const 
 		{
 			if (_indexed) 
 			{
