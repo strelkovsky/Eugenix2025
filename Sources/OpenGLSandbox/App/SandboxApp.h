@@ -24,6 +24,7 @@ namespace Eugenix
 		virtual void onRender() { }
 		virtual void onDebugUI() { }
 		virtual void onCleanup() { }
+		virtual void onResize() { }
 
 		virtual void onKeyHandle(int key, int code, int action, int mode) { }
 		virtual void onMouseHandle(double xPos, double yPos) { }

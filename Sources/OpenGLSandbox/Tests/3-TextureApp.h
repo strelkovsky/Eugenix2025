@@ -87,7 +87,7 @@ namespace Eugenix
 				_sampler.Bind(0);
 				_brickTexture.Bind();
 				_meshes[0].Bind();
-				_meshes[0].DrawTriangles();
+				_meshes[0].Draw();
 
 				model = glm::mat4(1.0f);
 				model = glm::translate(model, glm::vec3(0.6f, 0.0f, -3.0f));
@@ -99,7 +99,7 @@ namespace Eugenix
 				_sampler.Bind(0);
 				_dirtTexture.Bind();
 				_meshes[1].Bind();
-				_meshes[1].DrawTriangles();
+				_meshes[1].Draw();
 			}
 		}
 

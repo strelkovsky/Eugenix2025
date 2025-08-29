@@ -252,6 +252,18 @@ namespace Eugenix
 				}
 			});
 
+		glfwSetFramebufferSizeCallback(_window, [](GLFWwindow* window, int width, int height)
+			{
+				auto* self = static_cast<SandboxApp*>(glfwGetWindowUserPointer(window));
+				if (self)
+				{
+					self->_width = width;
+					self->_height = height;
+
+					self->onResize();
+				}
+			});
+
 		glfwMakeContextCurrent(_window);
 
 		if (!gladLoadGL())
