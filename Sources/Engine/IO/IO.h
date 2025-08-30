@@ -14,13 +14,15 @@ namespace Eugenix
             std::ifstream stream(std::string(path), std::ios::ate | mode);
             assert(stream.is_open());
 
-            const auto size = stream.tellg();
-            assert(size > 0);
+            const auto end = stream.tellg();
+            assert(end > 0);
+            const size_t size = static_cast<size_t>(end);
 
-            std::vector<char> content(size);
+            std::vector<char> content(size+1);
 
             stream.seekg(0, std::ios::beg);
             stream.read(content.data(), size);
+            content[size] = '\0';
 
             return content;
         }
