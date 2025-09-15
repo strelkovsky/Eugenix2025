@@ -50,6 +50,7 @@ namespace Eugenix
 
 		void onRender() override
 		{
+			Render::OpenGL::Commands::Viewport(0, 0, width(), height());
 			Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT);
 
 			_pipeline.Bind();
@@ -58,7 +59,7 @@ namespace Eugenix
 			//Render::OpenGL::Commands::DrawVertices(Render::PrimitiveType::Triangles, 3);
 
 			_mesh.Bind();
-			_mesh.DrawTriangles();
+			_mesh.Draw();
 		}
 		 
 		void onCleanup() override

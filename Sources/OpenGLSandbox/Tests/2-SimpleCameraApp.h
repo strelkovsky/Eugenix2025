@@ -15,6 +15,7 @@
 #include "Render/Mesh.h"
 #include "Render/OpenGL/Pipeline.h"
 #include "Render/OpenGL/VertexArray.h"
+#include "Render/Utils/MeshGenerator.h"
 
 namespace Eugenix
 {
@@ -43,6 +44,7 @@ namespace Eugenix
 
 		void onRender() override
 		{
+			Render::OpenGL::Commands::Viewport(0, 0, width(), height());
 			Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 			glm::mat4 projection = glm::perspective(45.0f, (GLfloat)width() / (GLfloat)height(), 0.1f, 100.0f);
@@ -61,7 +63,7 @@ namespace Eugenix
 				model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.75f));
 				_pipeline.SetUniform("model", model);
 				_meshes[0].Bind();
-				_meshes[0].DrawTriangles();
+				_meshes[0].Draw();
 
 				model = glm::mat4(1.0f);
 				model = glm::translate(model, glm::vec3(1.0f, 0.0f, -3.0f));
@@ -71,7 +73,7 @@ namespace Eugenix
 				model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.75f));
 				_pipeline.SetUniform("model", model);
 				_meshes[1].Bind();
-				_meshes[1].DrawTriangles();
+				_meshes[1].Draw();
 
 				model = glm::mat4(1.0f);
 				model = glm::translate(model, glm::vec3(0.0f, 0.0f, -3.0f));
@@ -81,7 +83,7 @@ namespace Eugenix
 				model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.75f));
 				_pipeline.SetUniform("model", model);
 				_mesh.Bind();
-				_mesh.DrawTriangles();
+				_mesh.Draw();
 			}
 		}
 
@@ -110,7 +112,9 @@ namespace Eugenix
 			mesh.Build(std::span{ verts }, std::span{ inds });
 
 			_meshes.push_back(mesh);
-			_meshes.push_back(mesh);
+
+			auto genMesh = Render::Utils::CreateCube();
+			_meshes.push_back(genMesh);
 		}
 
 		void CreatePipelines()

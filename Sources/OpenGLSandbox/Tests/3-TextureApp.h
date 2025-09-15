@@ -14,7 +14,7 @@
 #include "Render/OpenGL/Buffer.h"
 #include "Render/OpenGL/Commands.h"
 #include "Render/OpenGL/Pipeline.h"
-#include "Render/OpenGL/Texture.h"
+#include "Render/OpenGL/Texture2D.h"
 #include "Render/OpenGL/Sampler.h"
 #include "Render/OpenGL/VertexArray.h"
 
@@ -64,6 +64,7 @@ namespace Eugenix
 
 		void onRender() override
 		{
+			Render::OpenGL::Commands::Viewport(0, 0, width(), height());
 			Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 			glm::mat4 projection = glm::perspective(45.0f, (GLfloat)width() / (GLfloat)height(), 0.1f, 100.0f);
