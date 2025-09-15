@@ -31,6 +31,7 @@ namespace Eugenix::Render
 	{
 		WrapS,
 		WrapT,
+		WrapR,
 		MinFilter,
 		MagFilter
 	};
@@ -46,6 +47,6 @@ namespace Eugenix::Render
 	// TODO : check naming
 	enum struct TextureFilter
 	{
-		Linear,
+		Linear
 	};
 } // namespace Eugenix::Render

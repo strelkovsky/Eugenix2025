@@ -78,6 +78,7 @@ namespace Eugenix::Render::OpenGL
 		{
 		case TextureParam::WrapS: return GL_TEXTURE_WRAP_S;
 		case TextureParam::WrapT: return GL_TEXTURE_WRAP_T;
+		case TextureParam::WrapR: return GL_TEXTURE_WRAP_R;
 		case TextureParam::MinFilter: return GL_TEXTURE_MIN_FILTER;
 		case TextureParam::MagFilter: return GL_TEXTURE_MAG_FILTER;
 		}

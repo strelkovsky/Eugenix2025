@@ -7,7 +7,7 @@
 #include "Render/OpenGL/Commands.h"
 #include "Render/OpenGL/Pipeline.h"
 #include "Render/OpenGL/ShaderStage.h"
-#include "Render/OpenGL/Texture.h"
+#include "Render/OpenGL/Texture2D.h"
 #include "Render/OpenGL/VertexArray.h"
 #include "Render/Types.h"
 
