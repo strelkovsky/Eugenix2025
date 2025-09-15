@@ -11,13 +11,11 @@
 
 namespace Eugenix::Render::OpenGL
 {
-	// TODO : use DSA & separate sampler
 	class TextureCubemap final : public Object
 	{
 	public:
 		void Create() override
 		{
-			//glGenTextures(1, &_handle);
 			glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &_handle);
 		}
 
@@ -78,42 +76,8 @@ namespace Eugenix::Render::OpenGL
 			glTextureParameteri(_handle, GL_TEXTURE_MAX_LEVEL, 0);
 		}
 
-		//void Create(const std::array<Eugenix::Assets::ImageData, 6>& images)
-		//{
-		//	glBindTexture(GL_TEXTURE_CUBE_MAP, _handle);
-
-		//	for (unsigned int i = 0; i < images.size(); i++)
-		//	{
-		//		const auto& image = images[i];
-
-		//		GLenum internalformat;
-		//		GLenum type;
-
-		//		if (image.channels == 3)
-		//		{
-		//			internalformat = GL_RGB8;
-		//			type = GL_RGB;
-		//		}
-		//		else
-		//		{
-		//			internalformat = GL_RGBA8;
-		//			type = GL_RGBA;
-		//		}
-
-		//		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalformat, image.width, image.height, 0, type, Eugenix::Render::OpenGL::to_opengl_type(Eugenix::Render::DataType::UByte), image.pixels.get());
-		//	}
-
-		//	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		//	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		//	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		//	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		//	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-		//}
-
 		void Bind(uint32_t unit = 0) const
 		{
-			//glActiveTexture(GL_TEXTURE0 + unit);
-			//glBindTexture(GL_TEXTURE_CUBE_MAP, _handle);
 			glBindTextureUnit(unit, _handle);
 		}
 	};
