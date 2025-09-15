@@ -34,7 +34,7 @@ namespace Eugenix
 
 			Render::OpenGL::Commands::Clear(0.2f, 0.0f, 0.2f);
 
-			const std::array<std::string, 6> skyboxImages =
+			const std::array<std::string_view, 6> skyboxImages =
 			{
 				"Textures/Skybox/right.jpg",
 				"Textures/Skybox/left.jpg",

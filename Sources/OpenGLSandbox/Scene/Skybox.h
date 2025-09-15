@@ -2,7 +2,7 @@
 
 #include <array>
 #include <span>
-#include <string>
+#include <string_view>
 
 #include "Assets/ImageLoader.h"
 #include "Render/Mesh.h"
@@ -16,7 +16,7 @@ namespace Eugenix::Scene
 	class Skybox
 	{
 	public:
-		void Create(const std::array<std::string, 6> imagePaths)
+		void Create(const std::array<std::string_view, 6> imagePaths)
 		{
 			const std::array<Eugenix::Render::Vertex::Pos, 24> vertices
 			{ {
