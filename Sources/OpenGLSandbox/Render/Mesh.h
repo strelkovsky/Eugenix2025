@@ -43,7 +43,7 @@ namespace Eugenix::Render
 			}
 		}
 
-		void Bind() 
+		void Bind()
 		{ 
 			_vao.Bind(); 
 		}
