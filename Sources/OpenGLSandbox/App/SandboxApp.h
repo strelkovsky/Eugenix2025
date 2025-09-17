@@ -6,6 +6,8 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include "Render/RenderCaps.h"
+
 constexpr auto DEFAULT_WIDTH = 1024;
 constexpr auto DEFAULT_HEIGHT = 768;
 
@@ -52,6 +54,8 @@ namespace Eugenix
 
 	private:
 		bool initRuntime();
+
+		Render::Caps _renderCaps{};
 
 		GLFWwindow* _window{ nullptr };
 		int _width{};

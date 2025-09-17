@@ -272,6 +272,16 @@ namespace Eugenix
 			glfwTerminate();
 		}
 
+		LogInfo("OpenGL Renderer : {}", (const char*)glGetString(GL_RENDERER));
+		LogInfo("OpenGL Vendor   : {}", (const char*)glGetString(GL_VENDOR));
+		LogInfo("OpenGL Version  : {}", (const char*)glGetString(GL_VERSION));
+		LogInfo("GLSL Version    : {}", (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
+
+		// TODO : log it
+		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &_renderCaps.maxAnisotropy);
+		glGetIntegerv(GL_MAX_COLOR_TEXTURE_SAMPLES, &_renderCaps.maxSamples);
+		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &_renderCaps.maxSamplers);
+
 #if EUGENIX_DEBUG
 		glEnable(GL_DEBUG_OUTPUT);
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
