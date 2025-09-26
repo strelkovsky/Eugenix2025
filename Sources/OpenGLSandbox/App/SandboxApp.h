@@ -35,6 +35,8 @@ namespace Eugenix
 		int width() const { return _width; }
 		int height() const { return _height; }
 
+		GLFWwindow* WindowHandle() const { return _window; }
+
 		bool* getKeys() { return _keys; };
 		bool* getMouseButtons() { return _buttons; };
 
