@@ -26,5 +26,10 @@ namespace Eugenix::Render::OpenGL
 		{
 			glNamedBufferStorage(_handle, data.size, data.ptr, flag);
 		}
+
+		void Update(const Core::Data& data, uint32_t offset = 0)
+		{
+			glNamedBufferSubData(_handle, offset, data.size, data.ptr);
+		}
 	};
 } // namespace Eugenix::Render::OpenGL
