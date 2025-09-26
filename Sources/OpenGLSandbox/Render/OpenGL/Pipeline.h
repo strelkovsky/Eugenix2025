@@ -55,16 +55,15 @@ namespace Eugenix::Render::OpenGL
 		// TODO : cache locations
 
 		// ------------------------------------------------------------------------
-		void setUniformBool(const std::string& name, bool value) const
-		{
-			auto location = glGetUniformLocation(_handle, name.data());
-			glProgramUniform1i(_handle, location, (int)value);
-		}
-		// ------------------------------------------------------------------------
-		void SetUniform(std::string_view name, int value)
+		void SetUniform(std::string_view name, int value) const
 		{
 			auto location = glGetUniformLocation(_handle, name.data());
 			glProgramUniform1i(_handle, location, value);
+		}
+		// ------------------------------------------------------------------------
+		void SetUniform(std::string_view name, bool v) const
+		{
+			SetUniform(name, int(v));
 		}
 		// ------------------------------------------------------------------------
 		void SetUniform(std::string_view name, float value) const
