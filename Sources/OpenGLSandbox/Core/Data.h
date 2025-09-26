@@ -10,6 +10,13 @@ namespace Eugenix::Core
 		size_t      size{};
 	};
 
+	template <typename type>
+	static Data MakeData(const type* ptr)
+	{
+		assert(ptr != nullptr);
+		return { ptr, sizeof(type) };
+	}
+
 	template <class T, std::size_t N>
 	inline Data MakeData(std::span<const T, N> s) 
 	{
