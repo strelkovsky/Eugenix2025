@@ -10,17 +10,17 @@ namespace Eugenix::Assets
 	class ObjModelLoader
 	{
 	public:
-		Render::Model Load(const char* path, const char* pathMaterialFiles = "./", bool flipV = true)
+		Render::Model Load(const std::filesystem::path& modelPath, const std::filesystem::path& materialDir = {}, bool flipV = true)
 		{
 			Eugenix::Render::Model model;
 
 			tinyobj::ObjReaderConfig readerConfig;
-			readerConfig.mtl_search_path = pathMaterialFiles;
+			readerConfig.mtl_search_path = materialDir.string();
 			readerConfig.triangulate = true;
 			readerConfig.vertex_color = false;
 
 			tinyobj::ObjReader reader;
-			if (!reader.ParseFromFile(path, readerConfig))
+			if (!reader.ParseFromFile(modelPath.string(), readerConfig))
 			{
 				if (!reader.Error().empty())
 					Eugenix::LogError("TinyObjReader error: {}", reader.Error());
@@ -42,7 +42,8 @@ namespace Eugenix::Assets
 				{
 					Eugenix::Render::Material out{};
 
-					const std::filesystem::path base = pathMaterialFiles;
+					std::filesystem::path base =
+						materialDir.empty() ? modelPath.parent_path() : materialDir;
 					const std::filesystem::path texPath = base / m.diffuse_texname;
 					const auto image = imageLoader.Load(texPath.string());
 
