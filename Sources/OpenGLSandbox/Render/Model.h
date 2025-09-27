@@ -44,8 +44,13 @@ namespace Eugenix::Render
 			{
 				if (part.materialIndex >= 0 && part.materialIndex < (int)_materials.size())
 				{
-					auto& tex = _materials[part.materialIndex].diffuseTex;
-					if (tex) tex->Bind(0);
+					auto& diffuse = _materials[part.materialIndex].diffuseTex;
+					auto& specular = _materials[part.materialIndex].specularTex;
+
+					if (diffuse) 
+						diffuse->Bind(0); // TODO : use TextureLocation
+					if (specular) 
+						specular->Bind(1); // TODO : use TextureLocation
 				}
 
 				part.mesh.Bind();
