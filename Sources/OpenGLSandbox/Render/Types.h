@@ -47,6 +47,7 @@ namespace Eugenix::Render
 	// TODO : check naming
 	enum struct TextureFilter
 	{
-		Linear
+		Linear,
+		Nearest
 	};
 } // namespace Eugenix::Render
