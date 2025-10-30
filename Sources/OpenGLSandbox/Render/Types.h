@@ -50,4 +50,10 @@ namespace Eugenix::Render
 		Linear,
 		Nearest
 	};
+
+	enum struct TextureColorSpace 
+	{ 
+		Linear, 
+		SRGB 
+	};
 } // namespace Eugenix::Render

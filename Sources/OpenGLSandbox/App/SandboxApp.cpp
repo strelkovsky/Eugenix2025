@@ -282,6 +282,8 @@ namespace Eugenix
 		glGetIntegerv(GL_MAX_COLOR_TEXTURE_SAMPLES, &_renderCaps.maxSamples);
 		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &_renderCaps.maxSamplers);
 
+		glEnable(GL_FRAMEBUFFER_SRGB);
+
 #if EUGENIX_DEBUG
 		glEnable(GL_DEBUG_OUTPUT);
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);

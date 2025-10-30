@@ -38,14 +38,12 @@ namespace Eugenix
 			const auto brickData = _imageLoader.Load("Textures/brick.png");
 			
 			_brickTexture.Create();
-			_brickTexture.Storage(brickData);
-			_brickTexture.Update(brickData);
+			_brickTexture.Upload(brickData);
 
 			const auto dirtData = _imageLoader.Load("Textures/brick.png");
 
 			_dirtTexture.Create();
-			_dirtTexture.Storage(dirtData);
-			_dirtTexture.Update(dirtData);
+			_dirtTexture.Upload(dirtData);
 
 			_sampler.Create();
 			_sampler.Parameter(Render::TextureParam::WrapS, Render::TextureWrapping::Repeat);

@@ -50,10 +50,9 @@ namespace Eugenix::Assets
 						const std::filesystem::path diffuseTexPath = base / m.diffuse_texname;
 						const auto image = imageLoader.Load(diffuseTexPath.string());
 
-						out.diffuseTex = std::make_shared<Eugenix::Render::OpenGL::Texture2D>();
+						out.diffuseTex = std::make_shared<Render::OpenGL::Texture2D>();
 						out.diffuseTex->Create();
-						out.diffuseTex->Storage(image);
-						out.diffuseTex->Update(image);
+						out.diffuseTex->Upload(image);
 					}
 
 					if (!m.normal_texname.empty())
@@ -61,10 +60,9 @@ namespace Eugenix::Assets
 						const std::filesystem::path normalTexPath = base / m.normal_texname;
 						const auto image = imageLoader.Load(normalTexPath.string());
 
-						out.normalsTex = std::make_shared<Eugenix::Render::OpenGL::Texture2D>();
+						out.normalsTex = std::make_shared<Render::OpenGL::Texture2D>();
 						out.normalsTex->Create();
-						out.normalsTex->Storage(image);
-						out.normalsTex->Update(image);
+						out.normalsTex->Upload(image, {.colorSpace = Render::TextureColorSpace::Linear});
 					}
 
 					if (!m.specular_texname.empty())
@@ -74,8 +72,7 @@ namespace Eugenix::Assets
 
 						out.specularTex = std::make_shared<Eugenix::Render::OpenGL::Texture2D>();
 						out.specularTex->Create();
-						out.specularTex->Storage(image);
-						out.specularTex->Update(image);
+						out.specularTex->Upload(image, { .colorSpace = Render::TextureColorSpace::Linear });
 					}
 
 					model.AddMaterial(out);

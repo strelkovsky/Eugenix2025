@@ -37,14 +37,12 @@ namespace Eugenix
 			auto data = _imageLoader.Load("Textures/stone03b.jpg");
 			
 			_texture.Create();
-			_texture.Storage(data);
-			_texture.Update(data);
+			_texture.Upload(data);
 
 			data = _imageLoader.Load("Textures/uvtestgrid.png");
 
 			_texture2.Create();
-			_texture2.Storage(data);
-			_texture2.Update(data);
+			_texture2.Upload(data);
 
 			_sampler.Create();
 			_sampler.Parameter(Render::TextureParam::WrapS, Render::TextureWrapping::Repeat);
@@ -52,10 +50,10 @@ namespace Eugenix
 			_sampler.Parameter(Render::TextureParam::MinFilter, Render::TextureFilter::Linear);
 			_sampler.Parameter(Render::TextureParam::MagFilter, Render::TextureFilter::Linear);
 
-			_model = _modelLoader.Load("Models/rock.obj", "Models/");
-			_model2 = _modelLoader.Load("Models/backpack/backpack.obj", "Models/backpack/");
+			_model = _modelLoader.Load("Models/nanosuit/nanosuit.obj");
+			//_model2 = _modelLoader.Load("Models/backpack/backpack.obj", "Models/backpack/");
 
-			_plane = _modelLoader.Load("Models/plane.obj");
+			//_plane = _modelLoader.Load("Models/plane.obj");
 
 			const std::vector<Render::Vertex::PosNormalUV> vertices =
 			{ {
@@ -115,18 +113,18 @@ namespace Eugenix
 
 			{
 				model = glm::scale(model, { 0.1f, 0.1f, 0.1f });
-				model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+				//model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
 				_pipeline.SetUniform("model", model);
 				_model.Render();
 			}
 
-			{
-				model = glm::mat4(1.0f);
-				model = glm::translate(model, { -0.5f, 0.1, 0.0f });
-				model = glm::scale(model, { 0.1f, 0.1f, 0.1f });
-				_pipeline.SetUniform("model", model);
-				_model2.Render();
-			}
+			//{
+			//	model = glm::mat4(1.0f);
+			//	model = glm::translate(model, { -0.5f, 0.1, 0.0f });
+			//	model = glm::scale(model, { 0.1f, 0.1f, 0.1f });
+			//	_pipeline.SetUniform("model", model);
+			//	_model2.Render();
+			//}
 
 			{
 				model = glm::mat4(1.0f);
@@ -140,16 +138,16 @@ namespace Eugenix
 				_customModel.Render();
 			}
 
-			{
-				model = glm::mat4(1.0f);
-				model = glm::scale(model, { 5.0f, 1.0f, 5.0f });
-				_pipeline.SetUniform("model", model);
+			//{
+			//	model = glm::mat4(1.0f);
+			//	model = glm::scale(model, { 5.0f, 1.0f, 5.0f });
+			//	_pipeline.SetUniform("model", model);
 
-				_sampler.Bind(0);
-				_texture2.Bind(0);
+			//	_sampler.Bind(0);
+			//	_texture2.Bind(0);
 
-				_plane.Render();
-			}
+			//	_plane.Render();
+			//}
 		}
 
 	private:
