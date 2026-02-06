@@ -28,4 +28,10 @@ namespace Eugenix::Core
 	{
 		return{ span.data(), span.size_bytes() };
 	}
+
+	template <typename type>
+	static Data MakeData(const std::vector<type>& vector)
+	{
+		return{ vector.data(), vector.size() * sizeof(type) };
+	}
 } // namespace Eugenix::Render
