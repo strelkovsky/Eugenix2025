@@ -45,6 +45,7 @@ namespace Eugenix::Render::OpenGL
 		switch (type)
 		{
 		case PrimitiveType::Triangles : return GL_TRIANGLES;
+		case PrimitiveType::Lines : return GL_LINES;
 		}
 		assert(false && "Invalid PrimitiveType");
 		return 0;

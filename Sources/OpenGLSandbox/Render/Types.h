@@ -11,7 +11,8 @@ namespace Eugenix::Render
 
 	enum struct PrimitiveType
 	{
-		Triangles
+		Triangles,
+		Lines
 	};
 
 	enum struct ShaderStageType
