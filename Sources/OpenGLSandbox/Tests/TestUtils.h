@@ -20,6 +20,20 @@ const int MAX_SPOT_LIGHTS = 3;
 // TMP bridge beetween tests & sandbox sources
 namespace Eugenix
 {
+	namespace UBO
+	{
+		struct Camera
+		{
+			glm::mat4 view;
+			glm::mat4 proj;
+		};
+
+		struct Material
+		{
+			glm::vec3 color;
+		};
+	}
+
 	class Camera
 	{
 
@@ -144,15 +158,23 @@ namespace Eugenix
 	};
 
 
-	Render::OpenGL::ShaderStage CreateStage(const char* source, Render::ShaderStageType type)
+	Render::OpenGL::ShaderStage CreateStage(std::string_view source, Render::ShaderStageType type)
 	{
 		Render::OpenGL::ShaderStage stage{ type };
 		stage.Create();
-		stage.CompileFromSource(source);
+		stage.CompileGLSL(source);
 		return stage;
 	}
 
-	inline Render::OpenGL::Pipeline MakePipeline(const char* vsSource, const char* fsSource)
+	Render::OpenGL::ShaderStage CreateStage(const std::vector<char>& source, Render::ShaderStageType type)
+	{
+		Render::OpenGL::ShaderStage stage{ type };
+		stage.Create();
+		stage.SpecializeSPIRV(source);
+		return stage;
+	}
+
+	inline Render::OpenGL::Pipeline MakePipeline(std::string_view vsSource, std::string_view fsSource)
 	{
 		auto vs = CreateStage(vsSource, Render::ShaderStageType::Vertex);
 		auto fs = CreateStage(fsSource, Render::ShaderStageType::Fragment);
@@ -166,12 +188,44 @@ namespace Eugenix
 		return p;
 	}
 
-	inline Render::OpenGL::Pipeline MakePipelineFromFiles(std::string_view vsPath, std::string_view fsPath)
+	inline Render::OpenGL::Pipeline MakePipeline(const std::vector<char>& vsSource, const std::vector<char>& fsSource)
 	{
-		auto vsData = IO::FileContent(vsPath);
-		auto fsData = IO::FileContent(fsPath);
+		auto vs = CreateStage(vsSource, Render::ShaderStageType::Vertex);
+		auto fs = CreateStage(fsSource, Render::ShaderStageType::Fragment);
 
-		return MakePipeline(vsData.data(), fsData.data());
+		Render::OpenGL::Pipeline p;
+		p.Create();
+		p.AttachStage(vs).AttachStage(fs).Build();
+
+		vs.Destroy();
+		fs.Destroy();
+		return p;
+	}
+
+	inline Render::OpenGL::Pipeline MakePipelineFromFiles(const std::filesystem::path& vsPath, const std::filesystem::path& fsPath)
+	{
+		const bool vsSpv = (vsPath.extension() == ".spv");
+		const bool fsSpv = (fsPath.extension() == ".spv");
+		if (vsSpv != fsSpv)
+			throw std::runtime_error("VS/FS format mismatch: both must be .spv or both must be GLSL.");
+
+		if (vsSpv)
+		{
+			auto vsData = IO::File::ReadBinary(vsPath);
+			auto fsData = IO::File::ReadBinary(fsPath);
+
+			return MakePipeline(vsData, fsData);
+		}
+		else
+		{
+			auto vsData = IO::File::ReadText(vsPath);
+			auto fsData = IO::File::ReadText(fsPath);
+
+			return MakePipeline(
+				std::string_view{ vsData.data(), vsData.size() },
+				std::string_view{ fsData.data(), fsData.size() }
+			);
+		}
 	}
 
 	// Helpers
