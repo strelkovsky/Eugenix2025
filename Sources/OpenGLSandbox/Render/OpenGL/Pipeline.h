@@ -18,6 +18,7 @@ namespace Eugenix::Render::OpenGL
 		GLint location;
 	};
 
+	// TODO : rename to ShaderProgram?..
 	class Pipeline final : public Object
 	{
 	public:
@@ -31,7 +32,7 @@ namespace Eugenix::Render::OpenGL
 			glDeleteProgram(_handle);
 		}
 
-		Pipeline& AttachStage(ShaderStage& stage)
+		Pipeline& AttachStage(const ShaderStage& stage)
 		{
 			glAttachShader(_handle, stage.NativeHandle());
 			return *this;
