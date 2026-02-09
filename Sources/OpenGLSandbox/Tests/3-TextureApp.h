@@ -18,7 +18,6 @@
 #include "Render/OpenGL/Sampler.h"
 #include "Render/OpenGL/VertexArray.h"
 
-
 namespace Eugenix
 {
 	class TextureApp final : public SandboxApp
@@ -132,10 +131,10 @@ namespace Eugenix
 		{
 			_pipeline.Create();
 
-			const auto vsSourceData = Eugenix::IO::FileContent("Shaders/texture_shader.vert");
+			const auto vsSourceData = Eugenix::IO::File::ReadText("Shaders/texture_shader.vert");
 			const char* vsSource = vsSourceData.data();
 
-			const auto fsSourceData = Eugenix::IO::FileContent("Shaders/texture_shader.frag");
+			const auto fsSourceData = Eugenix::IO::File::ReadText("Shaders/texture_shader.frag");
 			const char* fsSource = fsSourceData.data();
 
 			auto vertexStage = Eugenix::CreateStage(vsSource, Eugenix::Render::ShaderStageType::Vertex);
