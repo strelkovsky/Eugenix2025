@@ -34,4 +34,13 @@ namespace Eugenix::Core
 	{
 		return{ vector.data(), vector.size() * sizeof(type) };
 	}
-} // namespace Eugenix::Render
+
+	template<class T, class Alloc> 
+	static Data MakeData(const std::vector<T, Alloc>*) = delete;
+	template<class T, class Alloc> 
+	static Data MakeData(std::vector<T, Alloc>*) = delete;
+	template<class T, size_t N>
+	static Data MakeData(const std::span<T, N>*) = delete;
+	template<class T>          
+	static Data MakeData(const std::span<T>*) = delete;
+} // namespace Eugenix::Core
