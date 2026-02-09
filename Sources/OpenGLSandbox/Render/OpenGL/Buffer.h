@@ -24,11 +24,14 @@ namespace Eugenix::Render::OpenGL
 
 		void Storage(const Core::Data& data, uint32_t flag = 0)
 		{
+			assert(data.size > 0 && "Buffer::Storage called with zero size");
 			glNamedBufferStorage(_handle, data.size, data.ptr, flag);
 		}
 
 		void Update(const Core::Data& data, uint32_t offset = 0)
 		{
+			assert(data.size > 0 && "Buffer::Update called with zero size");
+			// TODO : assert: offset + data.size <= allocatedSize.
 			glNamedBufferSubData(_handle, offset, data.size, data.ptr);
 		}
 	};
