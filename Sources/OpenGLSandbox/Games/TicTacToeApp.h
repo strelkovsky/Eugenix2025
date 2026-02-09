@@ -15,9 +15,10 @@
 #include "App/SandboxApp.h"
 #include "Render/OpenGL/Buffer.h"
 #include "Render/OpenGL/Commands.h"
-#include "Render/Mesh.h"
 #include "Render/OpenGL/Pipeline.h"
 #include "Render/OpenGL/VertexArray.h"
+#include "Render/Attribute.h"
+#include "Render/Mesh.h"
 #include "Render/Utils/MeshGenerator.h"
 
 #include "../Tests/TestUtils.h"
@@ -39,7 +40,9 @@ namespace core::data
     class Grid
     {
     public:
-        using ValueType = T;
+        using iterator = typename std::array<T, R* C>::iterator;
+        using const_iterator = typename std::array<T, R* C>::const_iterator;
+
         static constexpr int Rows = R;
         static constexpr int Cols = C;
 
@@ -47,10 +50,10 @@ namespace core::data
         const T& At(const GridPosition& p) const { return _data[IndexAt(p)]; }
 
         // NOTE : lower-case for stl compat
-        auto begin() -> auto { return _data.begin(); }
-        auto end() -> auto { return _data.end(); }
-        auto begin() const { return _data.begin(); }
-        auto end()   const { return _data.end(); }
+        iterator begin() { return _data.begin(); }
+        iterator end()  { return _data.end(); }
+        const_iterator begin() const { return _data.cbegin(); }
+        const_iterator end()   const { return _data.cend(); }
 
         static constexpr bool WithinBounds(const GridPosition& p)
         {
@@ -69,40 +72,142 @@ namespace core::data
     };
 }
 
-std::vector<float> debug_vertices;
-
-class PhysicsDebug : public btIDebugDraw
+class PhysicsDebugRenderer final : public btIDebugDraw
 {
 public:
+    struct Settings
+    {
+        size_t initialCapacityBytes = 256 * 1024;
+        int debugMode = btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawAabb;
+    };
+
+    PhysicsDebugRenderer() = default;
+    explicit PhysicsDebugRenderer(const Settings& s) { Init(s); }
+
+    void Init(const Settings& settings)
+    {
+        _settings = settings;
+        _debugMode = settings.debugMode;
+
+        _capacityBytes = std::max<size_t>(1, settings.initialCapacityBytes);
+
+        _vbo.Create();
+        _vbo.Storage(Eugenix::Core::Data{ nullptr, _capacityBytes }, GL_DYNAMIC_STORAGE_BIT);
+
+        constexpr Eugenix::Render::Attribute position_attr{ 0, 3, Eugenix::Render::DataType::Float, GL_FALSE, 0 };
+
+        _vao.Create();
+        _vao.AttachVertices(_vbo, sizeof(float) * 3);
+        _vao.Attribute(position_attr);
+    }
+
+    void Shutdown()
+    {
+        _vao.Destroy();
+        _vbo.Destroy();
+        _vertices.clear();
+        _vertices.shrink_to_fit();
+        _capacityBytes = 0;
+    }
+
+    void Attach(btCollisionWorld& world)
+    {
+        _world = &world;
+        world.setDebugDrawer(this);
+        setDebugMode(_debugMode);
+    }
+
+    void Render()
+    {
+        clearLines();
+
+        _world->debugDrawWorld();
+
+        if (_vertices.empty())
+            return;
+
+        const size_t neededBytes = _vertices.size() * sizeof(float);
+        ensureCapacity(neededBytes);
+
+        _vbo.Update(Eugenix::Core::MakeData(_vertices));
+        _vao.Bind();
+
+        Eugenix::Render::OpenGL::Commands::DrawVertices(
+            Eugenix::Render::PrimitiveType::Lines,
+            static_cast<uint32_t>(_vertices.size() / 3)
+        );
+    }
+
+    //
+    // Bullet overrides
+    //
+
     void drawLine(const btVector3& from, const btVector3& to, const btVector3& color) override
     {
-        debug_vertices.push_back(from.x());
-        debug_vertices.push_back(from.y());
-        debug_vertices.push_back(from.z());
+        _vertices.push_back(from.x());
+        _vertices.push_back(from.y());
+        _vertices.push_back(from.z());
 
-        debug_vertices.push_back(to.x());
-        debug_vertices.push_back(to.y());
-        debug_vertices.push_back(to.z());
+        _vertices.push_back(to.x());
+        _vertices.push_back(to.y());
+        _vertices.push_back(to.z());
     }
 
     void clearLines() override
     {
-        debug_vertices.clear();
+        _vertices.clear();
     }
 
     void drawContactPoint(const btVector3& PointOnB, const btVector3& normalOnB, btScalar distance, int lifeTime, const btVector3& color) override {}
     void reportErrorWarning(const char* warningString) override {}
     void draw3dText(const btVector3& location, const char* textString) override {}
-    void setDebugMode(int debugMode) override { _mode = debugMode; }
-    int getDebugMode() const override { return _mode; }
+
+    void setDebugMode(int debugMode) override { _debugMode = debugMode; }
+    int getDebugMode() const override { return _debugMode; }
+
+//private:
 
 private:
-    int _mode = btIDebugDraw::DBG_DrawWireframe;
+    void ensureCapacity(size_t neededBytes)
+    {
+        if (neededBytes == 0)
+            return;
+
+        if (_capacityBytes == 0)
+            _capacityBytes = std::max<size_t>(1, _settings.initialCapacityBytes);
+
+        if (neededBytes < _capacityBytes)
+            return;
+
+        while (neededBytes > _capacityBytes)
+            _capacityBytes *= 2;
+
+        _vbo.Destroy();
+        _vbo.Create();
+        _vbo.Storage(Eugenix::Core::Data{ nullptr, _capacityBytes }, GL_DYNAMIC_STORAGE_BIT);
+
+        constexpr Eugenix::Render::Attribute position_attr{ 0, 3, Eugenix::Render::DataType::Float, GL_FALSE, 0 };
+
+        _vao.Destroy();
+        _vao.Create();
+        _vao.AttachVertices(_vbo, sizeof(float) * 3);
+        _vao.Attribute(position_attr);
+    }
+
+    btCollisionWorld* _world{ nullptr };
+
+    Settings _settings{};
+    int _debugMode = btIDebugDraw::DBG_DrawWireframe;
+
+    std::vector<float> _vertices;
+
+    Eugenix::Render::OpenGL::Buffer _vbo;
+    Eugenix::Render::OpenGL::VertexArray _vao;
+
+    size_t _capacityBytes{ 0 };
 };
 
-auto is_editor = false;
 
-static std::unique_ptr<btCollisionWorld> world2;
 
 static auto cursor_x = 0.0f;
 static auto cursor_y = 0.0f;
@@ -171,6 +276,13 @@ namespace Game
         bool CheckWin(const core::data::GridPosition& position, PieceType type) const
         {
             return checkRow(position.row, type) || checkCol(position.col, type) || checkDiagonals(type);
+        }
+
+        bool IsFull() const
+        {
+            for (auto& c : _data)
+                if (c.type == PieceType::None) return false;
+            return true;
         }
 
     private:
@@ -318,17 +430,22 @@ namespace Eugenix
             //_materialUbo.bind_base(opengl::constants::uniform_buffer, core::buffer::material);
 
             auto bt_default_configuration = new btDefaultCollisionConfiguration();
-            world2 = std::make_unique<btCollisionWorld>(
+            _world = std::make_unique<btCollisionWorld>(
                 new btCollisionDispatcher(bt_default_configuration), 
                 new btDbvtBroadphase(), 
                 bt_default_configuration);
 
-            _physDebug = std::make_unique<PhysicsDebug>();
-            _physDebug->setDebugMode(
+            _physDebugRenderer = std::make_unique<PhysicsDebugRenderer>(
+                PhysicsDebugRenderer::Settings{
+                    .initialCapacityBytes = 256 * 1024,
+                    .debugMode = btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawAabb
+                }
+            );
+            _physDebugRenderer->setDebugMode(
                 btIDebugDraw::DBG_DrawWireframe |
                 btIDebugDraw::DBG_DrawAabb
             );
-            world2->setDebugDrawer(_physDebug.get());
+            _physDebugRenderer->Attach(*_world);
 
             _tileShape = std::make_unique<btBoxShape>(btVector3(0.5f, 0.5f, 0.105f));
 
@@ -355,17 +472,9 @@ namespace Eugenix
                     bt_collision_object->setUserIndex(row);
                     bt_collision_object->setUserIndex2(col);
 
-                    world2->addCollisionObject(bt_collision_object);
+                    _world->addCollisionObject(bt_collision_object);
                 }
             }
-
-            debugVbo.Create();
-            const auto debugCapacityBytes = 1024 * 1024; // 1 MB, например
-            debugVbo.Storage(Core::Data{ nullptr, debugCapacityBytes }, GL_DYNAMIC_STORAGE_BIT);
-
-            _debugVao.Create();
-            _debugVao.AttachVertices(debugVbo, sizeof(glm::vec3));
-            _debugVao.Attribute(position_attribute);
 
             Render::OpenGL::Commands::Clear(0.42745098039215684f, 0.8823529411764706f, 0.8235294117647058f);
 
@@ -408,32 +517,22 @@ namespace Eugenix
                 const btVector3   to(end.x, end.y, end.z);
 
                 btCollisionWorld::ClosestRayResultCallback result(from, to);
-                world2->rayTest(from, to, result);
+                _world->rayTest(from, to, result);
                 if (result.hasHit())
                 {
-                    core::data::GridPosition position
+                    core::data::GridPosition pos
                     {
                         result.m_collisionObject->getUserIndex(),
                         result.m_collisionObject->getUserIndex2()
                     };
 
-                    printf("has hit - {%d}\n", _state.board.At(position).type);
-
-                    if (_state.board.At(position).type == Game::PieceType::None)
+                    auto& cell = _state.board.At(pos);
+                    if (cell.type == Game::PieceType::None)
                     {
-                        if (_state.xTurn) // TODO make some piece type variable and use the code just once
-                        {
-                            _state.board.At(position).type = Game::PieceType::X;
-                            _state.isEnd = _state.board.CheckWin(position, Game::PieceType::X);
-                        }
-                        else
-                        {
-                            _state.board.At(position).type = Game::PieceType::O;
-                            _state.isEnd = _state.board.CheckWin(position, Game::PieceType::O);
-                        }
-
-                        printf("is end - %d\n", (_state.isEnd) ? 1 : 0);
-
+                        const auto current = _state.xTurn ? Game::PieceType::X : Game::PieceType::O;
+                        cell.type = current;
+                        
+                        _state.isEnd = _state.board.CheckWin(pos, current) || _state.board.IsFull();
                         _state.xTurn = !_state.xTurn;
                     }
                 }
@@ -453,13 +552,7 @@ namespace Eugenix
             {
                 _materialUbo.Update(Core::MakeData(&grid_color));
 
-                _physDebug->clearLines();
-                world2->debugDrawWorld();
-
-                debugVbo.Update(Core::MakeData(debug_vertices));
-
-                _debugVao.Bind();
-                Render::OpenGL::Commands::DrawVertices(Render::PrimitiveType::Lines, debug_vertices.size() / 3);
+                _physDebugRenderer->Render();
             }
             else
             {
@@ -514,12 +607,10 @@ namespace Eugenix
         Render::OpenGL::Buffer xEbo;
         Render::OpenGL::Buffer gridVbo;
         Render::OpenGL::Buffer gridEbo;
-        Render::OpenGL::Buffer debugVbo;
 
         Render::OpenGL::VertexArray _oVao{};
         Render::OpenGL::VertexArray _xVao{};
         Render::OpenGL::VertexArray _gridVao{};
-        Render::OpenGL::VertexArray _debugVao{};
 
         core::data::geometry<glm::vec3, core::primitive::triangle>    o_geometry;
         core::data::geometry<glm::vec3, core::primitive::triangle>    x_geometry;
@@ -537,10 +628,12 @@ namespace Eugenix
         glm::vec3 o_color{ 0.9686274509803922f, 0.35294117647058826f, 0.35294117647058826f };
         glm::vec3 grid_color{ 1.0f, 0.6627450980392157f, 0.3333333333333333f };
 
-        //std::unique_ptr<btCollisionWorld> _world;
-        std::unique_ptr<PhysicsDebug> _physDebug;
+        std::unique_ptr<btCollisionWorld> _world;
         std::unique_ptr<btCollisionShape> _tileShape;
 
-        Game::GameState _state;
+        std::unique_ptr<PhysicsDebugRenderer> _physDebugRenderer;
+
+        Game::GameState _state{};
+        bool is_editor = { false };
     };
 } // namespace Eugenix
