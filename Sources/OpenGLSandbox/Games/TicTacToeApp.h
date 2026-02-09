@@ -24,66 +24,48 @@
 
 namespace core::data
 {
-    struct grid_position
+    struct GridPosition
     {
         int32_t row{ };
         int32_t col{ };
 
-        auto operator==(const grid_position& position) const -> bool
+        bool operator==(const GridPosition& position) const
         {
             return row == position.row && col == position.col;
         }
     };
 
-    template <typename type, int32_t _rows, int32_t _cols>
+    template <class T, int32_t R, int32_t C>
     class Grid
     {
     public:
-        auto at(const grid_position& position) const -> const type&
+        using ValueType = T;
+        static constexpr int Rows = R;
+        static constexpr int Cols = C;
+
+        T& At(const GridPosition& p) { return _data[IndexAt(p)]; }
+        const T& At(const GridPosition& p) const { return _data[IndexAt(p)]; }
+
+        // NOTE : lower-case for stl compat
+        auto begin() -> auto { return _data.begin(); }
+        auto end() -> auto { return _data.end(); }
+        auto begin() const { return _data.begin(); }
+        auto end()   const { return _data.end(); }
+
+        static constexpr bool WithinBounds(const GridPosition& p)
         {
-            return _data[index_at(position)];
+            return (p.row >= 0 && p.row < R) && (p.col >= 0 && p.col < C);
         }
 
-        auto at(const grid_position& position) -> type&
+    private:
+        static constexpr size_t IndexAt(GridPosition p)
         {
-            return _data[index_at(position)];
-        }
-
-        auto begin() -> auto
-        {
-            return _data.begin();
-        }
-
-        auto end() -> auto
-        {
-            return _data.end();
-        }
-
-        auto index_at(const grid_position& position) const -> int32_t
-        {
-            assert(within_bounds(position));
-
-            return _cols * position.row + position.col;
-        }
-
-        static auto within_bounds(const grid_position& position) -> bool
-        {
-            return position.row >= 0 && position.row < _rows &&
-                position.col >= 0 && position.col < _cols;
-        }
-
-        constexpr auto rows() -> int32_t // TODO maybe we don't need this?
-        {
-            return _rows;
-        }
-
-        constexpr auto cols() -> int32_t // TODO maybe we don't need this?
-        {
-            return _cols;
+            assert(WithinBounds(p));
+            return size_t(p.row) * C + size_t(p.col);
         }
 
     protected:
-        std::array<type, _rows* _cols> _data;
+        std::array<T, size_t(R) * size_t(C)> _data{};
     };
 }
 
@@ -147,7 +129,7 @@ namespace game
             }
         }
 
-        auto check_win(const core::data::grid_position& position, piece_type type) const -> bool
+        auto check_win(const core::data::GridPosition& position, piece_type type) const -> bool
         {
             return check_row(position.row, type) || check_col(position.col, type) || check_diagonals(type);
         }
@@ -155,20 +137,20 @@ namespace game
     private:
         auto check_row(int32_t row, piece_type type) const -> bool
         {
-            return at({ row, 0 }).type == type &&
-                at({ row, 1 }).type == type &&
-                at({ row, 2 }).type == type;
+            return At({ row, 0 }).type == type &&
+                At({ row, 1 }).type == type &&
+                At({ row, 2 }).type == type;
         }
         auto check_col(int32_t column, piece_type type) const -> bool
         {
-            return at({ 0, column }).type == type &&
-                at({ 1, column }).type == type &&
-                at({ 2, column }).type == type;
+            return At({ 0, column }).type == type &&
+                At({ 1, column }).type == type &&
+                At({ 2, column }).type == type;
         }
         auto check_diagonals(piece_type type) const -> bool
         {
-            return at({ 1, 1 }).type == type &&
-                ((at({ 0, 0 }).type == type && at({ 2, 2 }).type == type) || (at({ 0, 2 }).type == type && at({ 2, 0 }).type == type));
+            return At({ 1, 1 }).type == type &&
+                ((At({ 0, 0 }).type == type && At({ 2, 2 }).type == type) || (At({ 0, 2 }).type == type && At({ 2, 0 }).type == type));
         }
     };
 }
@@ -346,16 +328,16 @@ namespace Eugenix
 
             _tileShape = std::make_unique<btBoxShape>(btVector3(0.5f, 0.5f, 0.105f));
 
-            for (auto row = 0; row < board.rows(); row++)
+            for (auto row = 0; row < board.Rows; row++)
             {
                 constexpr auto       piece_size = 1.5f;
                 const     auto  x = -piece_size + row * piece_size;
 
-                for (auto col = 0; col < board.cols(); col++)
+                for (auto col = 0; col < board.Cols; col++)
                 {
                     const auto y = piece_size - col * piece_size;
 
-                    board.at({ row, col }).position = { x, y, 0.0f };
+                    board.At({ row, col }).position = { x, y, 0.0f };
 
                     printf("create shape {%f} {%f}\n", x, y);
 
@@ -425,24 +407,24 @@ namespace Eugenix
                 world2->rayTest(from, to, result);
                 if (result.hasHit())
                 {
-                    core::data::grid_position position
+                    core::data::GridPosition position
                     {
                         result.m_collisionObject->getUserIndex(),
                         result.m_collisionObject->getUserIndex2()
                     };
 
-                    printf("has hit - {%d}\n", board.at(position).type);
+                    printf("has hit - {%d}\n", board.At(position).type);
 
-                    if (board.at(position).type == game::piece_type::none)
+                    if (board.At(position).type == game::piece_type::none)
                     {
                         if (x_turn) // TODO make some piece type variable and use the code just once
                         {
-                            board.at(position).type = game::piece_type::x;
+                            board.At(position).type = game::piece_type::x;
                             is_end = board.check_win(position, game::piece_type::x);
                         }
                         else
                         {
-                            board.at(position).type = game::piece_type::o;
+                            board.At(position).type = game::piece_type::o;
                             is_end = board.check_win(position, game::piece_type::o);
                         }
 
