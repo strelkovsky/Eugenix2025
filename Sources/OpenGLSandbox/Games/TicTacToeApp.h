@@ -121,33 +121,31 @@ namespace game
     class Board final : public core::data::Grid<piece, 3, 3>
     {
     public:
-        auto reset() -> void
+        auto Reset() -> void
         {
-            for (auto& [position, type] : _data)
-            {
-                type = piece_type::none;
-            }
+            for (auto& cell : _data)
+                cell.type = piece_type::none;
         }
 
-        auto check_win(const core::data::GridPosition& position, piece_type type) const -> bool
+        auto CheckWin(const core::data::GridPosition& position, piece_type type) const -> bool
         {
-            return check_row(position.row, type) || check_col(position.col, type) || check_diagonals(type);
+            return checkRow(position.row, type) || checkCol(position.col, type) || checkDiagonals(type);
         }
 
     private:
-        auto check_row(int32_t row, piece_type type) const -> bool
+        auto checkRow(int32_t row, piece_type type) const -> bool
         {
             return At({ row, 0 }).type == type &&
                 At({ row, 1 }).type == type &&
                 At({ row, 2 }).type == type;
         }
-        auto check_col(int32_t column, piece_type type) const -> bool
+        auto checkCol(int32_t column, piece_type type) const -> bool
         {
             return At({ 0, column }).type == type &&
                 At({ 1, column }).type == type &&
                 At({ 2, column }).type == type;
         }
-        auto check_diagonals(piece_type type) const -> bool
+        auto checkDiagonals(piece_type type) const -> bool
         {
             return At({ 1, 1 }).type == type &&
                 ((At({ 0, 0 }).type == type && At({ 2, 2 }).type == type) || (At({ 0, 2 }).type == type && At({ 2, 0 }).type == type));
@@ -372,7 +370,7 @@ namespace Eugenix
         {
             if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
             {
-                board.reset();
+                board.Reset();
 
                 x_turn = true;
                 is_end = false;
@@ -420,12 +418,12 @@ namespace Eugenix
                         if (x_turn) // TODO make some piece type variable and use the code just once
                         {
                             board.At(position).type = game::piece_type::x;
-                            is_end = board.check_win(position, game::piece_type::x);
+                            is_end = board.CheckWin(position, game::piece_type::x);
                         }
                         else
                         {
                             board.At(position).type = game::piece_type::o;
-                            is_end = board.check_win(position, game::piece_type::o);
+                            is_end = board.CheckWin(position, game::piece_type::o);
                         }
 
                         printf("is end - %d\n", (is_end) ? 1 : 0);
