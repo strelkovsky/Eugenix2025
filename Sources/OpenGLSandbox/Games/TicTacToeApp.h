@@ -100,7 +100,51 @@ private:
     int _mode = btIDebugDraw::DBG_DrawWireframe;
 };
 
-namespace game
+auto is_editor = false;
+
+static std::unique_ptr<btCollisionWorld> world2;
+
+static auto cursor_x = 0.0f;
+static auto cursor_y = 0.0f;
+
+namespace core::data
+{
+    struct camera
+    {
+        glm::mat4 view;
+        glm::mat4 proj;
+    };
+}
+
+namespace core::data
+{
+    template <typename vertex, typename primitive>
+    struct geometry
+    {
+        std::vector<vertex>    vertices;
+        std::vector<primitive> elements;
+    };
+}
+
+namespace core::primitive
+{
+    struct triangle
+    {
+        uint32_t a;
+        uint32_t b;
+        uint32_t c;
+
+        static constexpr uint32_t elements{ 3 };
+    };
+}
+
+static core::data::camera camera_data
+{
+    glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -4.0f)),
+    glm::perspective(glm::radians(60.0f), static_cast<float>(1024) / static_cast<float>(768), 0.1f, 100.0f)
+};
+
+namespace Game
 {
     enum class PieceType
     {
@@ -146,60 +190,23 @@ namespace game
 
         bool checkDiagonals(PieceType type) const
         {
-            return At({ 1, 1 }).type == type &&
-                ((At({ 0, 0 }).type == type && At({ 2, 2 }).type == type) || (At({ 0, 2 }).type == type && At({ 2, 0 }).type == type));
+            bool d0 = true, d1 = true;
+            for (int i = 0; i < Rows; ++i)
+            {
+                d0 &= (At({ i, i }).type == type);
+                d1 &= (At({ i, Cols - 1 - i }).type == type);
+            }
+            return d0 || d1;
         }
     };
-}
 
-auto is_editor = false;
-
-static game::Board board;
-
-auto x_turn = true;
-auto is_end = false;
-
-static std::unique_ptr<btCollisionWorld> world2;
-
-static auto cursor_x = 0.0f;
-static auto cursor_y = 0.0f;
-
-namespace core::data
-{
-    struct camera
+    struct GameState 
     {
-        glm::mat4 view;
-        glm::mat4 proj;
+        Board board;
+        bool xTurn = true;
+        bool isEnd = false;
     };
 }
-
-namespace core::data
-{
-    template <typename vertex, typename primitive>
-    struct geometry
-    {
-        std::vector<vertex>    vertices;
-        std::vector<primitive> elements;
-    };
-}
-
-namespace core::primitive
-{
-    struct triangle
-    {
-        uint32_t a;
-        uint32_t b;
-        uint32_t c;
-
-        static constexpr uint32_t elements{ 3 };
-    };
-}
-
-static core::data::camera camera_data
-{
-    glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -4.0f)),
-    glm::perspective(glm::radians(60.0f), static_cast<float>(1024) / static_cast<float>(768), 0.1f, 100.0f)
-};
 
 namespace Eugenix
 {
@@ -325,16 +332,16 @@ namespace Eugenix
 
             _tileShape = std::make_unique<btBoxShape>(btVector3(0.5f, 0.5f, 0.105f));
 
-            for (auto row = 0; row < board.Rows; row++)
+            for (auto row = 0; row < _state.board.Rows; row++)
             {
                 constexpr auto       piece_size = 1.5f;
                 const     auto  x = -piece_size + row * piece_size;
 
-                for (auto col = 0; col < board.Cols; col++)
+                for (auto col = 0; col < _state.board.Cols; col++)
                 {
                     const auto y = piece_size - col * piece_size;
 
-                    board.At({ row, col }).position = { x, y, 0.0f };
+                    _state.board.At({ row, col }).position = { x, y, 0.0f };
 
                     printf("create shape {%f} {%f}\n", x, y);
 
@@ -369,10 +376,10 @@ namespace Eugenix
         {
             if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
             {
-                board.Reset();
+                _state.board.Reset();
 
-                x_turn = true;
-                is_end = false;
+                _state.xTurn = true;
+                _state.isEnd = false;
             }
 
             if (key == GLFW_KEY_TAB && action == GLFW_PRESS)
@@ -389,7 +396,7 @@ namespace Eugenix
 
         void onMouseButtonHandle(int button, int action, int mods) override
         {
-            if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS && !is_end)
+            if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS && !_state.isEnd)
             {
                 const glm::vec4 viewport{ 0.0f, 0.0f, (float)width(), (float)height() };
 
@@ -410,24 +417,24 @@ namespace Eugenix
                         result.m_collisionObject->getUserIndex2()
                     };
 
-                    printf("has hit - {%d}\n", board.At(position).type);
+                    printf("has hit - {%d}\n", _state.board.At(position).type);
 
-                    if (board.At(position).type == game::PieceType::None)
+                    if (_state.board.At(position).type == Game::PieceType::None)
                     {
-                        if (x_turn) // TODO make some piece type variable and use the code just once
+                        if (_state.xTurn) // TODO make some piece type variable and use the code just once
                         {
-                            board.At(position).type = game::PieceType::X;
-                            is_end = board.CheckWin(position, game::PieceType::X);
+                            _state.board.At(position).type = Game::PieceType::X;
+                            _state.isEnd = _state.board.CheckWin(position, Game::PieceType::X);
                         }
                         else
                         {
-                            board.At(position).type = game::PieceType::O;
-                            is_end = board.CheckWin(position, game::PieceType::O);
+                            _state.board.At(position).type = Game::PieceType::O;
+                            _state.isEnd = _state.board.CheckWin(position, Game::PieceType::O);
                         }
 
-                        printf("is end - %d\n", (is_end) ? 1 : 0);
+                        printf("is end - %d\n", (_state.isEnd) ? 1 : 0);
 
-                        x_turn = !x_turn;
+                        _state.xTurn = !_state.xTurn;
                     }
                 }
             }
@@ -466,7 +473,7 @@ namespace Eugenix
             _gridVao.Bind();
             Render::OpenGL::Commands::DrawIndexed(Render::PrimitiveType::Triangles, grid_geometry.elements.size() * core::primitive::triangle::elements, Render::DataType::UInt);
 
-            for (auto& [piece_position, piece_type] : board)
+            for (auto& [piece_position, piece_type] : _state.board)
             {
                 _model = glm::translate(glm::mat4(1.0f), piece_position);
 
@@ -474,7 +481,7 @@ namespace Eugenix
 
                 switch (piece_type)
                 {
-                case game::PieceType::X:
+                case Game::PieceType::X:
                 {
                     _xVao.Bind();
                     _materialUbo.Update(Core::MakeData(&x_color));
@@ -482,7 +489,7 @@ namespace Eugenix
 
                     break;
                 }
-                case game::PieceType::O:
+                case Game::PieceType::O:
                 {
                     _oVao.Bind();
                     _materialUbo.Update(Core::MakeData(&o_color));
@@ -533,5 +540,7 @@ namespace Eugenix
         //std::unique_ptr<btCollisionWorld> _world;
         std::unique_ptr<PhysicsDebug> _physDebug;
         std::unique_ptr<btCollisionShape> _tileShape;
+
+        Game::GameState _state;
     };
 } // namespace Eugenix
