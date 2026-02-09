@@ -8,55 +8,52 @@
 #include <string_view>
 #include <vector>
 
+// TODO : move to .cpp
+namespace
+{
+    inline std::vector<char> ReadFile(const std::filesystem::path& path,
+        std::ios::openmode mode,
+        bool addNullTerminator)
+    {
+        assert(std::filesystem::is_regular_file(path));
+
+        std::ifstream stream(path, std::ios::in | std::ios::ate | mode);
+        assert(stream.is_open());
+
+        const std::streamsize size = stream.tellg();
+        assert(size >= 0);
+
+        const std::size_t extra = addNullTerminator ? 1u : 0u;
+        std::vector<char> data(static_cast<std::size_t>(size) + extra);
+
+        stream.seekg(0, std::ios::beg);
+
+        if (size > 0)
+        {
+            stream.read(data.data(), size);
+        }
+
+        if (addNullTerminator)
+            data[static_cast<std::size_t>(size)] = '\0';
+
+        return data;
+    }
+}
+
 namespace Eugenix::IO
 {
     struct File
     {
         File() = delete;
 
-        static std::vector<char> ReadText(const std::filesystem::path& path, int32_t mode = 0)
+        static std::vector<char> ReadText(const std::filesystem::path& path, std::ios::openmode mode = {})
         {
-            assert(std::filesystem::is_regular_file(path));
-
-            std::ifstream stream(path, std::ios::ate | mode);
-            assert(stream.is_open());
-
-            const auto end = stream.tellg();
-            assert(end > 0);
-
-            const auto size = static_cast<std::size_t>(end);
-            std::vector<char> content(size + 1);
-            
-            stream.seekg(0, std::ios::beg);
-            if (size > 0)
-            {
-                stream.read(content.data(), size);
-            }
-            content[size] = '\0';
-
-            return content;
+            return ReadFile(path, /*mode=*/{}, /*addNullTerminator=*/true);
         }
 
-        static std::vector<char> ReadBinary(const std::filesystem::path& path, int32_t mode = 0)
+        static std::vector<char> ReadBinary(const std::filesystem::path& path, std::ios::openmode mode = {})
         {
-            assert(std::filesystem::is_regular_file(path));
-
-            std::ifstream stream(path, std::ios::ate | mode);
-            assert(stream.is_open());
-
-            const auto end = stream.tellg();
-            assert(end > 0);
-
-            const auto size = static_cast<std::size_t>(end);
-            std::vector<char> content(size);
-
-            stream.seekg(0, std::ios::beg);
-            if (size > 0)
-            {
-                stream.read(content.data(), size);
-            }
-
-            return content;
+            return ReadFile(path, std::ios::binary, /*addNullTerminator=*/false);
         }
     };
 } // namespace Eugenix::IO
