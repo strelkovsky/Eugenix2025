@@ -102,50 +102,49 @@ private:
 
 namespace game
 {
-    enum class piece_type
+    enum class PieceType
     {
-        none,
-        x,
-        o
+        None,
+        X,
+        O
     };
 
-    struct piece
+    struct Piece
     {
         glm::vec3 position;
-        piece_type type;
-
-        // TODO move the position a little closer to the center
-        // TODO make the winner row/column white? and maybe blinking
+        PieceType type;
     };
 
-    class Board final : public core::data::Grid<piece, 3, 3>
+    class Board final : public core::data::Grid<Piece, 3, 3>
     {
     public:
-        auto Reset() -> void
+        void Reset()
         {
             for (auto& cell : _data)
-                cell.type = piece_type::none;
+                cell.type = PieceType::None;
         }
 
-        auto CheckWin(const core::data::GridPosition& position, piece_type type) const -> bool
+        bool CheckWin(const core::data::GridPosition& position, PieceType type) const
         {
             return checkRow(position.row, type) || checkCol(position.col, type) || checkDiagonals(type);
         }
 
     private:
-        auto checkRow(int32_t row, piece_type type) const -> bool
+        bool checkRow(int32_t row, PieceType type) const
         {
-            return At({ row, 0 }).type == type &&
-                At({ row, 1 }).type == type &&
-                At({ row, 2 }).type == type;
+            for (int col = 0; col < Cols; ++col)
+                if (At({ row, col }).type != type) return false;
+            return true;
         }
-        auto checkCol(int32_t column, piece_type type) const -> bool
+
+        bool checkCol(int32_t col, PieceType type) const
         {
-            return At({ 0, column }).type == type &&
-                At({ 1, column }).type == type &&
-                At({ 2, column }).type == type;
+            for (int row = 0; row < Rows; ++row)
+                if (At({ row, col }).type != type) return false;
+            return true;
         }
-        auto checkDiagonals(piece_type type) const -> bool
+
+        bool checkDiagonals(PieceType type) const
         {
             return At({ 1, 1 }).type == type &&
                 ((At({ 0, 0 }).type == type && At({ 2, 2 }).type == type) || (At({ 0, 2 }).type == type && At({ 2, 0 }).type == type));
@@ -413,17 +412,17 @@ namespace Eugenix
 
                     printf("has hit - {%d}\n", board.At(position).type);
 
-                    if (board.At(position).type == game::piece_type::none)
+                    if (board.At(position).type == game::PieceType::None)
                     {
                         if (x_turn) // TODO make some piece type variable and use the code just once
                         {
-                            board.At(position).type = game::piece_type::x;
-                            is_end = board.CheckWin(position, game::piece_type::x);
+                            board.At(position).type = game::PieceType::X;
+                            is_end = board.CheckWin(position, game::PieceType::X);
                         }
                         else
                         {
-                            board.At(position).type = game::piece_type::o;
-                            is_end = board.CheckWin(position, game::piece_type::o);
+                            board.At(position).type = game::PieceType::O;
+                            is_end = board.CheckWin(position, game::PieceType::O);
                         }
 
                         printf("is end - %d\n", (is_end) ? 1 : 0);
@@ -475,7 +474,7 @@ namespace Eugenix
 
                 switch (piece_type)
                 {
-                case game::piece_type::x:
+                case game::PieceType::X:
                 {
                     _xVao.Bind();
                     _materialUbo.Update(Core::MakeData(&x_color));
@@ -483,7 +482,7 @@ namespace Eugenix
 
                     break;
                 }
-                case game::piece_type::o:
+                case game::PieceType::O:
                 {
                     _oVao.Bind();
                     _materialUbo.Update(Core::MakeData(&o_color));
