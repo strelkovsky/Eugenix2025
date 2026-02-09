@@ -67,7 +67,7 @@ namespace Eugenix::Render::OpenGL
 	{
 		switch (target)
 		{
-		case BufferTarget::Uniform: return GL_UNIFORM_BUFFER;
+		case BufferTarget::UBO: return GL_UNIFORM_BUFFER;
 		}
 		assert(false && "Invalid BufferTarget");
 		return 0;

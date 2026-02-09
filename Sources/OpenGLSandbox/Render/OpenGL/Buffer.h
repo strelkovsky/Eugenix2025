@@ -7,6 +7,9 @@
 
 #include "Core/Data.h"
 
+// TODO : remove
+#include "../../Tests/TestUtils.h"
+
 namespace Eugenix::Render::OpenGL
 {
 	class Buffer final : public Object
@@ -33,6 +36,11 @@ namespace Eugenix::Render::OpenGL
 			assert(data.size > 0 && "Buffer::Update called with zero size");
 			// TODO : assert: offset + data.size <= allocatedSize.
 			glNamedBufferSubData(_handle, offset, data.size, data.ptr);
+		}
+
+		void Bind(BufferTarget target, BufferBinding binding)
+		{
+			glBindBufferBase(to_opengl_type(target), (GLuint)binding, _handle);
 		}
 	};
 } // namespace Eugenix::Render::OpenGL

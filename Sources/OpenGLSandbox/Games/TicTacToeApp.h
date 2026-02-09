@@ -416,17 +416,20 @@ namespace Eugenix
 
             _transformUbo.Create();
             _transformUbo.Storage(Core::MakeData(&_model), GL_DYNAMIC_STORAGE_BIT);
-            glBindBufferBase(GL_UNIFORM_BUFFER, (GLint)UBO::Location::Transform, _transformUbo.NativeHandle());
+            //glBindBufferBase(GL_UNIFORM_BUFFER, (GLint)UBO::Location::Transform, _transformUbo.NativeHandle());
+            _transformUbo.Bind(Render::BufferTarget::UBO, Render::BufferBinding::Transform);
             //transform_ubo.bind_base(opengl::constants::uniform_buffer, core::buffer::transform);
 
             _cameraUbo.Create();
             _cameraUbo.Storage(Core::MakeData(&camera_data), GL_DYNAMIC_STORAGE_BIT);
-            glBindBufferBase(GL_UNIFORM_BUFFER, (GLint)UBO::Location::Camera, _cameraUbo.NativeHandle());
+            //glBindBufferBase(GL_UNIFORM_BUFFER, (GLint)UBO::Location::Camera, _cameraUbo.NativeHandle());
+            _cameraUbo.Bind(Render::BufferTarget::UBO, Render::BufferBinding::Camera);
             //_cameraUbo.bind_base(opengl::constants::uniform_buffer, core::buffer::camera);
 
             _materialUbo.Create();
             _materialUbo.Storage(Core::MakeData(&_materialAlbedo), GL_DYNAMIC_STORAGE_BIT);
-            glBindBufferBase(GL_UNIFORM_BUFFER, (GLint)UBO::Location::Material, _materialUbo.NativeHandle());
+            //glBindBufferBase(GL_UNIFORM_BUFFER, (GLint)UBO::Location::Material, _materialUbo.NativeHandle());
+            _materialUbo.Bind(Render::BufferTarget::UBO, Render::BufferBinding::Material);
             //_materialUbo.bind_base(opengl::constants::uniform_buffer, core::buffer::material);
 
             auto bt_default_configuration = new btDefaultCollisionConfiguration();

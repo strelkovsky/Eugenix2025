@@ -24,7 +24,7 @@ namespace Eugenix::Render
 
 	enum struct BufferTarget
 	{
-		Uniform
+		UBO
 	};
 
 	// TODO : rename to SamplerParam when DSA?..
@@ -56,5 +56,19 @@ namespace Eugenix::Render
 	{ 
 		Linear, 
 		SRGB 
+	};
+
+	// TODO : rename to binding
+	enum struct BufferBinding
+	{
+		/* vertex */
+
+		Transform,
+		Camera,
+
+		/* fragment */
+
+		Material,
+		Lighting,
 	};
 } // namespace Eugenix::Render
