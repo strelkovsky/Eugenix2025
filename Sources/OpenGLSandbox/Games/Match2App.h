@@ -15,25 +15,39 @@
 
 namespace Game
 {
-	enum card_state
-	{
-		visible,
-		hidden,
-		turned,
-		turning
-	};
+	enum class CardAnim { None, TurningToFront, TurningToBack };
+	enum class CardFace { Back, Front, Removed };
 
-	struct card
+	struct Card
 	{
-		float angle{ };
-		bool turning{ };
+		int32_t type{ };
+
+		float angle{ 0.0f };
+
+		//bool turning{ };
 		bool turned{ };
 		bool flipped{ };
 		bool reversing{ };
-
-		int32_t type{ };
+		
+		CardAnim anim = CardAnim::None;
+		CardFace face = CardFace::Back;
 
 		vec3 color{ 1.0f };
+	};
+
+	struct Settings
+	{
+
+	};
+
+	enum class GamePhase { WaitingFirstPick, WaitingSecondPick, Animating, Resolving };
+
+	struct State
+	{
+		GamePhase phase = GamePhase::WaitingFirstPick;
+		//std::optional<grid_pos> first;
+		//std::optional<grid_pos> second;
+		float resolveTimer = 0.0f; // например, пауза после открытия второй карты
 	};
 }
 
@@ -42,9 +56,13 @@ btCollisionWorld* world;
 glm::mat4 view;
 glm::mat4 proj;
 
-Game::card cards[4][13]{ };
+Game::Card cards[4][13]{ };
+//static constexpr int Rows = 4;
+//static constexpr int Cols = 13;
+//std::array<Game::Card, Rows* Cols> _cards;
+//Game::Card& cardAt(int r, int c) { return _cards[r * Cols + c]; }
 
-Game::card* last_card{ };
+Game::Card* last_card{ };
 
 static auto card_is_matching = false;
 static auto card_is_turning = false;
@@ -215,7 +233,7 @@ namespace Eugenix
 						continue;
 					}
 
-					if (card.turning)
+					if (card.anim == Game::CardAnim::TurningToFront)
 					{
 						card.angle += deltaTime * card_rotation_speed;
 					}
@@ -244,7 +262,7 @@ namespace Eugenix
 						continue;
 					}
 
-					_materialUbo.Update(Core::MakeData(&_cardBackgroundColor));
+					auto cardColor = _cardBackgroundColor;
 
 					const auto x = tile_width_size * col - 6.0f * tile_width_size + static_cast<float>(width()) / 2.0f;
 					const auto y = tile_height_size * row - 1.5f * tile_height_size + static_cast<float>(height()) / 2.0f;
@@ -252,13 +270,13 @@ namespace Eugenix
 					_model = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, 0.0f));
 					_model = glm::scale(_model, glm::vec3(card_scale, card_scale, 1.0f));
 
-					if (card.turning)
+					if (card.anim == Game::CardAnim::TurningToFront)
 					{
 						auto a = glm::smoothstep(0.0f, card_rotation_max_angle, card.angle);
 
 						if (a >= 0.5f)
 						{
-							_materialUbo.Update(Core::MakeData(&card.color));
+							cardColor = card.color;
 						}
 
 						_model = glm::rotate(_model, glm::radians(a * card_rotation_max_angle), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -266,7 +284,8 @@ namespace Eugenix
 						if (card.angle >= card_rotation_max_angle)
 						{
 							card.turned = true;
-							card.turning = false;
+							//card.turning = false;
+							card.anim = Game::CardAnim::None;
 
 							card_is_turning = false;
 
@@ -287,11 +306,11 @@ namespace Eugenix
 
 						if (a <= 0.5f)
 						{
-							_materialUbo.Update(Core::MakeData(&_cardBackgroundColor));
+							cardColor = _cardBackgroundColor;
 						}
 						else
 						{
-							_materialUbo.Update(Core::MakeData(&card.color));
+							cardColor = card.color;
 						}
 
 						_model = glm::rotate(_model, glm::radians(a * card_rotation_max_angle), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -314,9 +333,10 @@ namespace Eugenix
 					}
 					else if (card.turned)
 					{
-						_materialUbo.Update(Core::MakeData(&card.color));
+						cardColor = card.color;
 					}
 
+					_materialUbo.Update(Core::MakeData(&cardColor));
 					_transformUbo.Update(Core::MakeData(&_model));
 
 					Render::OpenGL::Commands::DrawIndexed(Render::PrimitiveType::Triangles, card_elements.size(), Render::DataType::UInt);
@@ -334,7 +354,8 @@ namespace Eugenix
 					{
 						auto& card = cards[row][col];
 						card.turned = false;
-						card.turning = false;
+						//card.turning = false;
+						card.anim = Game::CardAnim::None;
 						card.reversing = false;
 						card.flipped = false;
 						card.angle = 0.0f;
@@ -379,12 +400,12 @@ namespace Eugenix
 
 					auto& card = cards[row][col];
 
-					if (card_is_turning || card_is_reversing || card.turned || card.turning || card.flipped)
+					if (card_is_turning || card_is_reversing || card.turned || card.anim == Game::CardAnim::TurningToFront || card.flipped)
 					{
 						return;
 					}
 
-					card.turning = true;
+					card.anim = Game::CardAnim::TurningToFront;
 					card_is_turning = true;
 
 					if (last_card != nullptr)
