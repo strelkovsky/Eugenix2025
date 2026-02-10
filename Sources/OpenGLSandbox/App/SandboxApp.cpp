@@ -4,6 +4,8 @@
 
 #include "SandboxApp.h"
 
+#include "Render/OpenGL/EugenixGL.h"
+
 #include "Engine/CompileConfig.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Platform.h"
@@ -266,9 +268,9 @@ namespace Eugenix
 
 		glfwMakeContextCurrent(_window);
 
-		if (!gladLoadGL())
+		if (!Render::OpenGL::Init())
 		{
-			LogError("Failed to init GLAD");
+			LogError("Failed to init OpenGL!");
 			glfwTerminate();
 		}
 
