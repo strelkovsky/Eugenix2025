@@ -1,9 +1,10 @@
 #pragma once
 
-#include <glad/glad.h>
+#include "SandboxCompileConfig.h"
 
 #include "OpenGLTypes.h"
 
+// TODO : move to Render Core
 namespace Eugenix::Render::OpenGL::Commands
 {
 	inline void Clear(float r, float g, float b)

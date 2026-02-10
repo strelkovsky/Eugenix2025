@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-#include <glad/glad.h>
+#include "SandboxCompileConfig.h"
 
 #include <glm/gtc/type_ptr.hpp>
 

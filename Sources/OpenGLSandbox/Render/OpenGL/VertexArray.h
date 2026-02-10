@@ -2,7 +2,7 @@
 
 #include <span>
 
-#include <glad/glad.h>
+#include "SandboxCompileConfig.h"
 
 #include "Object.h"
 #include "Render/Attribute.h"

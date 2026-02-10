@@ -2,7 +2,7 @@
 
 #include <cassert>
 
-#include <glad/glad.h>
+#include "SandboxCompileConfig.h"
 
 #include "Render/Types.h"
 

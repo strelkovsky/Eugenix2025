@@ -2,7 +2,7 @@
 
 #include <array>
 
-#include <glad/glad.h>
+#include "SandboxCompileConfig.h"
 
 #include "Assets/Image.h"
 

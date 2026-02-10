@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include <glad/glad.h>
+#include "SandboxCompileConfig.h"
 
 #include "Engine/Core/Log.h"
 

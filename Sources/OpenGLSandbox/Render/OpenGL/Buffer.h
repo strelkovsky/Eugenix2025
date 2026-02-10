@@ -1,6 +1,6 @@
 #pragma once
 
-#include <glad/glad.h>
+#include "SandboxCompileConfig.h"
 
 #include "Object.h"
 #include "OpenGLTypes.h"
