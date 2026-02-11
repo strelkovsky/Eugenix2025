@@ -19,6 +19,7 @@
 #include "Render/OpenGL/VertexArray.h"
 #include "Render/Attribute.h"
 #include "Render/Mesh.h"
+#include "Render/SharedData.h"
 #include "Render/Utils/MeshGenerator.h"
 
 #include "../Tests/TestUtils.h"
@@ -207,20 +208,6 @@ private:
     size_t _capacityBytes{ 0 };
 };
 
-
-
-static auto cursor_x = 0.0f;
-static auto cursor_y = 0.0f;
-
-namespace core::data
-{
-    struct camera
-    {
-        glm::mat4 view;
-        glm::mat4 proj;
-    };
-}
-
 namespace core::data
 {
     template <typename vertex, typename primitive>
@@ -242,12 +229,6 @@ namespace core::primitive
         static constexpr uint32_t elements{ 3 };
     };
 }
-
-static core::data::camera camera_data
-{
-    glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -4.0f)),
-    glm::perspective(glm::radians(60.0f), static_cast<float>(1024) / static_cast<float>(768), 0.1f, 100.0f)
-};
 
 namespace Game
 {
@@ -317,6 +298,12 @@ namespace Game
         Board board;
         bool xTurn = true;
         bool isEnd = false;
+    };
+
+    struct Entity
+    {
+        Eugenix::Render::OpenGL::VertexArray vao;
+        glm::vec3 albedo;
     };
 }
 
@@ -411,8 +398,8 @@ namespace Eugenix
             _gridVao.AttachIndices(gridEbo);
             _gridVao.Attribute(position_attribute);
 
-            //camera_data.view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -4.0f));
-            //camera_data.proj = glm::perspective(glm::radians(60.0f), static_cast<float>(width()) / static_cast<float>(height()), 0.1f, 100.0f);
+            _cameraData.view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -4.0f));
+            _cameraData.proj =  glm::perspective(glm::radians(60.0f), static_cast<float>(1024) / static_cast<float>(768), 0.1f, 100.0f);
 
             _transformUbo.Create();
             _transformUbo.Storage(Core::MakeData(&_model), GL_DYNAMIC_STORAGE_BIT);
@@ -420,7 +407,7 @@ namespace Eugenix
             _transformUbo.Bind(Render::BufferTarget::UBO, Render::BufferBinding::Transform);
 
             _cameraUbo.Create();
-            _cameraUbo.Storage(Core::MakeData(&camera_data), GL_DYNAMIC_STORAGE_BIT);
+            _cameraUbo.Storage(Core::MakeData(&_cameraData), GL_DYNAMIC_STORAGE_BIT);
             //glBindBufferBase(GL_UNIFORM_BUFFER, (GLint)UBO::Location::Camera, _cameraUbo.NativeHandle());
             _cameraUbo.Bind(Render::BufferTarget::UBO, Render::BufferBinding::Camera);
 
@@ -509,8 +496,8 @@ namespace Eugenix
             {
                 const glm::vec4 viewport{ 0.0f, 0.0f, (float)width(), (float)height() };
 
-                auto start = glm::unProject(glm::vec3(cursor_x, height() - cursor_y, -1.0f), camera_data.view, camera_data.proj, viewport);
-                auto end = glm::unProject(glm::vec3(cursor_x, height() - cursor_y, 1.0f), camera_data.view, camera_data.proj, viewport);
+                auto start = glm::unProject(glm::vec3(cursor_x, height() - cursor_y, -1.0f), _cameraData.view, _cameraData.proj, viewport);
+                auto end = glm::unProject(glm::vec3(cursor_x, height() - cursor_y, 1.0f), _cameraData.view, _cameraData.proj, viewport);
                 end = start + glm::normalize(end - start) * 1000.0f;
 
                 const btVector3 from(start.x, start.y, start.z);
@@ -621,6 +608,8 @@ namespace Eugenix
         Render::OpenGL::Buffer _cameraUbo;
         Render::OpenGL::Buffer _materialUbo;
 
+        Eugenix::Render::Data::Camera _cameraData;
+
         // UBO data
         glm::mat4 _model{ 1.0f };
         glm::vec3 _materialAlbedo{ 1.0f };
@@ -632,6 +621,9 @@ namespace Eugenix
         std::unique_ptr<btCollisionShape> _tileShape;
 
         std::unique_ptr<PhysicsDebugRenderer> _physDebugRenderer;
+
+        float cursor_x = 0.0f;
+        float cursor_y = 0.0f;
 
         Game::GameState _state{};
         bool is_editor = { false };

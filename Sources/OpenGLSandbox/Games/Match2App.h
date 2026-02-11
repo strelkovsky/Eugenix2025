@@ -9,6 +9,7 @@
 #include "App/SandboxApp.h"
 #include "Core/Math/Math.h"
 #include "Render/Attribute.h"
+#include "Render/SharedData.h"
 #include "Render/OpenGL/Buffer.h"
 #include "Render/OpenGL/Pipeline.h"
 #include "Render/OpenGL/VertexArray.h"
@@ -53,9 +54,6 @@ namespace Game
 
 btCollisionWorld* world;
 
-glm::mat4 view;
-glm::mat4 proj;
-
 Game::Card cards[4][13]{ };
 //static constexpr int Rows = 4;
 //static constexpr int Cols = 13;
@@ -69,9 +67,6 @@ static auto card_is_turning = false;
 static auto card_is_reversing = false;
 
 static constexpr auto card_columns_count = 13;
-
-static auto cursor_x2 = 0.0f;
-static auto cursor_y2 = 0.0f;
 
 namespace Eugenix
 {
@@ -119,20 +114,15 @@ namespace Eugenix
 
 			_pipeline = Eugenix::MakePipelineFromFiles("Shaders/simple_pos_transform_ubo.vert", "Shaders/simple_pos_transform_ubo.frag");
 
-			proj = glm::ortho(0.0f, static_cast<float>(width()), 0.0f, static_cast<float>(height()), -1.0f, 1.0f);
-			view = glm::mat4(1.0f);
-
-			const std::vector camera_uniforms
-			{
-				view, proj
-			};
+			_cameraData.view = glm::mat4(1.0f);
+			_cameraData.proj = glm::ortho(0.0f, static_cast<float>(width()), 0.0f, static_cast<float>(height()), -1.0f, 1.0f);
 
 			_transformUbo.Create();
 			_transformUbo.Storage(Core::MakeData(&_model), GL_DYNAMIC_STORAGE_BIT);
 			_transformUbo.Bind(Render::BufferTarget::UBO, Render::BufferBinding::Transform);
 
 			_cameraUbo.Create();
-			_cameraUbo.Storage(Core::MakeData(camera_uniforms), GL_DYNAMIC_STORAGE_BIT);
+			_cameraUbo.Storage(Core::MakeData(&_cameraData), GL_DYNAMIC_STORAGE_BIT);
 			_cameraUbo.Bind(Render::BufferTarget::UBO, Render::BufferBinding::Camera);
 
 			_materialUbo.Create();
@@ -371,8 +361,8 @@ namespace Eugenix
 
 		void onMouseHandle(double xPos, double yPos) override
 		{
-			cursor_x2 = xPos;
-			cursor_y2 = yPos;
+			cursor_x = xPos;
+			cursor_y = yPos;
 		}
 
 		void onMouseButtonHandle(int button, int action, int mods) override
@@ -381,8 +371,8 @@ namespace Eugenix
 			{
 				const glm::vec4 viewport{ 0.0f, 0.0f, (float)width(), (float)height()};
 
-				auto start = glm::unProject(glm::vec3(cursor_x2, height() - cursor_y2, -1.0f), view, proj, viewport);
-				auto end = glm::unProject(glm::vec3(cursor_x2, height() - cursor_y2, 1.0f), view, proj, viewport);
+				auto start = glm::unProject(glm::vec3(cursor_x, height() - cursor_y, -1.0f), _cameraData.view, _cameraData.proj, viewport);
+				auto end = glm::unProject(glm::vec3(cursor_x, height() - cursor_y, 1.0f), _cameraData.view, _cameraData.proj, viewport);
 				end = start + glm::normalize(end - start) * 1000.0f;
 
 				const btVector3 from(start.x, start.y, start.z);
@@ -393,8 +383,6 @@ namespace Eugenix
 
 				if (result.hasHit())
 				{
-					std::cout << "hit" << std::endl;
-
 					const auto row = result.m_collisionObject->getUserIndex();
 					const auto col = result.m_collisionObject->getUserIndex2();
 
@@ -448,8 +436,13 @@ namespace Eugenix
 		Render::OpenGL::Buffer _cameraUbo;
 		Render::OpenGL::Buffer _materialUbo;
 
+		Eugenix::Render::Data::Camera _cameraData;
+
 		std::vector<glm::vec3> card_vertices;
 		std::vector<uint32_t>  card_elements;
+
+		float cursor_x = 0.0f;
+		float cursor_y = 0.0f;
 
 		glm::vec3 _cardBackgroundColor{ 0.97647058f, 0.47843137254901963f, 0.0f };
 		std::vector<glm::vec3> _cardColors;
