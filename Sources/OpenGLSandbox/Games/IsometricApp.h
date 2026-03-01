@@ -12,6 +12,13 @@
 
 namespace Eugenix
 {
+    struct TileVertex
+    {
+        glm::vec2 pos;
+        glm::vec2 uv;
+    };
+    static_assert(sizeof(TileVertex) == sizeof(float) * 4);
+
     class IsometricApp final : public SandboxApp
     {
     public:
@@ -37,38 +44,32 @@ namespace Eugenix
             const auto tile_width = static_cast<float>(ground1image.width);
             const auto tile_height = static_cast<float>(ground1image.height);
 
-            const auto half_tile_width = tile_width / 2.0f;
-            const auto half_tile_height = tile_height / 2.0f;
+            const auto hw = tile_width / 2.0f;
+            const auto hh = tile_height / 2.0f;
 
-            const std::vector tile_vertices
-            {
-                -half_tile_width, -half_tile_height, 0.0f, 0.0f,
-                 half_tile_width, -half_tile_height, 1.0f, 0.0f,
-                -half_tile_width,  half_tile_height, 0.0f, 1.0f,
-                 half_tile_width,  half_tile_height, 1.0f, 1.0f
-            };
+            const std::array<TileVertex, 4> tile_vertices =
+            { {
+              {{-hw,-hh},{0,0}},
+              {{ hw,-hh},{1,0}},
+              {{-hw, hh},{0,1}},
+              {{ hw, hh},{1,1}},
+            } };
 
-            const std::vector tile_elements
-            {
-                0, 1, 2,
-                3, 2, 1
-            };
+            const std::array<uint32_t, 6> tile_elements = { 0,1,2, 3,2,1 };
+            
+            _tileVbo.Create();
+            _tileVbo.Storage(Core::MakeData(&tile_vertices));
 
-            Render::OpenGL::Buffer tile_vbo;
-            tile_vbo.Create();
-            tile_vbo.Storage(Core::MakeData(tile_vertices));
-
-            Render::OpenGL::Buffer tile_ebo;
-            tile_ebo.Create();
-            tile_ebo.Storage(Core::MakeData(tile_elements));
+            _tileEbo.Create();
+            _tileEbo.Storage(Core::MakeData(&tile_elements));
 
             // TODO : try to parse attributes from shader
-            constexpr Eugenix::Render::Attribute position_attribute{ 0, 2, Eugenix::Render::DataType::Float, GL_FALSE, 0 };
-            constexpr Eugenix::Render::Attribute texcoord_attribute{ 1, 2, Eugenix::Render::DataType::Float, GL_FALSE, sizeof(glm::vec2) };
+            constexpr Eugenix::Render::Attribute position_attribute{ 0, 2, Eugenix::Render::DataType::Float, GL_FALSE, offsetof(TileVertex,pos) };
+            constexpr Eugenix::Render::Attribute texcoord_attribute{ 1, 2, Eugenix::Render::DataType::Float, GL_FALSE, offsetof(TileVertex,uv) };
 
             _tileVao.Create();
-            _tileVao.AttachVertices(tile_vbo, sizeof(glm::vec2) + sizeof(glm::vec2));
-            _tileVao.AttachIndices(tile_ebo);
+            _tileVao.AttachVertices(_tileVbo, sizeof(glm::vec2) + sizeof(glm::vec2));
+            _tileVao.AttachIndices(_tileEbo);
             _tileVao.Attribute(position_attribute);
             _tileVao.Attribute(texcoord_attribute);
 
@@ -85,7 +86,7 @@ namespace Eugenix
             _cameraUbo.Storage(Core::MakeData(&_cameraData), GL_DYNAMIC_STORAGE_BIT);
             _cameraUbo.Bind(Render::BufferTarget::UBO, Render::BufferBinding::Camera);
 
-            _map.Generate(half_tile_width, half_tile_height);
+            _map.Generate(hw, hh);
             _map.GenerateCorners();
 
             glEnable(GL_BLEND);
@@ -157,7 +158,10 @@ namespace Eugenix
         Render::OpenGL::Texture2D _ground1Texture;
         Render::OpenGL::Texture2D _water1Texture;
         Render::OpenGL::Sampler _tileSampler;
+
         Render::OpenGL::VertexArray _tileVao;
+        Render::OpenGL::Buffer _tileVbo;
+        Render::OpenGL::Buffer _tileEbo;
 
         // UBOs
         Render::OpenGL::Buffer _transformUbo;
