@@ -314,7 +314,7 @@ namespace Eugenix
 
         unsigned int cubemapTexture;
 
-        std::vector<std::string> faces = 
+        std::vector<std::string> faces =
         {
                 "textures/skybox/right.jpg",
                 "textures/skybox/left.jpg",
@@ -400,13 +400,13 @@ namespace Eugenix
                 {{-1.0f,  1.0f},  {0.0f, 1.0f}},
                 {{-1.0f, -1.0f},  {0.0f, 0.0f}},
                 {{ 1.0f, -1.0f},  {1.0f, 0.0f}},
-                                             
+
                 {{-1.0f,  1.0f},  {0.0f, 1.0f}},
                 {{ 1.0f, -1.0f},  {1.0f, 0.0f}},
                 {{ 1.0f,  1.0f},  {1.0f, 1.0f}}
             };
 
-            const std::vector<VertexPos> skyboxVertices = 
+            const std::vector<VertexPos> skyboxVertices =
             {
                 // positions          
                 {{-1.0f,  1.0f, -1.0f}},
@@ -415,35 +415,35 @@ namespace Eugenix
                 {{ 1.0f, -1.0f, -1.0f}},
                 {{ 1.0f,  1.0f, -1.0f}},
                 {{-1.0f,  1.0f, -1.0f}},
-                                      
+
                 {{-1.0f, -1.0f,  1.0f}},
                 {{-1.0f, -1.0f, -1.0f}},
                 {{-1.0f,  1.0f, -1.0f}},
                 {{-1.0f,  1.0f, -1.0f}},
                 {{-1.0f,  1.0f,  1.0f}},
                 {{-1.0f, -1.0f,  1.0f}},
-                                      
+
                 {{ 1.0f, -1.0f, -1.0f}},
                 {{ 1.0f, -1.0f,  1.0f}},
                 {{ 1.0f,  1.0f,  1.0f}},
                 {{ 1.0f,  1.0f,  1.0f}},
                 {{ 1.0f,  1.0f, -1.0f}},
                 {{ 1.0f, -1.0f, -1.0f}},
-                                      
+
                 {{-1.0f, -1.0f,  1.0f}},
                 {{-1.0f,  1.0f,  1.0f}},
                 {{ 1.0f,  1.0f,  1.0f}},
                 {{ 1.0f,  1.0f,  1.0f}},
                 {{ 1.0f, -1.0f,  1.0f}},
                 {{-1.0f, -1.0f,  1.0f}},
-                                      
+
                 {{-1.0f,  1.0f, -1.0f}},
                 {{ 1.0f,  1.0f, -1.0f}},
                 {{ 1.0f,  1.0f,  1.0f}},
                 {{ 1.0f,  1.0f,  1.0f}},
                 {{-1.0f,  1.0f,  1.0f}},
                 {{-1.0f,  1.0f, -1.0f}},
-                                      
+
                 {{-1.0f, -1.0f, -1.0f}},
                 {{-1.0f, -1.0f,  1.0f}},
                 {{ 1.0f, -1.0f, -1.0f}},
@@ -507,7 +507,7 @@ namespace Eugenix
 
             img = _imageLoader.Load("Textures/container2_specular.png");
             _cubeSpecularTexture.Create();
-            _cubeSpecularTexture.Upload(img, {.colorSpace = Render::TextureColorSpace::Linear});
+            _cubeSpecularTexture.Upload(img, { .colorSpace = Render::TextureColorSpace::Linear });
 
             img = _imageLoader.Load("Textures/metal.png");
             _metalAlbedo.Create();
@@ -561,7 +561,7 @@ namespace Eugenix
         }
 
         void onResize() override
-        { 
+        {
         }
 
         void onRender() override

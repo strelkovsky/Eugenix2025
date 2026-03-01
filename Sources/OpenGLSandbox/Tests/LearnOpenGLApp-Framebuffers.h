@@ -20,11 +20,6 @@
 
 namespace Eugenix
 {
-    struct VertexPos
-    {
-        glm::vec3 pos;
-    };
-
     struct Vertex
     {
         glm::vec3 pos;
@@ -273,64 +268,89 @@ namespace Eugenix
         },
     };
 
+    int selectedLightIndex;
+
+    struct Framebuffer
+    {
+        void Create(int width, int height, GLint internalFormat, GLenum format)
+        {
+            glGenFramebuffers(1, &_fboId);
+            glBindFramebuffer(GL_FRAMEBUFFER, _fboId);
+
+            glGenTextures(1, &_colorBuffer);
+            glBindTexture(GL_TEXTURE_2D, _colorBuffer);
+            GLenum type = (internalFormat == GL_RGBA16F) ? GL_FLOAT : GL_UNSIGNED_BYTE;
+            glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, type, NULL);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glBindTexture(GL_TEXTURE_2D, 0);
+
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorBuffer, 0);
+
+            glGenRenderbuffers(1, &_depthStencilBuffer);
+            glBindRenderbuffer(GL_RENDERBUFFER, _depthStencilBuffer);
+            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+            glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, _depthStencilBuffer);
+
+            if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            {
+                std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+            }
+
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+
+        void Bind()
+        {
+            glBindFramebuffer(GL_FRAMEBUFFER, _fboId);
+        }
+
+        void Resize(int width, int height)
+        {
+            glBindTexture(GL_TEXTURE_2D, _colorBuffer);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+            glBindRenderbuffer(GL_RENDERBUFFER, _depthStencilBuffer);
+            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+        }
+
+        void BindColorAttachment()
+        {
+            glBindTexture(GL_TEXTURE_2D, _colorBuffer);
+        }
+
+    private:
+        GLuint _fboId{};
+        GLuint _colorBuffer{};
+        GLuint _depthStencilBuffer{};
+    };
+
     class LearnOpenGLApp final : public SandboxApp
     {
     protected:
 
-        // TODO :  Use cubemap class
-        unsigned int loadCubemap(std::vector<std::string> faces)
+        Framebuffer simpleFramebuffer{};
+        Framebuffer hdrFramebuffer{};
+
+        void setupFrameBuffers()
         {
-            unsigned int textureID;
-            glGenTextures(1, &textureID);
-            glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
-
-            int width, height, nrChannels;
-            for (unsigned int i = 0; i < faces.size(); i++)
-            {
-                unsigned char* data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
-                if (data)
-                {
-                    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-                        0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
-                    );
-                    stbi_image_free(data);
-                }
-                else
-                {
-                    std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
-                    stbi_image_free(data);
-                }
-            }
-
-            // TODO : Use sampler
-            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-            return textureID;
+            simpleFramebuffer.Create(width(), height(), GL_RGB, GL_RGB);
+            hdrFramebuffer.Create(width(), height(), GL_RGBA16F, GL_RGBA);
         }
-
-        unsigned int cubemapTexture;
-
-        std::vector<std::string> faces = 
-        {
-                "textures/skybox/right.jpg",
-                "textures/skybox/left.jpg",
-                "textures/skybox/top.jpg",
-                "textures/skybox/bottom.jpg",
-                "textures/skybox/front.jpg",
-                "textures/skybox/back.jpg"
-        };
 
         bool onInit() override
         {
-            cubemapTexture = loadCubemap(faces);
+            setupFrameBuffers();
 
             _pipeline = MakePipelineFromFiles("shaders/SimpleVertex.vert", "shaders/SimplePhong.frag");
             _lampPipeline = MakePipelineFromFiles("shaders/SimpleVertex.vert", "shaders/SimpleUnlit.frag");
-            _skyboxPipeline = MakePipelineFromFiles("shaders/SimpleSkybox.vert", "shaders/SimpleSkybox.frag");
+            _screenPipeline = MakePipelineFromFiles("shaders/quad.vert", "shaders/SimpleSampler.frag");
+            _colorInversePipeline = MakePipelineFromFiles("shaders/quad.vert", "shaders/SimpleColorInverse.frag");
+            _grayScalePipeline = MakePipelineFromFiles("shaders/quad.vert", "shaders/SimpleGrayScale.frag");
+            _kernelEffectPipeline = MakePipelineFromFiles("shaders/quad.vert", "shaders/SimpleKernelEffect.frag");
+            _blurEffectPipeline = MakePipelineFromFiles("shaders/quad.vert", "shaders/SimpleBlur.frag");
+            _tonemapPipeline = MakePipelineFromFiles("shaders/quad.vert", "shaders/SimpleTonemap.frag");
 
             // Set up vertex data (and buffer(s)) and attribute pointers
             const std::vector<Vertex> vertices =
@@ -400,56 +420,22 @@ namespace Eugenix
                 {{-1.0f,  1.0f},  {0.0f, 1.0f}},
                 {{-1.0f, -1.0f},  {0.0f, 0.0f}},
                 {{ 1.0f, -1.0f},  {1.0f, 0.0f}},
-                                             
+
                 {{-1.0f,  1.0f},  {0.0f, 1.0f}},
                 {{ 1.0f, -1.0f},  {1.0f, 0.0f}},
                 {{ 1.0f,  1.0f},  {1.0f, 1.0f}}
             };
 
-            const std::vector<VertexPos> skyboxVertices = 
-            {
-                // positions          
-                {{-1.0f,  1.0f, -1.0f}},
-                {{-1.0f, -1.0f, -1.0f}},
-                {{ 1.0f, -1.0f, -1.0f}},
-                {{ 1.0f, -1.0f, -1.0f}},
-                {{ 1.0f,  1.0f, -1.0f}},
-                {{-1.0f,  1.0f, -1.0f}},
-                                      
-                {{-1.0f, -1.0f,  1.0f}},
-                {{-1.0f, -1.0f, -1.0f}},
-                {{-1.0f,  1.0f, -1.0f}},
-                {{-1.0f,  1.0f, -1.0f}},
-                {{-1.0f,  1.0f,  1.0f}},
-                {{-1.0f, -1.0f,  1.0f}},
-                                      
-                {{ 1.0f, -1.0f, -1.0f}},
-                {{ 1.0f, -1.0f,  1.0f}},
-                {{ 1.0f,  1.0f,  1.0f}},
-                {{ 1.0f,  1.0f,  1.0f}},
-                {{ 1.0f,  1.0f, -1.0f}},
-                {{ 1.0f, -1.0f, -1.0f}},
-                                      
-                {{-1.0f, -1.0f,  1.0f}},
-                {{-1.0f,  1.0f,  1.0f}},
-                {{ 1.0f,  1.0f,  1.0f}},
-                {{ 1.0f,  1.0f,  1.0f}},
-                {{ 1.0f, -1.0f,  1.0f}},
-                {{-1.0f, -1.0f,  1.0f}},
-                                      
-                {{-1.0f,  1.0f, -1.0f}},
-                {{ 1.0f,  1.0f, -1.0f}},
-                {{ 1.0f,  1.0f,  1.0f}},
-                {{ 1.0f,  1.0f,  1.0f}},
-                {{-1.0f,  1.0f,  1.0f}},
-                {{-1.0f,  1.0f, -1.0f}},
-                                      
-                {{-1.0f, -1.0f, -1.0f}},
-                {{-1.0f, -1.0f,  1.0f}},
-                {{ 1.0f, -1.0f, -1.0f}},
-                {{ 1.0f, -1.0f, -1.0f}},
-                {{-1.0f, -1.0f,  1.0f}},
-                {{ 1.0f, -1.0f,  1.0f}}
+            const std::vector<QuadVertex> quadVertices2 =
+            { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates. NOTE that this plane is now much smaller and at the top of the screen
+                // positions   // texCoords
+                {{-0.3f,  1.0f},  {0.0f, 1.0f}},
+                {{-0.3f,  0.7f},  {0.0f, 0.0f}},
+                {{ 0.3f,  0.7f},  {1.0f, 0.0f}},
+
+                {{-0.3f,  1.0f},  {0.0f, 1.0f}},
+                {{ 0.3f,  0.7f},  {1.0f, 0.0f}},
+                {{ 0.3f,  1.0f},  {1.0f, 1.0f}}
             };
 
             Render::OpenGL::Buffer vbo;
@@ -492,14 +478,26 @@ namespace Eugenix
             _quadVao.Attribute({ 0, 2, Render::DataType::Float, false, 0 });
             _quadVao.Attribute({ 1, 2, Render::DataType::Float, false, offsetof(QuadVertex, uv) });
 
-            // Skybox
-            Render::OpenGL::Buffer skyboxVbo;
-            skyboxVbo.Create();
-            skyboxVbo.Storage(Core::MakeData(std::span{ skyboxVertices }));
+            // screen quad 2 VAO
+            Render::OpenGL::Buffer quad2Vbo;
+            quad2Vbo.Create();
+            quad2Vbo.Storage(Core::MakeData(std::span{ quadVertices2 }));
 
-            _skyboxVao.Create();
-            _skyboxVao.AttachVertices(skyboxVbo, sizeof(VertexPos));
-            _skyboxVao.Attribute({ 0, 3, Render::DataType::Float, false, 0 });
+            _quad2Vao.Create();
+            _quad2Vao.AttachVertices(quad2Vbo, sizeof(QuadVertex));
+            _quad2Vao.Attribute({ 0, 2, Render::DataType::Float, false, 0 });
+            _quad2Vao.Attribute({ 1, 2, Render::DataType::Float, false, offsetof(QuadVertex, uv) });
+
+            //unsigned int quadVAO, quadVBO;
+            //glGenVertexArrays(1, &quadVAO);
+            //glGenBuffers(1, &quadVBO);
+            //glBindVertexArray(quadVAO);
+            //glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+            //glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+            //glEnableVertexAttribArray(0);
+            //glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+            //glEnableVertexAttribArray(1);
+            //glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 
             auto img = _imageLoader.Load("Textures/container2.png");
             _cubeDiffuseTexture.Create();
@@ -507,7 +505,7 @@ namespace Eugenix
 
             img = _imageLoader.Load("Textures/container2_specular.png");
             _cubeSpecularTexture.Create();
-            _cubeSpecularTexture.Upload(img, {.colorSpace = Render::TextureColorSpace::Linear});
+            _cubeSpecularTexture.Upload(img, { .colorSpace = Render::TextureColorSpace::Linear });
 
             img = _imageLoader.Load("Textures/metal.png");
             _metalAlbedo.Create();
@@ -556,37 +554,74 @@ namespace Eugenix
             }
         }
 
+        int _selectedPipeline = 0;
+
         void onDebugUI() override
         {
+            //static float exposure = 1.0f;
+            //ImGui::SliderFloat("Exposure", &exposure, 0.1f, 5.0f);
+            //_tonemapPipeline.SetUniform("exposure", exposure);
+
+            ImGui::Begin("Select FB pipeline");
+
+            ImGui::Text("Selected - %d\n1 - Simple\n2 - ColorInverse\n3 - GrayScale\n4 - Kernel\n5 - Blur", _selectedPipeline + 1);
+
+            //ImGui::DragInt("Pipeline: ", &_selectedPipeline, 0.2f, 0, 5);
+
+            ImGui::End();
         }
 
         void onResize() override
-        { 
+        {
+            simpleFramebuffer.Resize(width(), height());
+            hdrFramebuffer.Resize(width(), height());
         }
 
         void onRender() override
         {
+            // Main Pass
+            simpleFramebuffer.Bind();
+            //hdrFramebuffer.Bind();
             glEnable(GL_DEPTH_TEST);
             Render::OpenGL::Commands::Viewport(0, 0, width(), height());
             Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glEnable(GL_DEPTH_TEST);
             drawScene();
 
-            //_skyboxPipeline.SetUniform("skybox", 0);
+            // второй проход
+            glBindFramebuffer(GL_FRAMEBUFFER, 0); // возвращаем буфер кадра по умолчанию
+            Render::OpenGL::Commands::Clear(0.1f, 0.1, 0.1f);
+            Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT);
 
-            // draw skybox as last
-            glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
-            _skyboxPipeline.Bind();
-            glm::mat4 view = glm::mat4(glm::mat3(camera.GetViewMatrix())); // remove translation from the view matrix
-            auto projection = glm::perspective(glm::radians(45.0f), (GLfloat)width() / (GLfloat)height(), 0.1f, 100.0f);
-            _skyboxPipeline.SetUniform("view", view);
-            _skyboxPipeline.SetUniform("projection", projection);
-            // skybox cube
-            _skyboxVao.Bind();
+            Render::OpenGL::Pipeline fbPipeline{};
+
+            if (_selectedPipeline == 0)
+                fbPipeline = _screenPipeline;
+            else if (_selectedPipeline == 1)
+                fbPipeline = _colorInversePipeline;
+            else if (_selectedPipeline == 2)
+                fbPipeline = _grayScalePipeline;
+            else if (_selectedPipeline == 3)
+                fbPipeline = _kernelEffectPipeline;
+            else if (_selectedPipeline == 4)
+                fbPipeline = _blurEffectPipeline;
+
+            fbPipeline.Bind();
+            //_tonemapPipeline.Bind();
+            //_tonemapPipeline.SetUniform("screenTexture", 0); // <-- обязательно!
+
+            glDisable(GL_DEPTH_TEST);
             glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-            glBindVertexArray(0);
-            glDepthFunc(GL_LESS); // set depth function back to default
+            //hdrFramebuffer.BindColorAttachment();
+            simpleFramebuffer.BindColorAttachment();
+
+            // General quad
+            _quadVao.Bind();
+            Render::OpenGL::Commands::DrawVertices(Render::PrimitiveType::Triangles, 6);
+
+            // Small quad
+            _quad2Vao.Bind();
+            Render::OpenGL::Commands::DrawVertices(Render::PrimitiveType::Triangles, 6);
         }
 
         void drawScene()
@@ -663,6 +698,24 @@ namespace Eugenix
                 }
             }
 
+
+            // point lights 
+            //for (int i = 0; i < pointLights.size(); i++)
+            //{
+            //    const auto& light = pointLights[i];
+
+            //    _pipeline.SetUniform(std::format("pointLights[{}].position", i), light.position);
+            //    _pipeline.SetUniform(std::format("pointLights[{}].ambient", i), light.ambient);
+            //    _pipeline.SetUniform(std::format("pointLights[{}].diffuse", i), light.diffuse);
+            //    _pipeline.SetUniform(std::format("pointLights[{}].specular", i), light.specular);
+            //    _pipeline.SetUniform(std::format("pointLights[{}].constant", i), light.constant);
+            //    _pipeline.SetUniform(std::format("pointLights[{}].linear", i), light.linear);
+            //    _pipeline.SetUniform(std::format("pointLights[{}].quadratic", i), light.quadratic);
+            //}
+
+            // spotLight
+
+
             _cubeDiffuseTexture.Bind();
             _cubeSpecularTexture.Bind(1);
             _cubeVao.Bind();
@@ -727,6 +780,20 @@ namespace Eugenix
 
         void onKeyHandle(int key, int code, int action, int mode) override
         {
+            if (key == GLFW_KEY_TAB && action == GLFW_PRESS)
+            {
+                _isLineMode = !_isLineMode;
+
+                if (_isLineMode)
+                {
+                    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+                }
+                else
+                {
+                    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+                }
+            }
+
             if (key == GLFW_KEY_F2 && action == GLFW_PRESS)
             {
                 cull_face = !cull_face;
@@ -743,6 +810,27 @@ namespace Eugenix
                 glfwSetInputMode(WindowHandle(), GLFW_CURSOR, _lockCursor ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
             }
 
+            if (key == GLFW_KEY_1 && action == GLFW_PRESS)
+            {
+                _selectedPipeline = 0;
+            }
+            if (key == GLFW_KEY_2 && action == GLFW_PRESS)
+            {
+                _selectedPipeline = 1;
+            }
+            if (key == GLFW_KEY_3 && action == GLFW_PRESS)
+            {
+                _selectedPipeline = 2;
+            }
+            if (key == GLFW_KEY_4 && action == GLFW_PRESS)
+            {
+                _selectedPipeline = 3;
+            }
+            if (key == GLFW_KEY_5 && action == GLFW_PRESS)
+            {
+                _selectedPipeline = 4;
+            }
+
             if (action == GLFW_PRESS)
                 keys[key] = true;
             else if (action == GLFW_RELEASE)
@@ -756,6 +844,7 @@ namespace Eugenix
                 firstMouse = true;
                 return;
             }
+
 
             if (firstMouse)
             {
@@ -787,15 +876,21 @@ namespace Eugenix
         Render::OpenGL::VertexArray _planeVao;
         Render::OpenGL::VertexArray _lightSourceVao;
         Render::OpenGL::VertexArray _quadVao;
-        Render::OpenGL::VertexArray _skyboxVao;
+        Render::OpenGL::VertexArray _quad2Vao;
 
         Render::OpenGL::Pipeline _pipeline;
         Render::OpenGL::Pipeline _lampPipeline;
-        Render::OpenGL::Pipeline _skyboxPipeline;
+        Render::OpenGL::Pipeline _screenPipeline;
+        Render::OpenGL::Pipeline _colorInversePipeline;
+        Render::OpenGL::Pipeline _grayScalePipeline;
+        Render::OpenGL::Pipeline _kernelEffectPipeline;
+        Render::OpenGL::Pipeline _blurEffectPipeline;
+        Render::OpenGL::Pipeline _tonemapPipeline;
 
         GLfloat lastX, lastY;
         bool firstMouse{ true };
 
+        bool _isLineMode{};
         bool _lockCursor{ true };
     };
 }

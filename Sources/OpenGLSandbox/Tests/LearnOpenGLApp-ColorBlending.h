@@ -20,11 +20,6 @@
 
 namespace Eugenix
 {
-    struct VertexPos
-    {
-        glm::vec3 pos;
-    };
-
     struct Vertex
     {
         glm::vec3 pos;
@@ -32,12 +27,6 @@ namespace Eugenix
         glm::vec2 uv;
 
         // TODO : return span of attributes
-    };
-
-    struct QuadVertex
-    {
-        glm::vec2 pos;
-        glm::vec2 uv;
     };
 
     glm::vec3 cubePositions[] = {
@@ -53,7 +42,14 @@ namespace Eugenix
           glm::vec3(-1.3f,  1.0f, -1.5f)
     };
 
-
+    std::vector<glm::vec3> vegetation =
+    {
+        glm::vec3(-1.5f, 0.0f, -0.48f),
+        glm::vec3(1.5f, 0.0f, 0.51f),
+        glm::vec3(0.0f, 0.0f, 0.7f),
+        glm::vec3(-0.3f, 0.0f, -2.3f),
+        glm::vec3(0.5f, 0.0f, -0.6f)
+    };
 
     // Defines several possible options for camera movement. Used as abstraction to stay away from window-system specific input methods
     enum Camera_Movement {
@@ -273,64 +269,17 @@ namespace Eugenix
         },
     };
 
+    int selectedLightIndex;
+
+    // TODO : lights UBO from Eugenix. UBO Test. ShaderEnv stuff
+
     class LearnOpenGLApp final : public SandboxApp
     {
     protected:
-
-        // TODO :  Use cubemap class
-        unsigned int loadCubemap(std::vector<std::string> faces)
-        {
-            unsigned int textureID;
-            glGenTextures(1, &textureID);
-            glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
-
-            int width, height, nrChannels;
-            for (unsigned int i = 0; i < faces.size(); i++)
-            {
-                unsigned char* data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
-                if (data)
-                {
-                    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-                        0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
-                    );
-                    stbi_image_free(data);
-                }
-                else
-                {
-                    std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
-                    stbi_image_free(data);
-                }
-            }
-
-            // TODO : Use sampler
-            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-            return textureID;
-        }
-
-        unsigned int cubemapTexture;
-
-        std::vector<std::string> faces = 
-        {
-                "textures/skybox/right.jpg",
-                "textures/skybox/left.jpg",
-                "textures/skybox/top.jpg",
-                "textures/skybox/bottom.jpg",
-                "textures/skybox/front.jpg",
-                "textures/skybox/back.jpg"
-        };
-
         bool onInit() override
         {
-            cubemapTexture = loadCubemap(faces);
-
             _pipeline = MakePipelineFromFiles("shaders/SimpleVertex.vert", "shaders/SimplePhong.frag");
             _lampPipeline = MakePipelineFromFiles("shaders/SimpleVertex.vert", "shaders/SimpleUnlit.frag");
-            _skyboxPipeline = MakePipelineFromFiles("shaders/SimpleSkybox.vert", "shaders/SimpleSkybox.frag");
 
             // Set up vertex data (and buffer(s)) and attribute pointers
             const std::vector<Vertex> vertices =
@@ -384,91 +333,48 @@ namespace Eugenix
                 {{-0.5f,  0.5f, -0.5f}, { 0.0f,  1.0f,  0.0f}, {0.0f, 1.0f}}
             };
 
-            const std::vector<Vertex> planeVertices = {
-                {{-5.0f, -0.5f,  5.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-                {{ 5.0f, -0.5f,  5.0f}, {0.0f, 1.0f, 0.0f}, {2.0f, 0.0f}},
-                {{-5.0f, -0.5f, -5.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 2.0f}},
-
-                {{ 5.0f, -0.5f,  5.0f}, {0.0f, 1.0f, 0.0f}, {2.0f, 0.0f}},
-                {{ 5.0f, -0.5f, -5.0f}, {0.0f, 1.0f, 0.0f}, {2.0f, 2.0f}},
-                {{-5.0f, -0.5f, -5.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 2.0f}}
-            };
-
-            const std::vector<QuadVertex> quadVertices =
-            { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
-                // positions   // texCoords
-                {{-1.0f,  1.0f},  {0.0f, 1.0f}},
-                {{-1.0f, -1.0f},  {0.0f, 0.0f}},
-                {{ 1.0f, -1.0f},  {1.0f, 0.0f}},
-                                             
-                {{-1.0f,  1.0f},  {0.0f, 1.0f}},
-                {{ 1.0f, -1.0f},  {1.0f, 0.0f}},
-                {{ 1.0f,  1.0f},  {1.0f, 1.0f}}
-            };
-
-            const std::vector<VertexPos> skyboxVertices = 
+            const std::vector<Vertex> planeVertices =
             {
-                // positions          
-                {{-1.0f,  1.0f, -1.0f}},
-                {{-1.0f, -1.0f, -1.0f}},
-                {{ 1.0f, -1.0f, -1.0f}},
-                {{ 1.0f, -1.0f, -1.0f}},
-                {{ 1.0f,  1.0f, -1.0f}},
-                {{-1.0f,  1.0f, -1.0f}},
-                                      
-                {{-1.0f, -1.0f,  1.0f}},
-                {{-1.0f, -1.0f, -1.0f}},
-                {{-1.0f,  1.0f, -1.0f}},
-                {{-1.0f,  1.0f, -1.0f}},
-                {{-1.0f,  1.0f,  1.0f}},
-                {{-1.0f, -1.0f,  1.0f}},
-                                      
-                {{ 1.0f, -1.0f, -1.0f}},
-                {{ 1.0f, -1.0f,  1.0f}},
-                {{ 1.0f,  1.0f,  1.0f}},
-                {{ 1.0f,  1.0f,  1.0f}},
-                {{ 1.0f,  1.0f, -1.0f}},
-                {{ 1.0f, -1.0f, -1.0f}},
-                                      
-                {{-1.0f, -1.0f,  1.0f}},
-                {{-1.0f,  1.0f,  1.0f}},
-                {{ 1.0f,  1.0f,  1.0f}},
-                {{ 1.0f,  1.0f,  1.0f}},
-                {{ 1.0f, -1.0f,  1.0f}},
-                {{-1.0f, -1.0f,  1.0f}},
-                                      
-                {{-1.0f,  1.0f, -1.0f}},
-                {{ 1.0f,  1.0f, -1.0f}},
-                {{ 1.0f,  1.0f,  1.0f}},
-                {{ 1.0f,  1.0f,  1.0f}},
-                {{-1.0f,  1.0f,  1.0f}},
-                {{-1.0f,  1.0f, -1.0f}},
-                                      
-                {{-1.0f, -1.0f, -1.0f}},
-                {{-1.0f, -1.0f,  1.0f}},
-                {{ 1.0f, -1.0f, -1.0f}},
-                {{ 1.0f, -1.0f, -1.0f}},
-                {{-1.0f, -1.0f,  1.0f}},
-                {{ 1.0f, -1.0f,  1.0f}}
+                {{ 5.0f, -0.5f,  5.0f},  {0.0f, 1.0f, 0.0f}, {2.0f, 0.0f}},
+                {{-5.0f, -0.5f,  5.0f},  {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+                {{-5.0f, -0.5f, -5.0f},  {0.0f, 1.0f, 0.0f}, {0.0f, 2.0f}},
+
+                {{ 5.0f, -0.5f,  5.0f},  {0.0f, 1.0f, 0.0f}, {2.0f, 0.0f}},
+                {{-5.0f, -0.5f, -5.0f},  {0.0f, 1.0f, 0.0f}, {0.0f, 2.0f}},
+                {{ 5.0f, -0.5f, -5.0f},  {0.0f, 1.0f, 0.0f}, {2.0f, 2.0f}}
             };
 
-            Render::OpenGL::Buffer vbo;
-            vbo.Create();
-            vbo.Storage(Core::MakeData(std::span{ vertices }));
+            const std::vector<Vertex> grassVertices =
+            {
+                {{0.0f,  0.5f,  0.0f}, {0.0f,  0.0f,  1.0f}, { 0.0f,  0.0f }},
+                {{0.0f, -0.5f,  0.0f}, {0.0f,  0.0f,  1.0f}, {0.0f,  1.0f}},
+                {{1.0f, -0.5f,  0.0f}, {0.0f,  0.0f,  1.0f}, {1.0f,  1.0f}},
+                                        
+                {{0.0f,  0.5f,  0.0f}, {0.0f,  0.0f,  1.0f}, {0.0f,  0.0f}},
+                {{1.0f, -0.5f,  0.0f}, {0.0f,  0.0f,  1.0f}, {1.0f,  1.0f}},
+                {{1.0f,  0.5f,  0.0f}, {0.0f,  0.0f,  1.0f}, {1.0f,  0.0f}}
+            };
+
+            Render::OpenGL::Buffer cubeVbo;
+            cubeVbo.Create();
+            cubeVbo.Storage(Core::MakeData(std::span{ vertices }));
+
+            //Render::OpenGL::Buffer ebo;
+            //ebo.Create();
+            //ebo.Storage(Core::MakeData(std::span { indices }));
 
             constexpr Render::Attribute position_attribute{ 0, 3, Render::DataType::Float, false, 0 };
             constexpr Render::Attribute normal_attribute{ 1, 3, Render::DataType::Float, false, offsetof(Vertex, normal) };
             constexpr Render::Attribute uv_attribute{ 2, 2, Render::DataType::Float, false, offsetof(Vertex, uv) };
 
             _cubeVao.Create();
-            _cubeVao.AttachVertices(vbo, sizeof(Vertex));
-            //_cubeVao.AttachIndices(ebo);
+            _cubeVao.AttachVertices(cubeVbo, sizeof(Vertex));
             _cubeVao.Attribute(position_attribute);
             _cubeVao.Attribute(normal_attribute);
             _cubeVao.Attribute(uv_attribute);
 
             _lightSourceVao.Create();
-            _lightSourceVao.AttachVertices(vbo, sizeof(Vertex));
+            _lightSourceVao.AttachVertices(cubeVbo, sizeof(Vertex));
             _lightSourceVao.Attribute(position_attribute);
             _lightSourceVao.Attribute(uv_attribute);
 
@@ -482,24 +388,15 @@ namespace Eugenix
             _planeVao.Attribute(normal_attribute);
             _planeVao.Attribute(uv_attribute);
 
-            // screen quad VAO
-            Render::OpenGL::Buffer quadVbo;
-            quadVbo.Create();
-            quadVbo.Storage(Core::MakeData(std::span{ quadVertices }));
+            Render::OpenGL::Buffer grassVbo;
+            grassVbo.Create();
+            grassVbo.Storage(Core::MakeData(std::span{ grassVertices }));
 
-            _quadVao.Create();
-            _quadVao.AttachVertices(quadVbo, sizeof(QuadVertex));
-            _quadVao.Attribute({ 0, 2, Render::DataType::Float, false, 0 });
-            _quadVao.Attribute({ 1, 2, Render::DataType::Float, false, offsetof(QuadVertex, uv) });
-
-            // Skybox
-            Render::OpenGL::Buffer skyboxVbo;
-            skyboxVbo.Create();
-            skyboxVbo.Storage(Core::MakeData(std::span{ skyboxVertices }));
-
-            _skyboxVao.Create();
-            _skyboxVao.AttachVertices(skyboxVbo, sizeof(VertexPos));
-            _skyboxVao.Attribute({ 0, 3, Render::DataType::Float, false, 0 });
+            _grassVao.Create();
+            _grassVao.AttachVertices(grassVbo, sizeof(Vertex));
+            _grassVao.Attribute(position_attribute);
+            _grassVao.Attribute(normal_attribute);
+            _grassVao.Attribute(uv_attribute);
 
             auto img = _imageLoader.Load("Textures/container2.png");
             _cubeDiffuseTexture.Create();
@@ -513,12 +410,28 @@ namespace Eugenix
             _metalAlbedo.Create();
             _metalAlbedo.Upload(img);
 
+            img = _imageLoader.Load("Textures/blending_transparent_window.png");
+            //img = _imageLoader.Load("Textures/grass.png");
+            _transparentTexture.Create();
+            _transparentTexture.Upload(img);
+            
+            _defaultSampler.Create();
+            _defaultSampler.Parameter(Render::TextureParam::WrapS, Render::TextureWrapping::Repeat);
+            _defaultSampler.Parameter(Render::TextureParam::WrapT, Render::TextureWrapping::Repeat);
+            _defaultSampler.Parameter(Render::TextureParam::MinFilter, Render::TextureFilter::Linear);
+            _defaultSampler.Parameter(Render::TextureParam::MagFilter, Render::TextureFilter::Linear);
+
+            _alphaSampler.Create();
+            _alphaSampler.Parameter(Render::TextureParam::WrapS, Render::TextureWrapping::ClampToEdge);
+            _alphaSampler.Parameter(Render::TextureParam::WrapT, Render::TextureWrapping::ClampToEdge);
+            _alphaSampler.Parameter(Render::TextureParam::MinFilter, Render::TextureFilter::Linear);
+            _alphaSampler.Parameter(Render::TextureParam::MagFilter, Render::TextureFilter::Linear);
+
             Render::OpenGL::Commands::Clear(0.1f, 0.1f, 0.1f);
 
             glEnable(GL_DEPTH_TEST);
-
-            glFrontFace(GL_CCW);        // лицевые треугольники Ц против часовой стрелки
-            glCullFace(GL_BACK);        // отбрасывать задние
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
             glfwSetInputMode(WindowHandle(), GLFW_CURSOR, _lockCursor ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 
@@ -558,39 +471,54 @@ namespace Eugenix
 
         void onDebugUI() override
         {
-        }
+            ImGui::Begin("Light Control");
 
-        void onResize() override
-        { 
+            int lightCount = std::max(1, (int)lights.size());
+            ImGui::SliderInt("Select Light", &selectedLightIndex, 0, lightCount - 1);
+
+            static const char* light_types[] = { "Directional", "Point", "Spot" };
+
+            auto& selectedLight = lights[selectedLightIndex];
+
+            int type = static_cast<int>(selectedLight.type);
+            if (ImGui::Combo("Light Type", &type, light_types, IM_ARRAYSIZE(light_types)))
+                selectedLight.type = static_cast<LightType>(type);
+
+            if (selectedLight.type == LightType::Directional || selectedLight.type == LightType::Spot)
+            {
+                ImGui::SliderFloat3("Direction", glm::value_ptr(selectedLight.direction), -1.0f, 1.0f);
+                selectedLight.direction = glm::normalize(selectedLight.direction);
+            }
+
+            if (selectedLight.type == LightType::Point || selectedLight.type == LightType::Spot)
+            {
+                ImGui::SliderFloat3("Position", glm::value_ptr(selectedLight.position), -10.0f, 10.0f);
+            }
+
+            ImGui::ColorEdit3("Ambient", glm::value_ptr(selectedLight.ambient));
+            ImGui::ColorEdit3("Diffuse", glm::value_ptr(selectedLight.diffuse));
+            ImGui::ColorEdit3("Specular", glm::value_ptr(selectedLight.specular));
+
+            if (selectedLight.type == LightType::Point)
+            {
+                ImGui::SliderFloat("Constant", &selectedLight.constant, 0.5f, 2.0f);
+                ImGui::SliderFloat("Linear", &selectedLight.linear, 0.001f, 0.2f);
+                ImGui::SliderFloat("Quadratic", &selectedLight.quadratic, 0.0001f, 0.1f);
+            }
+
+            if (selectedLight.type == LightType::Spot)
+            {
+                ImGui::SliderFloat("CutOff", &selectedLight.cutOff, 0.0f, glm::pi<float>());
+            }
+
+            ImGui::End();
         }
 
         void onRender() override
         {
-            glEnable(GL_DEPTH_TEST);
             Render::OpenGL::Commands::Viewport(0, 0, width(), height());
             Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            drawScene();
 
-            //_skyboxPipeline.SetUniform("skybox", 0);
-
-            // draw skybox as last
-            glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
-            _skyboxPipeline.Bind();
-            glm::mat4 view = glm::mat4(glm::mat3(camera.GetViewMatrix())); // remove translation from the view matrix
-            auto projection = glm::perspective(glm::radians(45.0f), (GLfloat)width() / (GLfloat)height(), 0.1f, 100.0f);
-            _skyboxPipeline.SetUniform("view", view);
-            _skyboxPipeline.SetUniform("projection", projection);
-            // skybox cube
-            _skyboxVao.Bind();
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-            glBindVertexArray(0);
-            glDepthFunc(GL_LESS); // set depth function back to default
-        }
-
-        void drawScene()
-        {
             glm::mat4 projection{ 1.0f };
 
             // rotate camera around (0, 0, 0)
@@ -598,6 +526,8 @@ namespace Eugenix
             //GLfloat camX = sin(glfwGetTime()) * radius;
             //GLfloat camZ = cos(glfwGetTime()) * radius;
             //view = glm::lookAt(glm::vec3(camX, 0.0, camZ), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+
+            glDisable(GL_BLEND);
 
             _pipeline.Bind();
 
@@ -609,6 +539,7 @@ namespace Eugenix
 
             _pipeline.SetUniform("viewPos", camera.Position);
 
+            // TODO : UBO!!
             _pipeline.SetUniform("material.diffuse", 0);
             _pipeline.SetUniform("material.specular", 1);
             _pipeline.SetUniform("material.shininess", 32.0f);
@@ -663,9 +594,30 @@ namespace Eugenix
                 }
             }
 
+
+            // point lights 
+            //for (int i = 0; i < pointLights.size(); i++)
+            //{
+            //    const auto& light = pointLights[i];
+
+            //    _pipeline.SetUniform(std::format("pointLights[{}].position", i), light.position);
+            //    _pipeline.SetUniform(std::format("pointLights[{}].ambient", i), light.ambient);
+            //    _pipeline.SetUniform(std::format("pointLights[{}].diffuse", i), light.diffuse);
+            //    _pipeline.SetUniform(std::format("pointLights[{}].specular", i), light.specular);
+            //    _pipeline.SetUniform(std::format("pointLights[{}].constant", i), light.constant);
+            //    _pipeline.SetUniform(std::format("pointLights[{}].linear", i), light.linear);
+            //    _pipeline.SetUniform(std::format("pointLights[{}].quadratic", i), light.quadratic);
+            //}
+
+            // spotLight
+
+
             _cubeDiffuseTexture.Bind();
             _cubeSpecularTexture.Bind(1);
+            _defaultSampler.Bind(0);
             _cubeVao.Bind();
+
+            _pipeline.SetUniform("material.alphaMode", 2);
 
             glm::mat4 model = glm::mat4{ 1.0f };
 
@@ -692,11 +644,40 @@ namespace Eugenix
             {
                 _planeVao.Bind();
                 _metalAlbedo.Bind();
-                glBindTextureUnit(1, 0);
+                glBindTextureUnit(1, 0); // ??
 
                 model = glm::mat4{ 1.0f };
                 _pipeline.SetUniform("model", model);
                 Render::OpenGL::Commands::DrawVertices(Render::PrimitiveType::Triangles, 6);
+            }
+
+            glEnable(GL_BLEND);
+
+            // grass
+            {
+                _alphaSampler.Bind(0);
+
+                _pipeline.SetUniform("material.alphaMode", 2);
+
+                _grassVao.Bind();
+                _transparentTexture.Bind();
+
+                // sort the transparent windows before rendering
+                // ---------------------------------------------
+                std::map<float, glm::vec3> sorted;
+                for (unsigned int i = 0; i < vegetation.size(); i++)
+                {
+                    float distance = glm::length(camera.Position - vegetation[i]);
+                    sorted[distance] = vegetation[i];
+                }
+
+                for (std::map<float, glm::vec3>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it)
+                {
+                    model = glm::mat4(1.0f);
+                    model = glm::translate(model, it->second);
+                    _pipeline.SetUniform("model", model);
+                    Render::OpenGL::Commands::DrawVertices(Render::PrimitiveType::Triangles, 6);
+                }
             }
 
             _lampPipeline.Bind();
@@ -719,22 +700,24 @@ namespace Eugenix
                     Render::OpenGL::Commands::DrawVertices(Render::PrimitiveType::Triangles, 36);
                 }
             }
-
         }
 
         bool keys[1024];
-        bool cull_face{ true };
 
         void onKeyHandle(int key, int code, int action, int mode) override
         {
-            if (key == GLFW_KEY_F2 && action == GLFW_PRESS)
+            if (key == GLFW_KEY_TAB && action == GLFW_PRESS)
             {
-                cull_face = !cull_face;
+                _isLineMode = !_isLineMode;
 
-                if (cull_face)
-                    glDisable(GL_CULL_FACE);
+                if (_isLineMode)
+                {
+                    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+                }
                 else
-                    glEnable(GL_CULL_FACE);
+                {
+                    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+                }
             }
 
             if (key == GLFW_KEY_F1 && action == GLFW_PRESS)
@@ -756,6 +739,7 @@ namespace Eugenix
                 firstMouse = true;
                 return;
             }
+
 
             if (firstMouse)
             {
@@ -782,20 +766,23 @@ namespace Eugenix
         Render::OpenGL::Texture2D _cubeDiffuseTexture;
         Render::OpenGL::Texture2D _cubeSpecularTexture;
         Render::OpenGL::Texture2D _metalAlbedo;
+        Render::OpenGL::Texture2D _transparentTexture;
+
+        Render::OpenGL::Sampler _defaultSampler;
+        Render::OpenGL::Sampler _alphaSampler;
 
         Render::OpenGL::VertexArray _cubeVao;
         Render::OpenGL::VertexArray _planeVao;
         Render::OpenGL::VertexArray _lightSourceVao;
-        Render::OpenGL::VertexArray _quadVao;
-        Render::OpenGL::VertexArray _skyboxVao;
+        Render::OpenGL::VertexArray _grassVao;
 
         Render::OpenGL::Pipeline _pipeline;
         Render::OpenGL::Pipeline _lampPipeline;
-        Render::OpenGL::Pipeline _skyboxPipeline;
 
         GLfloat lastX, lastY;
         bool firstMouse{ true };
 
+        bool _isLineMode{};
         bool _lockCursor{ true };
     };
 }
