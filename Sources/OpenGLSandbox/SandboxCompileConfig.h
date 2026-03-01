@@ -1,0 +1,10 @@
+#pragma once
+
+#define EUGENIX_MATH_GLM
+//#define EUGENIX_MATH_NATIVE
+
+#define EUGENIX_OPENGL_GLAD
+//#define EUGENIX_OPENGL_NATIVE
+
+#define EUGENIX_RUNTIME_GLFW
+//#define EUGENIX_RUNTIME_NATIVE
