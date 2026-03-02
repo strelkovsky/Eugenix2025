@@ -15,11 +15,15 @@
 #include "Assets/ObjModelLoader.h"
 #include "Render/OpenGL/ShaderProgram.h"
 #include "Render/OpenGL/Texture2D.h"
+#include "Render/OpenGL/Commands.h"
 
 #include "Render/Material.h"
 #include "Render/Mesh.h"
 #include "Render/Model.h"
 #include "Render/Vertex.h"
+#include "Render/SharedData.h"
+
+#include "Engine/Math/Transform.h"
 
 namespace Eugenix
 {
@@ -35,12 +39,10 @@ namespace Eugenix
 			_program = MakeProgramFromFiles("Shaders/simple_model_shader.vert", "Shaders/simple_model_shader.frag");
 
 			auto data = _imageLoader.Load("Textures/stone03b.jpg");
-			
 			_texture.Create();
 			_texture.Upload(data);
 
 			data = _imageLoader.Load("Textures/uvtestgrid.png");
-
 			_texture2.Create();
 			_texture2.Upload(data);
 
@@ -50,10 +52,10 @@ namespace Eugenix
 			_sampler.Parameter(Render::TextureParam::MinFilter, Render::TextureFilter::Linear);
 			_sampler.Parameter(Render::TextureParam::MagFilter, Render::TextureFilter::Linear);
 
-			_model = _modelLoader.Load("Models/nanosuit/nanosuit.obj");
-			//_model2 = _modelLoader.Load("Models/backpack/backpack.obj", "Models/backpack/");
+			createUBOs();
 
-			//_plane = _modelLoader.Load("Models/plane.obj");
+			_model = _modelLoader.Load("Models/nanosuit/nanosuit.obj");
+			_plane = _modelLoader.Load("Models/plane.obj");
 
 			const std::vector<Render::Vertex::PosNormalUV> vertices =
 			{ {
@@ -70,8 +72,9 @@ namespace Eugenix
 
 			_customModel.AddPart(genMesh);
 
-			glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
-			//glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+			Render::OpenGL::Commands::Clear(0.5f, 0.5f, 0.5f);
+
+			_cameraData.proj = glm::perspective(45.0f, (float)width() / (float)height(), 0.1f, 100.0f);
 
 			return true;
 		}
@@ -84,7 +87,6 @@ namespace Eugenix
 			_texture2.Destroy();
 
 			_model.Destroy();
-			_model2.Destroy();
 			_customModel.Destroy();
 			_plane.Destroy();
 		}
@@ -93,6 +95,8 @@ namespace Eugenix
 		{
 			_camera.keyControl(getKeys(), deltaTime);
 			_camera.mouseControl(getMouseButtons(), getXChange(), getYChange());
+
+			_cameraData.view = _camera.CalculateViewMatrix();
 		}
 
 		void onRender() override
@@ -100,37 +104,31 @@ namespace Eugenix
 			Render::OpenGL::Commands::Viewport(0, 0, width(), height());
 			Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-			glm::mat4 projection = glm::perspective(45.0f, (GLfloat)width() / (GLfloat)height(), 0.1f, 100.0f);
-			_program.SetUniform("view", _camera.CalculateViewMatrix());
-			_program.SetUniform("projection", projection);
+			//glm::mat4 projection = glm::perspective(45.0f, (GLfloat)width() / (GLfloat)height(), 0.1f, 100.0f);
+			//_program.SetUniform("view", _cameraData.view);
+			//_program.SetUniform("projection", _cameraData.proj);
+
+			_cameraUbo.Update(Core::MakeData(&_cameraData));
 
 			_program.Bind();
 
 			// TODO : придумать, где идет связь с семплером
 			_sampler.Bind(0);
 
-			glm::mat4 model = glm::mat4(1.0f);
-
 			{
-				model = glm::scale(model, { 0.1f, 0.1f, 0.1f });
-				//model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
-				_program.SetUniform("model", model);
+				_transform.Reset();
+				_transform.Scale({ 0.1f, 0.1f, 0.1f });
+				//_program.SetUniform("model", _transform.Matrix());
+				_transformUbo.Update(Core::MakeData(&_transform.Matrix()));
 				_model.Render();
 			}
 
-			//{
-			//	model = glm::mat4(1.0f);
-			//	model = glm::translate(model, { -0.5f, 0.1, 0.0f });
-			//	model = glm::scale(model, { 0.1f, 0.1f, 0.1f });
-			//	_pipeline.SetUniform("model", model);
-			//	_model2.Render();
-			//}
-
 			{
-				model = glm::mat4(1.0f);
-				model = glm::translate(model, { 0.5f, 0.2f, 0.4f });
-				model = glm::scale(model, { 0.1f, 0.1f, 0.1f });
-				_program.SetUniform("model", model);
+				_transform.Reset();
+				_transform.Translate({ 0.5f, 0.2f, 0.4f });
+				_transform.Scale({ 0.1f, 0.1f, 0.1f });
+				//_program.SetUniform("model", _transform.Matrix());
+				_transformUbo.Update(Core::MakeData(&_transform.Matrix()));
 
 				_sampler.Bind(0);
 				_texture.Bind(0);
@@ -138,19 +136,32 @@ namespace Eugenix
 				_customModel.Render();
 			}
 
-			//{
-			//	model = glm::mat4(1.0f);
-			//	model = glm::scale(model, { 5.0f, 1.0f, 5.0f });
-			//	_pipeline.SetUniform("model", model);
+			{
+				_transform.Reset();
+				_transform.Scale({ 5.0f, 1.0f, 5.0f });
+				//_program.SetUniform("model", _transform.Matrix());
+				_transformUbo.Update(Core::MakeData(&_transform.Matrix()));
 
-			//	_sampler.Bind(0);
-			//	_texture2.Bind(0);
+				_sampler.Bind(0);
+				_texture2.Bind(0);
 
-			//	_plane.Render();
-			//}
+				_plane.Render();
+			}
 		}
 
 	private:
+		void createUBOs()
+		{
+			_transformUbo.Create();
+			// TODO : see GP4 (create by size, not by data)
+			_transformUbo.Storage(Core::MakeData(&_transform), GL_DYNAMIC_STORAGE_BIT);
+			_transformUbo.Bind(Render::BufferTarget::UBO, Render::BufferBinding::Transform);
+
+			_cameraUbo.Create();
+			_cameraUbo.Storage(Core::MakeData(&_cameraData), GL_DYNAMIC_STORAGE_BIT);
+			_cameraUbo.Bind(Render::BufferTarget::UBO, Render::BufferBinding::Camera);
+		}
+
 		Assets::ImageLoader _imageLoader{};
 		Assets::ObjModelLoader _modelLoader{};
 
@@ -160,10 +171,15 @@ namespace Eugenix
 		Render::OpenGL::Sampler _sampler;
 
 		Render::Model _model;
-		Render::Model _model2;
 		Render::Model _customModel;
 		Render::Model _plane;
 
 		Camera _camera{};
+
+		Math::Transform _transform{};
+		Render::Data::Camera _cameraData{};
+
+		Render::OpenGL::Buffer _transformUbo{};
+		Render::OpenGL::Buffer _cameraUbo{};
 	};
 } // namespace Eugenix
