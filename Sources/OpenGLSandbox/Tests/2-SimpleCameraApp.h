@@ -114,14 +114,14 @@ namespace Eugenix
 
 		void CreateUBOs()
 		{
-			_cameraUbo.Create();
-			_cameraUbo.Storage(Core::MakeData(&_cameraData), GL_DYNAMIC_STORAGE_BIT);
-			_cameraUbo.Bind(Render::BufferTarget::UBO, Render::BufferBinding::Camera);
-
 			_transformUbo.Create();
 			// TODO : see GP4 (create by size, not by data)
 			_transformUbo.Storage(Core::MakeData(&_transform), GL_DYNAMIC_STORAGE_BIT);
 			_transformUbo.Bind(Render::BufferTarget::UBO, Render::BufferBinding::Transform);
+
+			_cameraUbo.Create();
+			_cameraUbo.Storage(Core::MakeData(&_cameraData), GL_DYNAMIC_STORAGE_BIT);
+			_cameraUbo.Bind(Render::BufferTarget::UBO, Render::BufferBinding::Camera);
 
 			_materialUbo.Create();
 			_materialUbo.Storage(Core::MakeData(&_color), GL_DYNAMIC_STORAGE_BIT);

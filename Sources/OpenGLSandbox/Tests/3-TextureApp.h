@@ -8,6 +8,8 @@
 
 #include "TestUtils.h"
 
+#include "Engine/Math/Transform.h"
+
 // Sandbox headers
 #include "App/SandboxApp.h"
 #include "Assets/ImageLoader.h"
@@ -17,6 +19,7 @@
 #include "Render/OpenGL/Texture2D.h"
 #include "Render/OpenGL/Sampler.h"
 #include "Render/OpenGL/VertexArray.h"
+#include "Render/SharedData.h"
 
 namespace Eugenix
 {
@@ -26,23 +29,16 @@ namespace Eugenix
 		bool onInit() override
 		{
 			CreateGeometry();
-			CreatePipelines();
+			CreateShaders();
+			CreateTextures();
+			CreateUBOs();
 
 			Render::OpenGL::Pipeline::Enable(Render::PipelineFeature::DepthTest);
-
 			Render::OpenGL::Commands::Clear(0.2f, 0.0f, 0.2f);
 
 			_camera = Camera(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f, 2.0f, 0.1f);
 
-			const auto brickData = _imageLoader.Load("Textures/brick.png");
-			
-			_brickTexture.Create();
-			_brickTexture.Upload(brickData);
-
-			const auto dirtData = _imageLoader.Load("Textures/brick.png");
-
-			_dirtTexture.Create();
-			_dirtTexture.Upload(dirtData);
+			_cameraData.proj = glm::perspective(45.0f, (GLfloat)width() / (GLfloat)height(), 0.1f, 100.0f);
 
 			_sampler.Create();
 			_sampler.Parameter(Render::TextureParam::WrapS, Render::TextureWrapping::Repeat);
@@ -57,6 +53,8 @@ namespace Eugenix
 		{
 			_camera.keyControl(getKeys(), deltaTime);
 			_camera.mouseControl(getMouseButtons(), getXChange(), getYChange());
+
+			_cameraData.view = _camera.CalculateViewMatrix();
 		}
 
 		void onRender() override
@@ -64,36 +62,28 @@ namespace Eugenix
 			Render::OpenGL::Commands::Viewport(0, 0, width(), height());
 			Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-			glm::mat4 projection = glm::perspective(45.0f, (GLfloat)width() / (GLfloat)height(), 0.1f, 100.0f);
-			_program.SetUniform("view", _camera.CalculateViewMatrix());
-			_program.SetUniform("projection", projection);
+			_cameraUbo.Update(Core::MakeData(&_cameraData));
 
 			_program.Bind();
 			{
 				_sampler.Bind(0);
 
-				// Model matrix
-				glm::mat4 model = glm::mat4(1.0f);
+				_transform.Reset();
+				_transform.Translate({ -0.6f, 0.0f, -3.0f });
+				_transform.Scale({ 0.5f, 0.5f, 0.75f });
+				_transformUbo.Update(Core::MakeData(&_transform.Matrix()));
 
-				model = glm::mat4(1.0f);
-				model = glm::translate(model, glm::vec3(-0.6f, 0.0f, -3.0f));
-				model = glm::rotate(model, 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
-				model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.75f));
-				_program.SetUniform("model", model);
-				_sampler.Bind(0);
+				//_program.SetUniform("model", _transform.Matrix());
 				_brickTexture.Bind();
 				_meshes[0].Bind();
 				_meshes[0].Draw();
 
-				model = glm::mat4(1.0f);
-				model = glm::translate(model, glm::vec3(0.6f, 0.0f, -3.0f));
-				model = glm::rotate(model, 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
-				model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.75f));
-				_program.SetUniform("model", model);
+				_transform.Reset();
+				_transform.Translate({ 0.6f, 0.0f, -3.0f });
+				_transform.Scale({ 0.5f, 0.5f, 0.75f });
+				_transformUbo.Update(Core::MakeData(&_transform.Matrix()));
+				
+				//_program.SetUniform("model", _transform.Matrix());
 				_sampler.Bind(0);
 				_dirtTexture.Bind();
 				_meshes[1].Bind();
@@ -127,23 +117,32 @@ namespace Eugenix
 			_meshes.push_back(mesh);
 		}
 
-		void CreatePipelines()
+		void CreateShaders()
 		{
-			_program.Create();
+			_program = MakeProgramFromFiles("Shaders/texture_shader_ubo.vert", "Shaders/texture_shader_ubo.frag");
+		}
 
-			const auto vsSourceData = Eugenix::IO::File::ReadText("Shaders/texture_shader.vert");
-			const char* vsSource = vsSourceData.data();
+		void CreateTextures()
+		{
+			const auto brickData = _imageLoader.Load("Textures/brick.png");
+			_brickTexture.Create();
+			_brickTexture.Upload(brickData);
 
-			const auto fsSourceData = Eugenix::IO::File::ReadText("Shaders/texture_shader.frag");
-			const char* fsSource = fsSourceData.data();
+			const auto dirtData = _imageLoader.Load("Textures/dirt.png");
+			_dirtTexture.Create();
+			_dirtTexture.Upload(dirtData);
+		}
 
-			auto vertexStage = Eugenix::CreateStage(vsSource, Eugenix::Render::ShaderStageType::Vertex);
-			auto fragmentStage = Eugenix::CreateStage(fsSource, Eugenix::Render::ShaderStageType::Fragment);
+		void CreateUBOs()
+		{
+			_transformUbo.Create();
+			// TODO : see GP4 (create by size, not by data)
+			_transformUbo.Storage(Core::MakeData(&_transform), GL_DYNAMIC_STORAGE_BIT);
+			_transformUbo.Bind(Render::BufferTarget::UBO, Render::BufferBinding::Transform);
 
-			_program.Create();
-			_program.AttachStage(vertexStage)
-				.AttachStage(fragmentStage)
-				.Build();
+			_cameraUbo.Create();
+			_cameraUbo.Storage(Core::MakeData(&_cameraData), GL_DYNAMIC_STORAGE_BIT);
+			_cameraUbo.Bind(Render::BufferTarget::UBO, Render::BufferBinding::Camera);
 		}
 
 		std::vector<Render::Mesh> _meshes;
@@ -157,5 +156,11 @@ namespace Eugenix
 		Render::OpenGL::Texture2D _brickTexture;
 		Render::OpenGL::Texture2D _dirtTexture;
 		Render::OpenGL::Sampler _sampler;
+
+		Render::OpenGL::Buffer _transformUbo{};
+		Render::OpenGL::Buffer _cameraUbo{};
+
+		Math::Transform _transform{};
+		Render::Data::Camera _cameraData{};
 	};
 }
