@@ -2,6 +2,8 @@
 
 #include "TestUtils.h"
 
+#include "Engine/Math/Transform.h"
+
 // Sandbox headers
 #include "App/SandboxApp.h"
 #include "Render/OpenGL/Buffer.h"
@@ -49,41 +51,27 @@ namespace Eugenix
 
 			_cameraUbo.Update(Core::MakeData(&_cameraData));
 
-			//_program.SetUniform("view", _cameraData.view);
-			//_program.SetUniform("projection", _cameraData.proj);
-
 			_program.Bind();
 			{
-				_model = glm::mat4(1.0f);
-				_model = glm::translate(_model, glm::vec3(-1.0f, 0.0f, -3.0f));
-				_model = glm::rotate(_model, 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-				_model = glm::rotate(_model, 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-				_model = glm::rotate(_model, 0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
-				_model = glm::scale(_model, glm::vec3(0.5f, 0.5f, 0.75f));
-				_transformUbo.Update(Core::MakeData(&_model));
-				//_program.SetUniform("model", _model);
+				_transform.Reset();
+				_transform.Translate({ -1.0f, 0.0f, -3.0f });
+				_transform.Scale({ 0.5f, 0.5f, 0.75f });
+				_transformUbo.Update(Core::MakeData(&_transform.Matrix()));
 				_meshes[0].Bind();
 				_meshes[0].Draw();
 
-				_model = glm::mat4(1.0f);
-				_model = glm::translate(_model, glm::vec3(1.0f, 0.0f, -3.0f));
-				_model = glm::rotate(_model, 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-				_model = glm::rotate(_model, 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-				_model = glm::rotate(_model, 0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
-				_model = glm::scale(_model, glm::vec3(0.5f, 0.5f, 0.75f));
-				//_program.SetUniform("model", _model);
-				_transformUbo.Update(Core::MakeData(&_model));
+				_transform.Reset();
+				_transform.Translate(glm::vec3(1.0f, 0.0f, -3.0f));
+				_transform.Rotate({ 0.0f, 45.0f, 0.0f });
+				_transform.Scale({ 0.5f, 0.5f, 0.5f });
+				_transformUbo.Update(Core::MakeData(&_transform.Matrix()));
 				_meshes[1].Bind();
 				_meshes[1].Draw();
 
-				_model = glm::mat4(1.0f);
-				_model = glm::translate(_model, glm::vec3(0.0f, 0.0f, -3.0f));
-				_model = glm::rotate(_model, 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-				_model = glm::rotate(_model, 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-				_model = glm::rotate(_model, 0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
-				_model = glm::scale(_model, glm::vec3(0.5f, 0.5f, 0.75f));
-				//_program.SetUniform("model", _model);
-				_transformUbo.Update(Core::MakeData(&_model));
+				_transform.Reset();
+				_transform.Translate(glm::vec3(0.0f, 0.0f, -3.0f));
+				_transform.Scale({ 0.5f, 0.5f, 0.75f });
+				_transformUbo.Update(Core::MakeData(&_transform.Matrix()));
 				_mesh.Bind();
 				_mesh.Draw();
 			}
@@ -132,7 +120,7 @@ namespace Eugenix
 
 			_transformUbo.Create();
 			// TODO : see GP4 (create by size, not by data)
-			_transformUbo.Storage(Core::MakeData(&_model), GL_DYNAMIC_STORAGE_BIT);
+			_transformUbo.Storage(Core::MakeData(&_transform), GL_DYNAMIC_STORAGE_BIT);
 			_transformUbo.Bind(Render::BufferTarget::UBO, Render::BufferBinding::Transform);
 
 			_materialUbo.Create();
@@ -152,7 +140,7 @@ namespace Eugenix
 		Render::OpenGL::Buffer _materialUbo{};
 
 		Render::Data::Camera _cameraData{};
-		glm::mat4 _model{ 1.0f };
+		Math::Transform _transform{};
 		glm::vec4 _color{ 1.0f };
 	};
 }
