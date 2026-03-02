@@ -11,7 +11,7 @@
 #include "Render/Attribute.h"
 #include "Render/SharedData.h"
 #include "Render/OpenGL/Buffer.h"
-#include "Render/OpenGL/Pipeline.h"
+#include "Render/OpenGL/ShaderProgram.h"
 #include "Render/OpenGL/VertexArray.h"
 
 namespace Game
@@ -112,7 +112,7 @@ namespace Eugenix
 			_cardVao.AttachIndices(_cardEbo);
 			_cardVao.Attribute(position_attribute);
 
-			_pipeline = Eugenix::MakePipelineFromFiles("Shaders/simple_pos_transform_ubo.vert", "Shaders/simple_pos_transform_ubo.frag");
+			_program = Eugenix::MakeProgramFromFiles("Shaders/simple_pos_transform_ubo.vert", "Shaders/simple_pos_transform_ubo.frag");
 
 			_cameraData.view = glm::mat4(1.0f);
 			_cameraData.proj = glm::ortho(0.0f, static_cast<float>(width()), 0.0f, static_cast<float>(height()), -1.0f, 1.0f);
@@ -205,9 +205,6 @@ namespace Eugenix
 
 			Render::OpenGL::Commands::Clear(0.08627450980392157f, 0.3803921568627451f, 0.05490196f);
 
-			glEnable(GL_DEPTH_TEST);
-			glEnable(GL_CULL_FACE);
-
 			return true;
 		}
 
@@ -239,7 +236,7 @@ namespace Eugenix
 		{
 			Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-			_pipeline.Bind();
+			_program.Bind();
 			_cardVao.Bind();
 			
 			for (auto row = 0; row < 4; row++)
@@ -426,7 +423,7 @@ namespace Eugenix
 		Render::OpenGL::Buffer _cardEbo;
 		Render::OpenGL::VertexArray _cardVao;
 
-		Render::OpenGL::Pipeline _pipeline;
+		Render::OpenGL::ShaderProgram _program;
 
 		glm::mat4 _model{ 1.0f };
 		glm::vec3 _materialAlbedo{ 1.0f, 0.0f, 0.0f };

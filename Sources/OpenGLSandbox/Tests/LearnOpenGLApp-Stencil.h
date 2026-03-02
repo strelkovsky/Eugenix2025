@@ -282,8 +282,8 @@ namespace Eugenix
     protected:
         bool onInit() override
         {
-            _pipeline = MakePipelineFromFiles("shaders/SimpleVertex.vert", "shaders/SimplePhong.frag");
-            _lampPipeline = MakePipelineFromFiles("shaders/SimpleVertex.vert", "shaders/SimpleUnlit.frag");
+            _pipeline = MakeProgramFromFiles("shaders/SimpleVertex.vert", "shaders/SimplePhong.frag");
+            _lampPipeline = MakeProgramFromFiles("shaders/SimpleVertex.vert", "shaders/SimpleUnlit.frag");
 
             // Set up vertex data (and buffer(s)) and attribute pointers
             const std::vector<Vertex> vertices =

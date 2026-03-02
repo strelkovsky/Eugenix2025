@@ -13,7 +13,7 @@
 #include "Render/OpenGL/Buffer.h"
 #include "Render/OpenGL/Commands.h"
 #include "Render/Mesh.h"
-#include "Render/OpenGL/Pipeline.h"
+#include "Render/OpenGL/ShaderProgram.h"
 #include "Render/OpenGL/VertexArray.h"
 #include "Render/OpenGL/OpenGLTypes.h"
 #include "Render/OpenGL/TextureCubemap.h"
@@ -69,10 +69,10 @@ namespace Eugenix
 			glm::mat4 view = glm::mat4(glm::mat3(_camera.CalculateViewMatrix()));
 			skybox.render(projection * view);
 
-			_pipeline.SetUniform("view", _camera.CalculateViewMatrix());
-			_pipeline.SetUniform("projection", projection);
+			_program.SetUniform("view", _camera.CalculateViewMatrix());
+			_program.SetUniform("projection", projection);
 
-			_pipeline.Bind();
+			_program.Bind();
 
 			{
 				glm::mat4 model = glm::mat4(1.0f);
@@ -83,7 +83,7 @@ namespace Eugenix
 				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 				model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.75f));
-				_pipeline.SetUniform("model", model);
+				_program.SetUniform("model", model);
 				_meshes[0].Bind();
 				_meshes[0].Draw();
 
@@ -93,7 +93,7 @@ namespace Eugenix
 				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 				model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.75f));
-				_pipeline.SetUniform("model", model);
+				_program.SetUniform("model", model);
 				_meshes[1].Bind();
 				_meshes[1].Draw();
 
@@ -103,7 +103,7 @@ namespace Eugenix
 				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 				model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.75f));
-				_pipeline.SetUniform("model", model);
+				_program.SetUniform("model", model);
 				_mesh.Bind();
 				_mesh.Draw();
 			}
@@ -139,7 +139,7 @@ namespace Eugenix
 
 		void CreatePipelines()
 		{
-			_pipeline = MakePipelineFromFiles("Shaders/simple_pos_transform.vert", "Shaders/simple_pos_transform.frag");
+			_program = MakeProgramFromFiles("Shaders/simple_pos_transform.vert", "Shaders/simple_pos_transform.frag");
 		}
 
 		Eugenix::Camera _camera{};
@@ -147,7 +147,7 @@ namespace Eugenix
 		std::vector<Render::Mesh> _meshes;
 		Render::Mesh _mesh;
 
-		Eugenix::Render::OpenGL::Pipeline _pipeline{};
+		Eugenix::Render::OpenGL::ShaderProgram _program{};
 		GLuint uniformModel{};
 		GLuint uniformView{};
 		GLuint uniformProjection{};

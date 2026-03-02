@@ -13,7 +13,7 @@
 #include "Assets/ImageLoader.h"
 #include "Render/OpenGL/Buffer.h"
 #include "Render/OpenGL/Commands.h"
-#include "Render/OpenGL/Pipeline.h"
+#include "Render/OpenGL/ShaderProgram.h"
 #include "Render/OpenGL/Texture2D.h"
 #include "Render/OpenGL/Sampler.h"
 #include "Render/OpenGL/VertexArray.h"
@@ -65,10 +65,10 @@ namespace Eugenix
 			Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 			glm::mat4 projection = glm::perspective(45.0f, (GLfloat)width() / (GLfloat)height(), 0.1f, 100.0f);
-			_pipeline.SetUniform("view", _camera.CalculateViewMatrix());
-			_pipeline.SetUniform("projection", projection);
+			_program.SetUniform("view", _camera.CalculateViewMatrix());
+			_program.SetUniform("projection", projection);
 
-			_pipeline.Bind();
+			_program.Bind();
 			{
 				_sampler.Bind(0);
 
@@ -81,7 +81,7 @@ namespace Eugenix
 				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 				model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.75f));
-				_pipeline.SetUniform("model", model);
+				_program.SetUniform("model", model);
 				_sampler.Bind(0);
 				_brickTexture.Bind();
 				_meshes[0].Bind();
@@ -93,7 +93,7 @@ namespace Eugenix
 				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 				model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.75f));
-				_pipeline.SetUniform("model", model);
+				_program.SetUniform("model", model);
 				_sampler.Bind(0);
 				_dirtTexture.Bind();
 				_meshes[1].Bind();
@@ -129,7 +129,7 @@ namespace Eugenix
 
 		void CreatePipelines()
 		{
-			_pipeline.Create();
+			_program.Create();
 
 			const auto vsSourceData = Eugenix::IO::File::ReadText("Shaders/texture_shader.vert");
 			const char* vsSource = vsSourceData.data();
@@ -140,15 +140,15 @@ namespace Eugenix
 			auto vertexStage = Eugenix::CreateStage(vsSource, Eugenix::Render::ShaderStageType::Vertex);
 			auto fragmentStage = Eugenix::CreateStage(fsSource, Eugenix::Render::ShaderStageType::Fragment);
 
-			_pipeline.Create();
-			_pipeline.AttachStage(vertexStage)
+			_program.Create();
+			_program.AttachStage(vertexStage)
 				.AttachStage(fragmentStage)
 				.Build();
 		}
 
 		std::vector<Render::Mesh> _meshes;
 
-		Render::OpenGL::Pipeline _pipeline{};
+		Render::OpenGL::ShaderProgram _program{};
 
 		Camera _camera{};
 

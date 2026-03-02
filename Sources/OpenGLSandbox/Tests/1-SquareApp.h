@@ -16,8 +16,7 @@
 #include "App/SandboxApp.h"
 #include "Render/OpenGL/Buffer.h"
 #include "Render/OpenGL/Commands.h"
-#include "Render/OpenGL/Pipeline.h"
-#include "Render/OpenGL/ShaderStage.h"
+#include "Render/OpenGL/ShaderProgram.h"
 #include "Render/OpenGL/VertexArray.h"
 #include "Render/Types.h"
 
@@ -55,7 +54,7 @@ namespace Eugenix
 			_squareVao.AttachIndices(_squareEbo);
 			_squareVao.Attribute(position_attribute);
 
-			_squarePipeline = Eugenix::MakePipelineFromFiles("Shaders/simple_pos.vert", "Shaders/simple_pos.frag");
+			_squareProgram = Eugenix::MakeProgramFromFiles("Shaders/simple_pos.vert", "Shaders/simple_pos.frag");
 
 			Render::OpenGL::Commands::Clear(0.2f, 0.3f, 0.3f);
 
@@ -67,7 +66,7 @@ namespace Eugenix
 			Render::OpenGL::Commands::Viewport(0, 0, width(), height());
 			Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT);
 
-			_squarePipeline.Bind();
+			_squareProgram.Bind();
 
 			_squareVao.Bind();
 
@@ -76,7 +75,7 @@ namespace Eugenix
 
 		void onCleanup() override
 		{
-			_squarePipeline.Destroy();
+			_squareProgram.Destroy();
 
 			_squareVao.Destroy();
 			_squareVbo.Destroy();
@@ -88,6 +87,6 @@ namespace Eugenix
 		Render::OpenGL::Buffer _squareVbo{};
 		Render::OpenGL::Buffer _squareEbo{};
 
-		Render::OpenGL::Pipeline _squarePipeline{};
+		Render::OpenGL::ShaderProgram _squareProgram{};
 	};
 }

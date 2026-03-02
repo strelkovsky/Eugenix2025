@@ -10,8 +10,7 @@
 #include "Engine/IO/IO.h"
 
 #include "Render/OpenGL/Commands.h"
-#include "Render/OpenGL/Pipeline.h"
-#include "Render/OpenGL/ShaderStage.h"
+#include "Render/OpenGL/ShaderProgram.h"
 #include "Render/OpenGL/VertexArray.h"
 
 const int MAX_POINT_LIGHTS = 3;
@@ -174,12 +173,12 @@ namespace Eugenix
 		return stage;
 	}
 
-	inline Render::OpenGL::Pipeline MakePipeline(std::string_view vsSource, std::string_view fsSource)
+	inline Render::OpenGL::ShaderProgram MakeShaderProgram(std::string_view vsSource, std::string_view fsSource)
 	{
 		auto vs = CreateStage(vsSource, Render::ShaderStageType::Vertex);
 		auto fs = CreateStage(fsSource, Render::ShaderStageType::Fragment);
 
-		Render::OpenGL::Pipeline p;
+		Render::OpenGL::ShaderProgram p;
 		p.Create();
 		p.AttachStage(vs).AttachStage(fs).Build();
 
@@ -188,12 +187,12 @@ namespace Eugenix
 		return p;
 	}
 
-	inline Render::OpenGL::Pipeline MakePipeline(const std::vector<char>& vsSource, const std::vector<char>& fsSource)
+	inline Render::OpenGL::ShaderProgram MakeShaderProgram(const std::vector<char>& vsSource, const std::vector<char>& fsSource)
 	{
 		auto vs = CreateStage(vsSource, Render::ShaderStageType::Vertex);
 		auto fs = CreateStage(fsSource, Render::ShaderStageType::Fragment);
 
-		Render::OpenGL::Pipeline p;
+		Render::OpenGL::ShaderProgram p;
 		p.Create();
 		p.AttachStage(vs).AttachStage(fs).Build();
 
@@ -202,7 +201,7 @@ namespace Eugenix
 		return p;
 	}
 
-	inline Render::OpenGL::Pipeline MakePipelineFromFiles(const std::filesystem::path& vsPath, const std::filesystem::path& fsPath)
+	inline Render::OpenGL::ShaderProgram MakeProgramFromFiles(const std::filesystem::path& vsPath, const std::filesystem::path& fsPath)
 	{
 		const bool vsSpv = (vsPath.extension() == ".spv");
 		const bool fsSpv = (fsPath.extension() == ".spv");
@@ -214,14 +213,14 @@ namespace Eugenix
 			auto vsData = IO::File::ReadBinary(vsPath);
 			auto fsData = IO::File::ReadBinary(fsPath);
 
-			return MakePipeline(vsData, fsData);
+			return MakeShaderProgram(vsData, fsData);
 		}
 		else
 		{
 			auto vsData = IO::File::ReadText(vsPath);
 			auto fsData = IO::File::ReadText(fsPath);
 
-			return MakePipeline(
+			return MakeShaderProgram(
 				std::string_view{ vsData.data(), vsData.size() },
 				std::string_view{ fsData.data(), fsData.size() }
 			);

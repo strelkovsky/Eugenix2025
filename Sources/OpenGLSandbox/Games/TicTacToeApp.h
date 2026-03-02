@@ -8,6 +8,8 @@
 #include <assimp/postprocess.h>
 #include <assimp/Importer.hpp>
 
+#include "Shared.h"
+
 // Engine headers
 #include "Engine/IO/IO.h"
 
@@ -15,7 +17,7 @@
 #include "App/SandboxApp.h"
 #include "Render/OpenGL/Buffer.h"
 #include "Render/OpenGL/Commands.h"
-#include "Render/OpenGL/Pipeline.h"
+#include "Render/OpenGL/ShaderProgram.h"
 #include "Render/OpenGL/VertexArray.h"
 #include "Render/Attribute.h"
 #include "Render/Mesh.h"
@@ -208,28 +210,6 @@ private:
     size_t _capacityBytes{ 0 };
 };
 
-namespace core::data
-{
-    template <typename vertex, typename primitive>
-    struct geometry
-    {
-        std::vector<vertex>    vertices;
-        std::vector<primitive> elements;
-    };
-}
-
-namespace core::primitive
-{
-    struct triangle
-    {
-        uint32_t a;
-        uint32_t b;
-        uint32_t c;
-
-        static constexpr uint32_t elements{ 3 };
-    };
-}
-
 namespace Game
 {
     enum class PieceType
@@ -314,7 +294,7 @@ namespace Eugenix
     protected:
         bool onInit() override
         {
-            _pipeline = Eugenix::MakePipelineFromFiles("Shaders/simple_pos_transform_ubo.vert", "Shaders/simple_pos_transform_ubo.frag");
+            _program = Eugenix::MakeProgramFromFiles("Shaders/simple_pos_transform_ubo.vert", "Shaders/simple_pos_transform_ubo.frag");
 
             constexpr Eugenix::Render::Attribute position_attribute{ 0, 3, Eugenix::Render::DataType::Float, GL_FALSE,  0 };
 
@@ -530,7 +510,7 @@ namespace Eugenix
         {
             Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            _pipeline.Bind();
+            _program.Bind();
 
             _model = glm::mat4(1.0f);
             _transformUbo.Update(Core::MakeData(&_model));
@@ -586,7 +566,7 @@ namespace Eugenix
     private:
         //core::data::camera camera_data;
 
-        Render::OpenGL::Pipeline _pipeline;
+        Render::OpenGL::ShaderProgram _program;
 
         Render::OpenGL::Buffer oVbo;
         Render::OpenGL::Buffer oEbo;

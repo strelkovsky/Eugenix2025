@@ -343,14 +343,14 @@ namespace Eugenix
         {
             setupFrameBuffers();
 
-            _pipeline = MakePipelineFromFiles("shaders/SimpleVertex.vert", "shaders/SimplePhong.frag");
-            _lampPipeline = MakePipelineFromFiles("shaders/SimpleVertex.vert", "shaders/SimpleUnlit.frag");
-            _screenPipeline = MakePipelineFromFiles("shaders/quad.vert", "shaders/SimpleSampler.frag");
-            _colorInversePipeline = MakePipelineFromFiles("shaders/quad.vert", "shaders/SimpleColorInverse.frag");
-            _grayScalePipeline = MakePipelineFromFiles("shaders/quad.vert", "shaders/SimpleGrayScale.frag");
-            _kernelEffectPipeline = MakePipelineFromFiles("shaders/quad.vert", "shaders/SimpleKernelEffect.frag");
-            _blurEffectPipeline = MakePipelineFromFiles("shaders/quad.vert", "shaders/SimpleBlur.frag");
-            _tonemapPipeline = MakePipelineFromFiles("shaders/quad.vert", "shaders/SimpleTonemap.frag");
+            _pipeline = MakeProgramFromFiles("shaders/SimpleVertex.vert", "shaders/SimplePhong.frag");
+            _lampPipeline = MakeProgramFromFiles("shaders/SimpleVertex.vert", "shaders/SimpleUnlit.frag");
+            _screenPipeline = MakeProgramFromFiles("shaders/quad.vert", "shaders/SimpleSampler.frag");
+            _colorInversePipeline = MakeProgramFromFiles("shaders/quad.vert", "shaders/SimpleColorInverse.frag");
+            _grayScalePipeline = MakeProgramFromFiles("shaders/quad.vert", "shaders/SimpleGrayScale.frag");
+            _kernelEffectPipeline = MakeProgramFromFiles("shaders/quad.vert", "shaders/SimpleKernelEffect.frag");
+            _blurEffectPipeline = MakeProgramFromFiles("shaders/quad.vert", "shaders/SimpleBlur.frag");
+            _tonemapPipeline = MakeProgramFromFiles("shaders/quad.vert", "shaders/SimpleTonemap.frag");
 
             // Set up vertex data (and buffer(s)) and attribute pointers
             const std::vector<Vertex> vertices =

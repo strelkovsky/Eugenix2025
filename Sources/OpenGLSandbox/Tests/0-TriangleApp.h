@@ -17,8 +17,7 @@
 #include "App/SandboxApp.h"
 #include "Render/OpenGL/Buffer.h"
 #include "Render/OpenGL/Commands.h"
-#include "Render/OpenGL/Pipeline.h"
-#include "Render/OpenGL/ShaderStage.h"
+#include "Render/OpenGL/ShaderProgram.h"
 #include "Render/OpenGL/VertexArray.h"
 
 #include "Render/Mesh.h"
@@ -53,7 +52,7 @@ namespace Eugenix
 			Render::OpenGL::Commands::Viewport(0, 0, width(), height());
 			Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT);
 
-			_pipeline.Bind();
+			_shaderProgram.Bind();
 
 			//_triangleVao.Bind();
 			//Render::OpenGL::Commands::DrawVertices(Render::PrimitiveType::Triangles, 3);
@@ -64,14 +63,14 @@ namespace Eugenix
 		 
 		void onCleanup() override
 		{
-			_pipeline.Destroy();
+			_shaderProgram.Destroy();
 			_mesh.Destroy();
 		}
 
 	private:
 		void createPipeline()
 		{
-			_pipeline = Eugenix::MakePipelineFromFiles("Shaders/simple_pos_color.vert", "Shaders/simple_pos_color.frag");
+			_shaderProgram = Eugenix::MakeProgramFromFiles("Shaders/simple_pos_color.vert", "Shaders/simple_pos_color.frag");
 		}
 
 		void createGeometry()
@@ -89,7 +88,7 @@ namespace Eugenix
 			//}
 
 			uint32_t currentOffset = 0;
-			for (const auto& attrib : _pipeline.GetAttribs())
+			for (const auto& attrib : _shaderProgram.GetAttribs())
 			{
 				auto a = AttributeFromShader(attrib, currentOffset);
 				currentOffset += ComponentsFromGLType(attrib.type) * BytesPerComponent(a.type);
@@ -102,7 +101,7 @@ namespace Eugenix
 		Render::OpenGL::VertexArray _triangleVao{};
 		Render::OpenGL::Buffer _triangleVbo{};
 
-		Render::OpenGL::Pipeline _pipeline{};
+		Render::OpenGL::ShaderProgram _shaderProgram{};
 
 		Render::Mesh _mesh;
 	};

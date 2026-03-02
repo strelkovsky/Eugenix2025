@@ -328,9 +328,9 @@ namespace Eugenix
         {
             cubemapTexture = loadCubemap(faces);
 
-            _pipeline = MakePipelineFromFiles("shaders/SimpleVertex.vert", "shaders/SimplePhong.frag");
-            _lampPipeline = MakePipelineFromFiles("shaders/SimpleVertex.vert", "shaders/SimpleUnlit.frag");
-            _skyboxPipeline = MakePipelineFromFiles("shaders/SimpleSkybox.vert", "shaders/SimpleSkybox.frag");
+            _pipeline = MakeProgramFromFiles("shaders/SimpleVertex.vert", "shaders/SimplePhong.frag");
+            _lampPipeline = MakeProgramFromFiles("shaders/SimpleVertex.vert", "shaders/SimpleUnlit.frag");
+            _skyboxPipeline = MakeProgramFromFiles("shaders/SimpleSkybox.vert", "shaders/SimpleSkybox.frag");
 
             // Set up vertex data (and buffer(s)) and attribute pointers
             const std::vector<Vertex> vertices =

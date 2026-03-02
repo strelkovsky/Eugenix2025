@@ -3,7 +3,7 @@
 // Sandbox headers
 #include "App/SandboxApp.h"
 #include "Assets/ImageLoader.h"
-#include "Render/OpenGL/Pipeline.h"
+#include "Render/OpenGL/ShaderProgram.h"
 #include "Render/SharedData.h"
 
 #include "../Tests/TestUtils.h"
@@ -27,7 +27,7 @@ namespace Eugenix
     protected:
         bool onInit() override
         {
-            _baseTextureShader = MakePipelineFromFiles("Shaders/SimpleSprite.vert", "Shaders/SimpleSprite2.frag");
+            _baseTextureShader = MakeProgramFromFiles("Shaders/SimpleSprite.vert", "Shaders/SimpleSprite2.frag");
 
             auto ground1image = _imageLoader.Load("Textures/Isometric/dirt.png");
             _ground1Texture.Create();
@@ -154,7 +154,7 @@ namespace Eugenix
     private:
         Assets::ImageLoader _imageLoader{};
 
-        Render::OpenGL::Pipeline _baseTextureShader;
+        Render::OpenGL::ShaderProgram _baseTextureShader;
         Render::OpenGL::Texture2D _ground1Texture;
         Render::OpenGL::Texture2D _water1Texture;
         Render::OpenGL::Sampler _tileSampler;

@@ -13,7 +13,7 @@
 #include "App/SandboxApp.h"
 #include "Assets/Image.h"
 #include "Assets/ObjModelLoader.h"
-#include "Render/OpenGL/Pipeline.h"
+#include "Render/OpenGL/ShaderProgram.h"
 #include "Render/OpenGL/Texture2D.h"
 
 #include "Render/Material.h"
@@ -32,7 +32,7 @@ namespace Eugenix
 
 			_camera = Camera(glm::vec3(0.0f, 1.0f, 1.5f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, -20.0f, 2.0f, 0.1f);
 
-			_pipeline = MakePipelineFromFiles("Shaders/simple_model_shader.vert", "Shaders/simple_model_shader.frag");
+			_program = MakeProgramFromFiles("Shaders/simple_model_shader.vert", "Shaders/simple_model_shader.frag");
 
 			auto data = _imageLoader.Load("Textures/stone03b.jpg");
 			
@@ -78,7 +78,7 @@ namespace Eugenix
 
 		void onCleanup() override
 		{
-			_pipeline.Destroy();
+			_program.Destroy();
 
 			_texture.Destroy();
 			_texture2.Destroy();
@@ -101,10 +101,10 @@ namespace Eugenix
 			Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 			glm::mat4 projection = glm::perspective(45.0f, (GLfloat)width() / (GLfloat)height(), 0.1f, 100.0f);
-			_pipeline.SetUniform("view", _camera.CalculateViewMatrix());
-			_pipeline.SetUniform("projection", projection);
+			_program.SetUniform("view", _camera.CalculateViewMatrix());
+			_program.SetUniform("projection", projection);
 
-			_pipeline.Bind();
+			_program.Bind();
 
 			// TODO : придумать, где идет связь с семплером
 			_sampler.Bind(0);
@@ -114,7 +114,7 @@ namespace Eugenix
 			{
 				model = glm::scale(model, { 0.1f, 0.1f, 0.1f });
 				//model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
-				_pipeline.SetUniform("model", model);
+				_program.SetUniform("model", model);
 				_model.Render();
 			}
 
@@ -130,7 +130,7 @@ namespace Eugenix
 				model = glm::mat4(1.0f);
 				model = glm::translate(model, { 0.5f, 0.2f, 0.4f });
 				model = glm::scale(model, { 0.1f, 0.1f, 0.1f });
-				_pipeline.SetUniform("model", model);
+				_program.SetUniform("model", model);
 
 				_sampler.Bind(0);
 				_texture.Bind(0);
@@ -154,7 +154,7 @@ namespace Eugenix
 		Assets::ImageLoader _imageLoader{};
 		Assets::ObjModelLoader _modelLoader{};
 
-		Render::OpenGL::Pipeline _pipeline;
+		Render::OpenGL::ShaderProgram _program;
 		Render::OpenGL::Texture2D _texture;
 		Render::OpenGL::Texture2D _texture2;
 		Render::OpenGL::Sampler _sampler;

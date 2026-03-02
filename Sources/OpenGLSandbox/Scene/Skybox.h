@@ -64,7 +64,7 @@ namespace Eugenix::Scene
 
 			skyboxMesh.Build(std::span{ vertices }, std::span{ indices });
 
-			pipeline = Eugenix::MakePipelineFromFiles("Shaders/simple_skybox.vert", "Shaders/simple_skybox.frag");
+			pipeline = Eugenix::MakeProgramFromFiles("Shaders/simple_skybox.vert", "Shaders/simple_skybox.frag");
 			pipeline.SetUniform("u_cubemap", 0);
 
 			Eugenix::Assets::ImageLoader loader{};
@@ -110,7 +110,7 @@ namespace Eugenix::Scene
 
 	private:
 		Eugenix::Render::Mesh skyboxMesh;
-		Eugenix::Render::OpenGL::Pipeline pipeline;
+		Eugenix::Render::OpenGL::ShaderProgram pipeline;
 		Eugenix::Render::OpenGL::TextureCubemap cubemap;
 		Eugenix::Render::OpenGL::Sampler sampler;
 	};
