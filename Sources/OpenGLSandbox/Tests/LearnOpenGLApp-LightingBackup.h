@@ -388,7 +388,7 @@ namespace Eugenix
 
             Render::OpenGL::Commands::Clear(0.1f, 0.1f, 0.1f);
 
-            glEnable(GL_DEPTH_TEST);
+            Render::OpenGL::Pipeline::Enable(Render::PipelineFeature::DepthTest);
 
             glfwSetInputMode(WindowHandle(), GLFW_CURSOR, _lockCursor ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 

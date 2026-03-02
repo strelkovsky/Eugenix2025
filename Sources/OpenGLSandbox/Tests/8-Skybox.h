@@ -30,7 +30,7 @@ namespace Eugenix
 			CreateGeometry();
 			CreatePipelines();
 
-			glEnable(GL_DEPTH_TEST);
+			Render::OpenGL::Pipeline::Enable(Render::PipelineFeature::DepthTest);
 
 			Render::OpenGL::Commands::Clear(0.2f, 0.0f, 0.2f);
 

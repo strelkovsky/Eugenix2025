@@ -110,4 +110,21 @@ namespace Eugenix::Render::OpenGL
 		assert(false && "Invalid TextureFilter");
 		return 0;
 	}
+
+	constexpr GLenum to_opengl_type(PipelineFeature feature)
+	{
+		switch (feature)
+		{
+		case PipelineFeature::DepthTest:         return GL_DEPTH_TEST;
+		case PipelineFeature::CullFace:          return GL_CULL_FACE;
+		case PipelineFeature::Blend:             return GL_BLEND;
+		case PipelineFeature::ScissorTest:       return GL_SCISSOR_TEST;
+		case PipelineFeature::Multisample:       return GL_MULTISAMPLE;
+		case PipelineFeature::StencilTest:       return GL_STENCIL_TEST;
+		case PipelineFeature::PolygonOffsetFill: return GL_POLYGON_OFFSET_FILL;
+		}
+
+		assert(false && "Invalid PipelineFeature");
+		return 0;
+	}
 } // namespace Eugenix::Render::OpenGL

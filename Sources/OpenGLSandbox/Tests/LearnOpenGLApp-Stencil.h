@@ -399,8 +399,8 @@ namespace Eugenix
 
             Render::OpenGL::Commands::Clear(0.1f, 0.1f, 0.1f);
 
-            glEnable(GL_DEPTH_TEST);
-            glEnable(GL_STENCIL_TEST);
+            Render::OpenGL::Pipeline::Enable(Render::PipelineFeature::DepthTest);
+            Render::OpenGL::Pipeline::Enable(Render::PipelineFeature::StencilTest);
 
             glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 

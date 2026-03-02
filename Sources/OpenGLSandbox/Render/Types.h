@@ -58,7 +58,18 @@ namespace Eugenix::Render
 		SRGB 
 	};
 
-	// TODO : rename to binding
+	enum struct PipelineFeature
+	{
+		DepthTest,
+		CullFace,
+		Blend,
+		ScissorTest,
+		Multisample,
+		StencilTest,
+		PolygonOffsetFill
+	};
+
+	// TODO : rename to binding (see SharedData)
 	enum struct BufferBinding
 	{
 		/* vertex */

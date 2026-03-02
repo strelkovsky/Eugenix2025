@@ -15,6 +15,7 @@
 #include "Render/Mesh.h"
 #include "Render/OpenGL/ShaderProgram.h"
 #include "Render/OpenGL/VertexArray.h"
+#include "Render/OpenGL/Pipeline.h"
 #include "Render/Utils/MeshGenerator.h"
 
 namespace Eugenix
@@ -27,7 +28,7 @@ namespace Eugenix
 			CreateGeometry();
 			CreatePipelines();
 
-			glEnable(GL_DEPTH_TEST);
+			Render::OpenGL::Pipeline::Enable(Render::PipelineFeature::DepthTest);
 
 			Render::OpenGL::Commands::Clear(0.2f, 0.0f, 0.2f);
 		

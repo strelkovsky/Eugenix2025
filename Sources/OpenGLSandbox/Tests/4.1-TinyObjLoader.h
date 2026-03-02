@@ -28,7 +28,7 @@ namespace Eugenix
 	protected:
 		bool onInit() override
 		{
-			glEnable(GL_DEPTH_TEST);
+			Render::OpenGL::Pipeline::Enable(Render::PipelineFeature::DepthTest);
 
 			_camera = Camera(glm::vec3(0.0f, 1.0f, 1.5f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, -20.0f, 2.0f, 0.1f);
 

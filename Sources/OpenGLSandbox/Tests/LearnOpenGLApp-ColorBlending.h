@@ -429,8 +429,8 @@ namespace Eugenix
 
             Render::OpenGL::Commands::Clear(0.1f, 0.1f, 0.1f);
 
-            glEnable(GL_DEPTH_TEST);
-            glEnable(GL_BLEND);
+            Render::OpenGL::Pipeline::Enable(Render::PipelineFeature::DepthTest);
+            Render::OpenGL::Pipeline::Enable(Render::PipelineFeature::Blend);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
             glfwSetInputMode(WindowHandle(), GLFW_CURSOR, _lockCursor ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
@@ -651,7 +651,7 @@ namespace Eugenix
                 Render::OpenGL::Commands::DrawVertices(Render::PrimitiveType::Triangles, 6);
             }
 
-            glEnable(GL_BLEND);
+            Render::OpenGL::Pipeline::Enable(Render::PipelineFeature::Blend);
 
             // grass
             {

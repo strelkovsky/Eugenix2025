@@ -513,7 +513,7 @@ namespace Eugenix
 
             Render::OpenGL::Commands::Clear(0.1f, 0.1f, 0.1f);
 
-            glEnable(GL_DEPTH_TEST);
+            Render::OpenGL::Pipeline::Enable(Render::PipelineFeature::DepthTest);
 
             glFrontFace(GL_CCW);        // лицевые треугольники Ц против часовой стрелки
             glCullFace(GL_BACK);        // отбрасывать задние
@@ -582,10 +582,9 @@ namespace Eugenix
             // Main Pass
             simpleFramebuffer.Bind();
             //hdrFramebuffer.Bind();
-            glEnable(GL_DEPTH_TEST);
+            Render::OpenGL::Pipeline::Enable(Render::PipelineFeature::DepthTest);
             Render::OpenGL::Commands::Viewport(0, 0, width(), height());
             Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            glEnable(GL_DEPTH_TEST);
             drawScene();
 
             // второй проход
@@ -799,9 +798,9 @@ namespace Eugenix
                 cull_face = !cull_face;
 
                 if (cull_face)
-                    glDisable(GL_CULL_FACE);
+                    Render::OpenGL::Pipeline::Disable(Render::PipelineFeature::CullFace);
                 else
-                    glEnable(GL_CULL_FACE);
+                    Render::OpenGL::Pipeline::Enable(Render::PipelineFeature::CullFace);
             }
 
             if (key == GLFW_KEY_F1 && action == GLFW_PRESS)

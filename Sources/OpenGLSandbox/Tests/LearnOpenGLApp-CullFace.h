@@ -384,7 +384,7 @@ namespace Eugenix
 
             Render::OpenGL::Commands::Clear(0.1f, 0.1f, 0.1f);
 
-            glEnable(GL_DEPTH_TEST);
+            Render::OpenGL::Pipeline::Enable(Render::PipelineFeature::DepthTest);
 
             glFrontFace(GL_CCW);        // лицевые треугольники Ц против часовой стрелки
             glCullFace(GL_BACK);        // отбрасывать задние
@@ -649,9 +649,9 @@ namespace Eugenix
                 cull_face = !cull_face;
 
                 if (cull_face)
-                    glDisable(GL_CULL_FACE);
+                    Render::OpenGL::Pipeline::Disable(Render::PipelineFeature::CullFace);
                 else
-                    glEnable(GL_CULL_FACE);
+                    Render::OpenGL::Pipeline::Enable(Render::PipelineFeature::CullFace);
             }
 
             if (key == GLFW_KEY_F1 && action == GLFW_PRESS)
