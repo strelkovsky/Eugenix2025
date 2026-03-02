@@ -271,8 +271,8 @@ namespace Eugenix
     protected:
         bool onInit() override
         {
-            _pipeline = MakeProgramFromFiles("shaders/SimpleVertex.vert", "shaders/SimplePhong.frag");
-            _lampPipeline = MakeProgramFromFiles("shaders/SimpleVertex.vert", "shaders/SimpleUnlit.frag");
+            _program = MakeProgramFromFiles("shaders/SimpleVertex.vert", "shaders/SimplePhong.frag");
+            _lampProgram = MakeProgramFromFiles("shaders/SimpleVertex.vert", "shaders/SimpleUnlit.frag");
 
             // Set up vertex data (and buffer(s)) and attribute pointers
             const std::vector<Vertex> vertices =
@@ -373,18 +373,15 @@ namespace Eugenix
 
             auto img = _imageLoader.Load("Textures/container2.png");
             _cubeDiffuseTexture.Create();
-            _cubeDiffuseTexture.Storage(img);
-            _cubeDiffuseTexture.Update(img);
+            _cubeDiffuseTexture.Upload(img);
 
             img = _imageLoader.Load("Textures/container2_specular.png");
             _cubeSpecularTexture.Create();
-            _cubeSpecularTexture.Storage(img);
-            _cubeSpecularTexture.Update(img);
+            _cubeSpecularTexture.Upload(img);
 
             img = _imageLoader.Load("Textures/metal.png");
             _metalAlbedo.Create();
-            _metalAlbedo.Storage(img);
-            _metalAlbedo.Update(img);
+            _metalAlbedo.Upload(img);
 
             Render::OpenGL::Commands::Clear(0.1f, 0.1f, 0.1f);
 
@@ -486,19 +483,19 @@ namespace Eugenix
 
 
 
-            _pipeline.Bind();
+            _program.Bind();
 
             glm::mat4 view = camera.GetViewMatrix();
             projection = glm::perspective(glm::radians(45.0f), (GLfloat)width() / (GLfloat)height(), 0.1f, 100.0f);
 
-            _pipeline.SetUniform("view", view);
-            _pipeline.SetUniform("projection", projection);
+            _program.SetUniform("view", view);
+            _program.SetUniform("projection", projection);
 
-            _pipeline.SetUniform("viewPos", camera.Position);
+            _program.SetUniform("viewPos", camera.Position);
 
-            _pipeline.SetUniform("material.diffuse", 0);
-            _pipeline.SetUniform("material.specular", 1);
-            _pipeline.SetUniform("material.shininess", 32.0f);
+            _program.SetUniform("material.diffuse", 0);
+            _program.SetUniform("material.specular", 1);
+            _program.SetUniform("material.shininess", 32.0f);
 
             // TODO : UBO
             //const auto& testLight = lights[0];
@@ -519,34 +516,34 @@ namespace Eugenix
 
                 if (light.type == LightType::Directional)
                 {
-                    _pipeline.SetUniform("dirLight.direction", light.direction);
-                    _pipeline.SetUniform("dirLight.ambient", light.ambient);
-                    _pipeline.SetUniform("dirLight.diffuse", light.diffuse);
-                    _pipeline.SetUniform("dirLight.specular", light.specular);
+                    _program.SetUniform("dirLight.direction", light.direction);
+                    _program.SetUniform("dirLight.ambient", light.ambient);
+                    _program.SetUniform("dirLight.diffuse", light.diffuse);
+                    _program.SetUniform("dirLight.specular", light.specular);
                 }
                 if (light.type == LightType::Point)
                 {
-                    _pipeline.SetUniform(std::format("pointLights[{}].position", pointLightIndex), light.position);
-                    _pipeline.SetUniform(std::format("pointLights[{}].ambient", pointLightIndex), light.ambient);
-                    _pipeline.SetUniform(std::format("pointLights[{}].diffuse", pointLightIndex), light.diffuse);
-                    _pipeline.SetUniform(std::format("pointLights[{}].specular", pointLightIndex), light.specular);
-                    _pipeline.SetUniform(std::format("pointLights[{}].constant", pointLightIndex), light.constant);
-                    _pipeline.SetUniform(std::format("pointLights[{}].linear", pointLightIndex), light.linear);
-                    _pipeline.SetUniform(std::format("pointLights[{}].quadratic", pointLightIndex), light.quadratic);
+                    _program.SetUniform(std::format("pointLights[{}].position", pointLightIndex), light.position);
+                    _program.SetUniform(std::format("pointLights[{}].ambient", pointLightIndex), light.ambient);
+                    _program.SetUniform(std::format("pointLights[{}].diffuse", pointLightIndex), light.diffuse);
+                    _program.SetUniform(std::format("pointLights[{}].specular", pointLightIndex), light.specular);
+                    _program.SetUniform(std::format("pointLights[{}].constant", pointLightIndex), light.constant);
+                    _program.SetUniform(std::format("pointLights[{}].linear", pointLightIndex), light.linear);
+                    _program.SetUniform(std::format("pointLights[{}].quadratic", pointLightIndex), light.quadratic);
                     pointLightIndex++;
                 }
                 else if (light.type == LightType::Spot)
                 {
-                    _pipeline.SetUniform("spotLight.position", light.position);
-                    _pipeline.SetUniform("spotLight.direction", light.direction);
-                    _pipeline.SetUniform("spotLight.ambient", light.ambient);
-                    _pipeline.SetUniform("spotLight.diffuse", light.diffuse);
-                    _pipeline.SetUniform("spotLight.specular", light.specular);
-                    _pipeline.SetUniform("spotLight.constant", light.constant);
-                    _pipeline.SetUniform("spotLight.linear", light.linear);
-                    _pipeline.SetUniform("spotLight.quadratic", light.quadratic);
-                    _pipeline.SetUniform("spotLight.cutOff", light.cutOff);
-                    _pipeline.SetUniform("spotLight.outerCutOff", light.outerCutOff);
+                    _program.SetUniform("spotLight.position", light.position);
+                    _program.SetUniform("spotLight.direction", light.direction);
+                    _program.SetUniform("spotLight.ambient", light.ambient);
+                    _program.SetUniform("spotLight.diffuse", light.diffuse);
+                    _program.SetUniform("spotLight.specular", light.specular);
+                    _program.SetUniform("spotLight.constant", light.constant);
+                    _program.SetUniform("spotLight.linear", light.linear);
+                    _program.SetUniform("spotLight.quadratic", light.quadratic);
+                    _program.SetUniform("spotLight.cutOff", light.cutOff);
+                    _program.SetUniform("spotLight.outerCutOff", light.outerCutOff);
                 }
             }
 
@@ -556,13 +553,13 @@ namespace Eugenix
             //{
             //    const auto& light = pointLights[i];
 
-            //    _pipeline.SetUniform(std::format("pointLights[{}].position", i), light.position);
-            //    _pipeline.SetUniform(std::format("pointLights[{}].ambient", i), light.ambient);
-            //    _pipeline.SetUniform(std::format("pointLights[{}].diffuse", i), light.diffuse);
-            //    _pipeline.SetUniform(std::format("pointLights[{}].specular", i), light.specular);
-            //    _pipeline.SetUniform(std::format("pointLights[{}].constant", i), light.constant);
-            //    _pipeline.SetUniform(std::format("pointLights[{}].linear", i), light.linear);
-            //    _pipeline.SetUniform(std::format("pointLights[{}].quadratic", i), light.quadratic);
+            //    _program.SetUniform(std::format("pointLights[{}].position", i), light.position);
+            //    _program.SetUniform(std::format("pointLights[{}].ambient", i), light.ambient);
+            //    _program.SetUniform(std::format("pointLights[{}].diffuse", i), light.diffuse);
+            //    _program.SetUniform(std::format("pointLights[{}].specular", i), light.specular);
+            //    _program.SetUniform(std::format("pointLights[{}].constant", i), light.constant);
+            //    _program.SetUniform(std::format("pointLights[{}].linear", i), light.linear);
+            //    _program.SetUniform(std::format("pointLights[{}].quadratic", i), light.quadratic);
             //}
 
             // spotLight
@@ -581,7 +578,7 @@ namespace Eugenix
                 if (i % 3 == 0)  // every 3rd iteration (including the first) we set the angle using GLFW's time function.
                     angle = glfwGetTime() * 25.0f;
                 model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-                _pipeline.SetUniform("model", model);
+                _program.SetUniform("model", model);
 
                 Render::OpenGL::Commands::DrawVertices(Render::PrimitiveType::Triangles, 36);
             }
@@ -589,7 +586,7 @@ namespace Eugenix
             // model
             {
                 model = glm::scale(glm::mat4{ 1.0f }, glm::vec3(0.1f));
-                _pipeline.SetUniform("model", model);
+                _program.SetUniform("model", model);
                 _model.Render();
             }
 
@@ -600,14 +597,14 @@ namespace Eugenix
                 glBindTextureUnit(1, 0);
 
                 model = glm::mat4{ 1.0f };
-                _pipeline.SetUniform("model", model);
+                _program.SetUniform("model", model);
                 Render::OpenGL::Commands::DrawVertices(Render::PrimitiveType::Triangles, 6);
             }
 
-            _lampPipeline.Bind();
+            _lampProgram.Bind();
 
-            _lampPipeline.SetUniform("view", view);
-            _lampPipeline.SetUniform("projection", projection);
+            _lampProgram.SetUniform("view", view);
+            _lampProgram.SetUniform("projection", projection);
 
             _lightSourceVao.Bind();
             for (unsigned int i = 0; i < lights.size(); i++)
@@ -619,8 +616,8 @@ namespace Eugenix
                     model = glm::mat4(1.0f);
                     model = glm::translate(model, light.position);
                     model = glm::scale(model, glm::vec3(0.2f)); // Make it a smaller cube
-                    _lampPipeline.SetUniform("model", model);
-                    _lampPipeline.SetUniform("lightColor", light.diffuse);
+                    _lampProgram.SetUniform("model", model);
+                    _lampProgram.SetUniform("lightColor", light.diffuse);
                     Render::OpenGL::Commands::DrawVertices(Render::PrimitiveType::Triangles, 36);
                 }
             }
@@ -695,8 +692,8 @@ namespace Eugenix
         Render::OpenGL::VertexArray _planeVao;
         Render::OpenGL::VertexArray _lightSourceVao;
 
-        Render::OpenGL::Pipeline _pipeline;
-        Render::OpenGL::Pipeline _lampPipeline;
+        Render::OpenGL::ShaderProgram _program;
+        Render::OpenGL::ShaderProgram _lampProgram;
 
         GLfloat lastX, lastY;
         bool firstMouse{ true };
