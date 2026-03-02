@@ -1,8 +1,10 @@
 #pragma once
 
-#include "TestUtils.h"
+/*
+Combine all of tests + rander&scene architecture drafts
+*/
 
-#include "Engine/Math/Transform.h"
+#include "TestUtils.h"
 
 // Sandbox headers
 #include "App/SandboxApp.h"
@@ -13,15 +15,50 @@
 #include "Render/OpenGL/Texture2D.h"
 #include "Render/OpenGL/Sampler.h"
 #include "Render/OpenGL/VertexArray.h"
-#include "Render/SharedData.h"
+
+namespace
+{
+	//struct Transform
+	//{
+	//	Transform() = default;
+
+	//	glm::vec3 getPosition() { return position_; };
+	//	glm::vec3 getScale() { return scale_; };
+	//	glm::mat4 getMatrix() { return matrix_; };
+
+	//	void translate(glm::vec3 position);
+	//	void scale(glm::vec3 scale);
+	//	void rotate(float angle, glm::vec3 rotation_axis);
+	//	void reset();
+	//private:
+	//	
+	//	glm::vec3 position_;
+	//	glm::vec3 scale_;
+	//	glm::mat4 matrix_;
+	//};
+
+	//struct SceneObject
+	//{
+	//	SceneObject(Eugenix::Render::Mesh& m, Transform& t)
+	//		: mesh{m}
+	//		, transform(t)
+	//	{
+
+	//	}
+
+	//	Eugenix::Render::Mesh mesh;
+	//	Transform transform;
+	//};
+}
 
 namespace Eugenix
 {
-	class TextureApp final : public SandboxApp
+	class MainSandbox final : public SandboxApp
 	{
 	protected:
 		bool onInit() override
 		{
+			createScene();
 			createGeometry();
 			createShaders();
 			createTextures();
@@ -32,7 +69,7 @@ namespace Eugenix
 
 			_camera = Camera(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f, 2.0f, 0.1f);
 
-			_cameraData.proj = glm::perspective(45.0f, (GLfloat)width() / (GLfloat)height(), 0.1f, 100.0f);
+			_cameraData.proj = glm::perspective(45.0f, (float)width() / (float)height(), 0.1f, 100.0f);
 
 			_sampler.Create();
 			_sampler.Parameter(Render::TextureParam::WrapS, Render::TextureWrapping::Repeat);
@@ -41,6 +78,16 @@ namespace Eugenix
 			_sampler.Parameter(Render::TextureParam::MagFilter, Render::TextureFilter::Linear);
 
 			return true;
+		}
+
+		bool isWireframe = false;
+		void onKeyHandle(int key, int code, int action, int mode) override
+		{
+			if (key == GLFW_KEY_F3 && action == GLFW_PRESS)
+			{
+				isWireframe = !isWireframe;
+				glPolygonMode(GL_FRONT_AND_BACK, isWireframe ? GL_LINE : GL_FILL);
+			}
 		}
 
 		void onUpdate(float deltaTime) override
@@ -66,8 +113,7 @@ namespace Eugenix
 				_transform.Translate({ -0.6f, 0.0f, -3.0f });
 				_transform.Scale({ 0.5f, 0.5f, 0.75f });
 				_transformUbo.Update(Core::MakeData(&_transform.Matrix()));
-
-				//_program.SetUniform("model", _transform.Matrix());
+				_sampler.Bind(0);
 				_brickTexture.Bind();
 				_meshes[0].Bind();
 				_meshes[0].Draw();
@@ -76,8 +122,6 @@ namespace Eugenix
 				_transform.Translate({ 0.6f, 0.0f, -3.0f });
 				_transform.Scale({ 0.5f, 0.5f, 0.75f });
 				_transformUbo.Update(Core::MakeData(&_transform.Matrix()));
-				
-				//_program.SetUniform("model", _transform.Matrix());
 				_sampler.Bind(0);
 				_dirtTexture.Bind();
 				_meshes[1].Bind();
@@ -86,6 +130,11 @@ namespace Eugenix
 		}
 
 	private:
+		void createScene()
+		{
+		//	_objects.emplace_back({  });
+		}
+
 		void createGeometry()
 		{
 			const std::array<Eugenix::Render::Vertex::PosUV, 4> verts =
@@ -109,6 +158,8 @@ namespace Eugenix
 
 			_meshes.push_back(mesh);
 			_meshes.push_back(mesh);
+
+		//	_objects.emplace_back({ mesh, Transform{} });
 		}
 
 		void createShaders()
@@ -140,6 +191,7 @@ namespace Eugenix
 		}
 
 		std::vector<Render::Mesh> _meshes;
+		//std::vector<SceneObject> _objects;
 
 		Render::OpenGL::ShaderProgram _program{};
 
