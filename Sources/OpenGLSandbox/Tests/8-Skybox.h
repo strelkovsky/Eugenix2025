@@ -20,6 +20,8 @@
 
 #include "Scene/Skybox.h"
 
+#include "Engine/Math/Transform.h"
+
 namespace Eugenix
 {
 	class SkyboxApp final : public SandboxApp
@@ -27,24 +29,12 @@ namespace Eugenix
 	protected:
 		bool onInit() override
 		{
-			CreateGeometry();
-			CreatePipelines();
+			createGeometry();
+			createPipelines();
+			createSkybox();
 
 			Render::OpenGL::Pipeline::Enable(Render::PipelineFeature::DepthTest);
-
 			Render::OpenGL::Commands::Clear(0.2f, 0.0f, 0.2f);
-
-			const std::array<std::string_view, 6> skyboxImages =
-			{
-				"Textures/Skybox/right.jpg",
-				"Textures/Skybox/left.jpg",
-				"Textures/Skybox/top.jpg",
-				"Textures/Skybox/bottom.jpg",
-				"Textures/Skybox/front.jpg",
-				"Textures/Skybox/back.jpg"
-			};
-
-			skybox.Create(skyboxImages);
 
 			_camera = Camera(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f, 2.0f, 0.1f);
 
@@ -75,42 +65,31 @@ namespace Eugenix
 			_program.Bind();
 
 			{
-				glm::mat4 model = glm::mat4(1.0f);
-
-				model = glm::mat4(1.0f);
-				model = glm::translate(model, glm::vec3(-0.6f, 0.0f, -3.0f));
-				model = glm::rotate(model, 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
-				model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.75f));
-				_program.SetUniform("model", model);
+				_transform.Reset();
+				_transform.Translate({ -0.6f, 0.0f, -3.0f });
+				_transform.Scale({ 0.5f, 0.5f, 0.75f });
+				_program.SetUniform("model", _transform.Matrix());
 				_meshes[0].Bind();
 				_meshes[0].Draw();
 
-				model = glm::mat4(1.0f);
-				model = glm::translate(model, glm::vec3(0.6f, 0.0f, -3.0f));
-				model = glm::rotate(model, 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
-				model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.75f));
-				_program.SetUniform("model", model);
+				_transform.Reset();
+				_transform.Translate({ 0.6f, 0.0f, -3.0f });
+				_transform.Scale({ 0.5f, 0.5f, 0.75f });
+				_program.SetUniform("model", _transform.Matrix());
 				_meshes[1].Bind();
 				_meshes[1].Draw();
 
-				model = glm::mat4(1.0f);
-				model = glm::translate(model, glm::vec3(0.0f, 0.0f, -3.0f));
-				model = glm::rotate(model, 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-				model = glm::rotate(model, 0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
-				model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.75f));
-				_program.SetUniform("model", model);
+				_transform.Reset();
+				_transform.Translate({ 0.0f, 0.0f, -3.0f });
+				_transform.Scale({ 0.5f, 0.5f, 0.75f });
+				_program.SetUniform("model", _transform.Matrix());
 				_mesh.Bind();
 				_mesh.Draw();
 			}
 		}
 
 	private:
-		void CreateGeometry()
+		void createGeometry()
 		{
 			const std::array<Eugenix::Render::Vertex::Pos, 4> verts =
 			{ {
@@ -137,21 +116,38 @@ namespace Eugenix
 			_meshes.push_back(mesh);
 		}
 
-		void CreatePipelines()
+		void createPipelines()
 		{
 			_program = MakeProgramFromFiles("Shaders/simple_pos_transform.vert", "Shaders/simple_pos_transform.frag");
 		}
 
-		Eugenix::Camera _camera{};
+		void createSkybox()
+		{
+			const std::array<std::string_view, 6> skyboxImages =
+			{
+				"Textures/Skybox/right.jpg",
+				"Textures/Skybox/left.jpg",
+				"Textures/Skybox/top.jpg",
+				"Textures/Skybox/bottom.jpg",
+				"Textures/Skybox/front.jpg",
+				"Textures/Skybox/back.jpg"
+			};
+
+			skybox.Create(skyboxImages);
+		}
+
+		Camera _camera{};
 
 		std::vector<Render::Mesh> _meshes;
 		Render::Mesh _mesh;
 
-		Eugenix::Render::OpenGL::ShaderProgram _program{};
+		Render::OpenGL::ShaderProgram _program{};
 		GLuint uniformModel{};
 		GLuint uniformView{};
 		GLuint uniformProjection{};
 
-		Eugenix::Scene::Skybox skybox;
+		Scene::Skybox skybox;
+
+		Math::Transform _transform;
 	};
 }
