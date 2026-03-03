@@ -12,7 +12,7 @@ namespace Eugenix::Assets
 	public:
 		Render::Model Load(const std::filesystem::path& modelPath, const std::filesystem::path& materialDir = {}, bool flipV = true)
 		{
-			Eugenix::Render::Model model;
+			Render::Model model;
 
 			tinyobj::ObjReaderConfig readerConfig;
 			readerConfig.mtl_search_path = materialDir.string();
@@ -23,10 +23,10 @@ namespace Eugenix::Assets
 			if (!reader.ParseFromFile(modelPath.string(), readerConfig))
 			{
 				if (!reader.Error().empty())
-					Eugenix::LogError("TinyObjReader error: {}", reader.Error());
+					LogError("TinyObjReader error: {}", reader.Error());
 			}
 			if (!reader.Warning().empty())
-				Eugenix::LogWarn("TinyObjReader warning: {}", reader.Warning());
+				LogWarn("TinyObjReader warning: {}", reader.Warning());
 
 			const auto& attrib = reader.GetAttrib();
 			const auto& shapes = reader.GetShapes();
@@ -36,7 +36,7 @@ namespace Eugenix::Assets
 
 			if (isFindMaterials)
 			{
-				Eugenix::Assets::ImageLoader imageLoader{};
+				Assets::ImageLoader imageLoader{};
 
 				for (const auto& m : materials)
 				{
@@ -184,7 +184,7 @@ namespace Eugenix::Assets
 				{
 					if (B.idx.empty()) continue;
 
-					Eugenix::Render::ModelPart part;
+					Render::ModelPart part;
 					part.materialIndex = matId;
 
 					std::span<const TVertex> vspan{ B.verts.data(), B.verts.size() };
