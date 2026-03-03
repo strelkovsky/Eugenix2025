@@ -1,11 +1,5 @@
 #pragma once
 
-#include <span>
-
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
 #include "TestUtils.h"
 
 // Sandbox headers
@@ -32,11 +26,14 @@ namespace Eugenix
 			createGeometry();
 			createPipelines();
 			createSkybox();
+			createUBOs();
 
 			Render::OpenGL::Pipeline::Enable(Render::PipelineFeature::DepthTest);
 			Render::OpenGL::Commands::Clear(0.2f, 0.0f, 0.2f);
 
 			_camera = Camera(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f, 2.0f, 0.1f);
+
+			_cameraData.proj = glm::perspective(45.0f, (float)width() / (float)height(), 0.1f, 100.0f);
 
 			return true;
 		}
@@ -45,6 +42,8 @@ namespace Eugenix
 		{
 			_camera.keyControl(getKeys(), deltaTime);
 			_camera.mouseControl(getMouseButtons(), getXChange(), getYChange());
+
+			_cameraData.view = _camera.CalculateViewMatrix();
 		}
 
 		void onRender() override
@@ -54,13 +53,8 @@ namespace Eugenix
 
 			Render::OpenGL::Commands::DepthMask(true);
 
-			glm::mat4 projection = glm::perspective(45.0f, (GLfloat)width() / (GLfloat)height(), 0.1f, 100.0f);
-
-			glm::mat4 view = glm::mat4(glm::mat3(_camera.CalculateViewMatrix()));
-			skybox.render(projection * view);
-
-			_program.SetUniform("view", _camera.CalculateViewMatrix());
-			_program.SetUniform("projection", projection);
+			_cameraUbo.Update(Core::MakeData(&_cameraData));
+			skybox.render(_cameraData.proj * glm::mat4(glm::mat3(_cameraData.view)));
 
 			_program.Bind();
 
@@ -68,24 +62,29 @@ namespace Eugenix
 				_transform.Reset();
 				_transform.Translate({ -0.6f, 0.0f, -3.0f });
 				_transform.Scale({ 0.5f, 0.5f, 0.75f });
-				_program.SetUniform("model", _transform.Matrix());
+				_transformUbo.Update(Core::MakeData(&_transform.Matrix()));
 				_meshes[0].Bind();
 				_meshes[0].Draw();
 
 				_transform.Reset();
 				_transform.Translate({ 0.6f, 0.0f, -3.0f });
 				_transform.Scale({ 0.5f, 0.5f, 0.75f });
-				_program.SetUniform("model", _transform.Matrix());
+				_transformUbo.Update(Core::MakeData(&_transform.Matrix()));
 				_meshes[1].Bind();
 				_meshes[1].Draw();
 
 				_transform.Reset();
 				_transform.Translate({ 0.0f, 0.0f, -3.0f });
 				_transform.Scale({ 0.5f, 0.5f, 0.75f });
-				_program.SetUniform("model", _transform.Matrix());
+				_transformUbo.Update(Core::MakeData(&_transform.Matrix()));
 				_mesh.Bind();
 				_mesh.Draw();
 			}
+		}
+
+		void onResize() override
+		{
+			_cameraData.proj = glm::perspective(45.0f, (float)width() / (float)height(), 0.1f, 100.0f);
 		}
 
 	private:
@@ -118,7 +117,7 @@ namespace Eugenix
 
 		void createPipelines()
 		{
-			_program = MakeProgramFromFiles("Shaders/simple_pos_transform.vert", "Shaders/simple_pos_transform.frag");
+			_program = MakeProgramFromFiles("Shaders/simple_pos_transform_ubo.vert", "Shaders/simple_pos_transform_ubo.frag");
 		}
 
 		void createSkybox()
@@ -136,18 +135,31 @@ namespace Eugenix
 			skybox.Create(skyboxImages);
 		}
 
+		void createUBOs()
+		{
+			_transformUbo.Create();
+			// TODO : see GP4 (create by size, not by data)
+			_transformUbo.Storage(Core::MakeData(&_transform), GL_DYNAMIC_STORAGE_BIT);
+			_transformUbo.Bind(Render::BufferTarget::UBO, Render::BufferBinding::Transform);
+
+			_cameraUbo.Create();
+			_cameraUbo.Storage(Core::MakeData(&_cameraData), GL_DYNAMIC_STORAGE_BIT);
+			_cameraUbo.Bind(Render::BufferTarget::UBO, Render::BufferBinding::Camera);
+		}
+
 		Camera _camera{};
 
 		std::vector<Render::Mesh> _meshes;
 		Render::Mesh _mesh;
 
 		Render::OpenGL::ShaderProgram _program{};
-		GLuint uniformModel{};
-		GLuint uniformView{};
-		GLuint uniformProjection{};
 
 		Scene::Skybox skybox;
 
-		Math::Transform _transform;
+		Math::Transform _transform{};
+		Render::Data::Camera _cameraData{};
+
+		Render::OpenGL::Buffer _transformUbo{};
+		Render::OpenGL::Buffer _cameraUbo{};
 	};
 }
