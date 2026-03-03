@@ -15,6 +15,7 @@
 #include "Render/OpenGL/ShaderProgram.h"
 #include "Render/OpenGL/Texture2D.h"
 #include "Render/OpenGL/VertexArray.h"
+#include "Render/OpenGL/Pipeline.h"
 #include "Render/Types.h"
 
 namespace Eugenix

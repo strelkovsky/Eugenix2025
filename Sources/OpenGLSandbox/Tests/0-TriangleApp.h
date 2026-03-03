@@ -10,9 +10,6 @@
 
 #include "TestUtils.h"
 
-// Engine headers
-#include "Engine/IO/IO.h"
-
 // Sandbox headers
 #include "App/SandboxApp.h"
 #include "Render/OpenGL/Buffer.h"
@@ -20,13 +17,12 @@
 #include "Render/OpenGL/ShaderProgram.h"
 #include "Render/OpenGL/VertexArray.h"
 
-#include "Render/Mesh.h"
 #include "Render/Types.h"
 #include "Render/Vertex.h"
 
 namespace
 {
-	const std::array<Eugenix::Render::Vertex::PosColor, 3> triangle_vertices = 
+	std::array<Eugenix::Render::Vertex::PosColor, 3> triangle_vertices = 
 	{ {
 		{{-1.0f, -1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
 		{{ 0.0f,  1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
@@ -41,10 +37,21 @@ namespace Eugenix
 	protected:
 		bool onInit() override
 		{
-			createPipeline();
+			createProgram();
 			createGeometry();
 
 			return true;
+		}
+
+		void onUpdate(float deltaTime) override
+		{
+			_xPos += deltaTime * (_invertPos ? -1.0f : 1.0f);
+			if (_xPos < -1.0f || _xPos > 1.0f)
+				_invertPos = !_invertPos;
+
+			triangle_vertices[1].pos.x = _xPos;
+
+			_triangleVbo.Update(Core::MakeData(&triangle_vertices));
 		}
 
 		void onRender() override
@@ -54,21 +61,28 @@ namespace Eugenix
 
 			_shaderProgram.Bind();
 
-			//_triangleVao.Bind();
-			//Render::OpenGL::Commands::DrawVertices(Render::PrimitiveType::Triangles, 3);
-
-			_mesh.Bind();
-			_mesh.Draw();
+			_triangleVao.Bind();
+			Render::OpenGL::Commands::DrawVertices(Render::PrimitiveType::Triangles, 3);
 		}
 		 
 		void onCleanup() override
 		{
 			_shaderProgram.Destroy();
-			_mesh.Destroy();
+
+			_triangleVao.Destroy();
+			_triangleVbo.Destroy();
+		}
+
+		void onKeyHandle(int key, int code, int action, int mode) override
+		{
+			if (key == GLFW_KEY_TAB && action == GLFW_PRESS)
+			{
+				_drawDynamic = !_drawDynamic;
+			}
 		}
 
 	private:
-		void createPipeline()
+		void createProgram()
 		{
 			_shaderProgram = Eugenix::MakeProgramFromFiles("Shaders/simple_pos_color.vert", "Shaders/simple_pos_color.frag");
 		}
@@ -76,33 +90,23 @@ namespace Eugenix
 		void createGeometry()
 		{
 			_triangleVbo.Create();
-			_triangleVbo.Storage(Core::MakeData(std::span{ triangle_vertices }));
+			_triangleVbo.Storage(Core::MakeData(&triangle_vertices), GL_DYNAMIC_STORAGE_BIT);
 
 			_triangleVao.Create();
 			_triangleVao.AttachVertices(_triangleVbo, sizeof(float) * 6);
 
-			// TODO : push layout in vertex_array
-			//for (const auto& attrib : Render::Vertex::PosColor::layout)
-			//{
-			//	_triangleVao.Attribute(attrib);
-			//}
-
-			uint32_t currentOffset = 0;
-			for (const auto& attrib : _shaderProgram.GetAttribs())
+			for (const auto& attrib : Render::Vertex::PosColor::layout)
 			{
-				auto a = AttributeFromShader(attrib, currentOffset);
-				currentOffset += ComponentsFromGLType(attrib.type) * BytesPerComponent(a.type);
-				_triangleVao.Attribute(a);
+				_triangleVao.Attribute(attrib);
 			}
-
-			_mesh.Build(std::span{ triangle_vertices });
 		}
 
 		Render::OpenGL::VertexArray _triangleVao{};
 		Render::OpenGL::Buffer _triangleVbo{};
+		bool _drawDynamic;
+		float _xPos;
+		bool _invertPos;
 
 		Render::OpenGL::ShaderProgram _shaderProgram{};
-
-		Render::Mesh _mesh;
 	};
 }
