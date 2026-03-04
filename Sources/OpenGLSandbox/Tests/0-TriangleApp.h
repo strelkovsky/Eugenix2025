@@ -1,9 +1,5 @@
 #pragma once
 
-// STD headers
-#include <array>
-#include <iostream>
-
 // ThirdParty headers
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
