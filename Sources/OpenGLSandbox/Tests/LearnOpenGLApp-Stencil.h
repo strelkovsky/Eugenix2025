@@ -485,7 +485,7 @@ namespace Eugenix
         void onRender() override
         {
             Render::OpenGL::Commands::Viewport(0, 0, width(), height());
-            Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+            Render::OpenGL::Commands::Clear(Render::ClearFlags::Color | Render::ClearFlags::Depth | Render::ClearFlags::Stencil);
 
             glm::mat4 projection{ 1.0f };
 

@@ -584,13 +584,13 @@ namespace Eugenix
             //hdrFramebuffer.Bind();
             Render::OpenGL::Pipeline::Enable(Render::PipelineFeature::DepthTest);
             Render::OpenGL::Commands::Viewport(0, 0, width(), height());
-            Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            Render::OpenGL::Commands::Clear(Render::ClearFlags::Color | Render::ClearFlags::Depth);
             drawScene();
 
             // второй проход
             glBindFramebuffer(GL_FRAMEBUFFER, 0); // возвращаем буфер кадра по умолчанию
             Render::OpenGL::Commands::Clear(0.1f, 0.1, 0.1f);
-            Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT);
+            Render::OpenGL::Commands::Clear(Render::ClearFlags::Color);
 
             Render::OpenGL::ShaderProgram fbProgram{};
 

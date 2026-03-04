@@ -57,7 +57,7 @@ namespace Eugenix
 		void onRender() override
 		{
 			Render::OpenGL::Commands::Viewport(0, 0, width(), height());
-			Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT);
+			Render::OpenGL::Commands::Clear(Render::ClearFlags::Color);
 
 			_shaderProgram.Bind();
 

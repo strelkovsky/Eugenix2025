@@ -234,7 +234,7 @@ namespace Eugenix
 
 		void onRender() override
 		{
-			Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			Render::OpenGL::Commands::Clear(Render::ClearFlags::Color | Render::ClearFlags::Depth);
 
 			_program.Bind();
 			_cardVao.Bind();

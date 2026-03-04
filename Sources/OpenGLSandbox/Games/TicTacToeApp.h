@@ -508,7 +508,7 @@ namespace Eugenix
 
         void onRender() override
         {
-            Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            Render::OpenGL::Commands::Clear(Render::ClearFlags::Color | Render::ClearFlags::Depth);
 
             _program.Bind();
 
@@ -524,7 +524,7 @@ namespace Eugenix
             else
             {
                 Render::OpenGL::Commands::Clear(0.42745098039215684f, 0.8823529411764706f, 0.8235294117647058f);
-                Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                Render::OpenGL::Commands::Clear(Render::ClearFlags::Color | Render::ClearFlags::Depth);
             }
 
             _materialAlbedo = glm::vec3(0.0f, 1.0f, 0.0f);

@@ -102,7 +102,7 @@ namespace Eugenix
 		void onRender() override
 		{
 			Render::OpenGL::Commands::Viewport(0, 0, width(), height());
-			Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			Render::OpenGL::Commands::Clear(Render::ClearFlags::Color | Render::ClearFlags::Depth);
 
 			//glm::mat4 projection = glm::perspective(45.0f, (GLfloat)width() / (GLfloat)height(), 0.1f, 100.0f);
 			//_program.SetUniform("view", _cameraData.view);

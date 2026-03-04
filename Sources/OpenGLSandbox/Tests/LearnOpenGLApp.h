@@ -568,7 +568,7 @@ namespace Eugenix
         {
             Render::OpenGL::Pipeline::Enable(Render::PipelineFeature::DepthTest);
             Render::OpenGL::Commands::Viewport(0, 0, width(), height());
-            Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            Render::OpenGL::Commands::Clear(Render::ClearFlags::Color | Render::ClearFlags::Depth);
             drawScene();
 
             //_skyboxPipeline.SetUniform("skybox", 0);

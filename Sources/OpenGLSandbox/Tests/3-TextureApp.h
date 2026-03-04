@@ -54,7 +54,7 @@ namespace Eugenix
 		void onRender() override
 		{
 			Render::OpenGL::Commands::Viewport(0, 0, width(), height());
-			Render::OpenGL::Commands::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			Render::OpenGL::Commands::Clear(Render::ClearFlags::Color | Render::ClearFlags::Depth);
 
 			_cameraUbo.Update(Core::MakeData(&_cameraData));
 
@@ -67,7 +67,6 @@ namespace Eugenix
 				_transform.Scale({ 0.5f, 0.5f, 0.75f });
 				_transformUbo.Update(Core::MakeData(&_transform.Matrix()));
 
-				//_program.SetUniform("model", _transform.Matrix());
 				_brickTexture.Bind();
 				_meshes[0].Bind();
 				_meshes[0].Draw();
@@ -77,7 +76,6 @@ namespace Eugenix
 				_transform.Scale({ 0.5f, 0.5f, 0.75f });
 				_transformUbo.Update(Core::MakeData(&_transform.Matrix()));
 				
-				//_program.SetUniform("model", _transform.Matrix());
 				_sampler.Bind(0);
 				_dirtTexture.Bind();
 				_meshes[1].Bind();
