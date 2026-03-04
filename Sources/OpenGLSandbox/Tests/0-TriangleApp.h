@@ -41,13 +41,16 @@ namespace Eugenix
 
 		void onUpdate(float deltaTime) override
 		{
-			_xPos += deltaTime * (_invertPos ? -1.0f : 1.0f);
-			if (_xPos < -1.0f || _xPos > 1.0f)
-				_invertPos = !_invertPos;
+			if (_drawDynamic)
+			{
+				_xPos += deltaTime * (_invertPos ? -1.0f : 1.0f);
+				if (_xPos < -1.0f || _xPos > 1.0f)
+					_invertPos = !_invertPos;
 
-			triangle_vertices[1].pos.x = _xPos;
+				triangle_vertices[1].pos.x = _xPos;
 
-			_triangleVbo.Update(Core::MakeData(&triangle_vertices));
+				_triangleVbo.Update(Core::MakeData(&triangle_vertices));
+			}
 		}
 
 		void onRender() override
