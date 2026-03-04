@@ -1,15 +1,8 @@
 #pragma once
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
 #include <imgui/imgui.h>
 
 // Sandbox headers
-#include "App/SandboxApp.h"
-#include "Assets/ImageLoader.h"
-#include "Assets/ObjModelLoader.h"
 #include "Render/OpenGL/Buffer.h"
 #include "Render/OpenGL/Commands.h"
 #include "Render/OpenGL/Pipeline.h"
@@ -18,266 +11,17 @@
 #include "Render/OpenGL/VertexArray.h"
 #include "Render/Types.h"
 
-namespace
+#include "LearnOpenGL-Shared.h"
+#include "LearnOpenGLApp-Base.h"
+
+namespace Eugenix
 {
-    struct Vertex
-    {
-        glm::vec3 pos;
-        glm::vec3 normal;
-        glm::vec2 uv;
-
-        // TODO : return span of attributes
-    };
-
-    glm::vec3 cubePositions[] = {
-      glm::vec3(0.0f,  0.0f,  0.0f),
-      glm::vec3(2.0f,  5.0f, -15.0f),
-      glm::vec3(-1.5f, -2.2f, -2.5f),
-      glm::vec3(-3.8f, -2.0f, -12.3f),
-      glm::vec3(2.4f, -0.4f, -3.5f),
-      glm::vec3(-1.7f,  3.0f, -7.5f),
-      glm::vec3(1.3f, -2.0f, -2.5f),
-      glm::vec3(1.5f,  2.0f, -2.5f),
-      glm::vec3(1.5f,  0.2f, -1.5f),
-      glm::vec3(-1.3f,  1.0f, -1.5f)
-    };
-
-
-
-    // Defines several possible options for camera movement. Used as abstraction to stay away from window-system specific input methods
-    enum Camera_Movement {
-        FORWARD,
-        BACKWARD,
-        LEFT,
-        RIGHT
-    };
-
-    // Default camera values
-    const GLfloat YAW = -90.0f;
-    const GLfloat PITCH = 0.0f;
-    const GLfloat SPEED = 3.0f;
-    const GLfloat SENSITIVTY = 0.25f;
-    const GLfloat ZOOM = 45.0f;
-
-    // An abstract camera class that processes input and calculates the corresponding Eular Angles, Vectors and Matrices for use in OpenGL
-    class Camera2
-    {
-    public:
-        // Camera Attributes
-        glm::vec3 Position;
-        glm::vec3 Front;
-        glm::vec3 Up;
-        glm::vec3 Right;
-        glm::vec3 WorldUp;
-        // Eular Angles
-        GLfloat Yaw;
-        GLfloat Pitch;
-        // Camera options
-        GLfloat MovementSpeed;
-        GLfloat MouseSensitivity;
-        GLfloat Zoom;
-
-        // Constructor with vectors
-        Camera2(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), GLfloat yaw = YAW, GLfloat pitch = PITCH) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVTY), Zoom(ZOOM)
-        {
-            this->Position = position;
-            this->WorldUp = up;
-            this->Yaw = yaw;
-            this->Pitch = pitch;
-            this->updateCameraVectors();
-        }
-        // Constructor with scalar values
-        Camera2(GLfloat posX, GLfloat posY, GLfloat posZ, GLfloat upX, GLfloat upY, GLfloat upZ, GLfloat yaw, GLfloat pitch) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVTY), Zoom(ZOOM)
-        {
-            this->Position = glm::vec3(posX, posY, posZ);
-            this->WorldUp = glm::vec3(upX, upY, upZ);
-            this->Yaw = yaw;
-            this->Pitch = pitch;
-            this->updateCameraVectors();
-        }
-
-        // Returns the view matrix calculated using Eular Angles and the LookAt Matrix
-        glm::mat4 GetViewMatrix()
-        {
-            return glm::lookAt(this->Position, this->Position + this->Front, this->Up);
-        }
-
-        // Processes input received from any keyboard-like input system. Accepts input parameter in the form of camera defined ENUM (to abstract it from windowing systems)
-        void ProcessKeyboard(Camera_Movement direction, GLfloat deltaTime)
-        {
-            GLfloat velocity = this->MovementSpeed * deltaTime;
-            if (direction == FORWARD)
-                this->Position += this->Front * velocity;
-            if (direction == BACKWARD)
-                this->Position -= this->Front * velocity;
-            if (direction == LEFT)
-                this->Position -= this->Right * velocity;
-            if (direction == RIGHT)
-                this->Position += this->Right * velocity;
-        }
-
-        // Processes input received from a mouse input system. Expects the offset value in both the x and y direction.
-        void ProcessMouseMovement(GLfloat xoffset, GLfloat yoffset, GLboolean constrainPitch = true)
-        {
-            xoffset *= this->MouseSensitivity;
-            yoffset *= this->MouseSensitivity;
-
-            this->Yaw += xoffset;
-            this->Pitch += yoffset;
-
-            // Make sure that when pitch is out of bounds, screen doesn't get flipped
-            if (constrainPitch)
-            {
-                if (this->Pitch > 89.0f)
-                    this->Pitch = 89.0f;
-                if (this->Pitch < -89.0f)
-                    this->Pitch = -89.0f;
-            }
-
-            // Update Front, Right and Up Vectors using the updated Eular angles
-            this->updateCameraVectors();
-        }
-
-        // Processes input received from a mouse scroll-wheel event. Only requires input on the vertical wheel-axis
-        void ProcessMouseScroll(GLfloat yoffset)
-        {
-            if (this->Zoom >= 1.0f && this->Zoom <= 45.0f)
-                this->Zoom -= yoffset;
-            if (this->Zoom <= 1.0f)
-                this->Zoom = 1.0f;
-            if (this->Zoom >= 45.0f)
-                this->Zoom = 45.0f;
-        }
-
-    private:
-        // Calculates the front vector from the Camera's (updated) Eular Angles
-        void updateCameraVectors()
-        {
-            // Calculate the new Front vector
-            glm::vec3 front;
-            front.x = cos(glm::radians(this->Yaw)) * cos(glm::radians(this->Pitch));
-            front.y = sin(glm::radians(this->Pitch));
-            front.z = sin(glm::radians(this->Yaw)) * cos(glm::radians(this->Pitch));
-            this->Front = glm::normalize(front);
-            // Also re-calculate the Right and Up vector
-            this->Right = glm::normalize(glm::cross(this->Front, this->WorldUp));  // Normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
-            this->Up = glm::normalize(glm::cross(this->Right, this->Front));
-        }
-    };
-
-    Camera2 camera{ glm::vec3(0.0f, 0.0f, 4.0f) };
-
-    enum class LightType : int
-    {
-        Directional = 0,
-        Point = 1,
-        Spot = 2
-    };
-
-    struct Light
-    {
-        LightType type;
-
-        // directional
-        glm::vec3 direction;
-        // posint & spot
-        glm::vec3 position;
-
-        glm::vec3 ambient;
-        glm::vec3 diffuse;
-        glm::vec3 specular;
-
-        // point 
-        float constant;
-        float linear;
-        float quadratic;
-
-        // Spot
-        float cutOff;
-        float outerCutOff;
-    };
-
-    std::vector<Light> lights =
-    {
-        {
-            .type = LightType::Directional,
-            .direction = { -0.2f, -1.0f, -0.3f },
-            .ambient = { 0.1f, 0.1f, 0.1f },
-            .diffuse = { 0.4f, 0.4f, 0.4f },
-            .specular = { 0.5f, 0.5f, 0.5f },
-        },
-        {
-            .type = LightType::Spot,
-            .direction = camera.Front,
-            .position = camera.Position,
-            .ambient = { 0.0f, 0.0f, 0.0f },
-            .diffuse = { 1.0f, 1.0f, 1.0f },
-            .specular = { 1.0f, 1.0f, 1.0f },
-            .constant = 1.0f,
-            .linear = 0.09f,
-            .quadratic = 0.032f,
-            .cutOff = glm::cos(glm::radians(12.5f)),
-            .outerCutOff = glm::cos(glm::radians(15.0f))
-        },
-        {
-            .type = LightType::Point,
-            .position = { 0.7f,  0.2f,  2.0f },
-            .ambient = { 0.05f, 0.05f, 0.05f },
-            .diffuse = { 0.8f, 0.8f, 0.8f },
-            .specular = { 1.0f, 1.0f, 1.0f },
-            .constant = 1.0f,
-            .linear = 0.09f,
-            .quadratic = 0.032f
-        },
-        {
-            .type = LightType::Point,
-            .position = { 2.3f, -3.3f, -4.0f },
-            .ambient = { 0.05f, 0.05f, 0.05f },
-            .diffuse = { 0.0f, 0.0f, 0.0f },
-            .specular = { 1.0f, 1.0f, 1.0f },
-            .constant = 1.0f,
-            .linear = 0.09f,
-            .quadratic = 0.032f
-        },
-        {
-            .type = LightType::Point,
-            .position = { -4.0f,  2.0f, -12.0f },
-            .ambient = { 0.05f, 0.05f, 0.05f },
-            .diffuse = { 0.0f, 0.0f, 1.0f },
-            .specular = { 1.0f, 1.0f, 1.0f },
-            .constant = 1.0f,
-            .linear = 0.09f,
-            .quadratic = 0.032f
-        },
-        {
-            .type = LightType::Point,
-            .position = { 0.0f,  0.0f, -3.0f },
-            .ambient = { 0.05f, 0.05f, 0.05f },
-            .diffuse = { 1.0f, 0.0f, 0.0f },
-            .specular = { 1.0f, 1.0f, 1.0f },
-            .constant = 1.0f,
-            .linear = 0.09f,
-            .quadratic = 0.032f
-        },
-    };
-
     int selectedLightIndex;
 }
 
 namespace Eugenix
 {
-
-
-
-
-
-
-
-
-
-    // TODO : lights UBO from Eugenix. UBO Test. ShaderEnv stuff
-
-    class LearnOpenGLApp final : public SandboxApp
+    class LearnOpenGLApp final : public LearnOpenGLAppBase
     {
     protected:
         bool onInit() override
@@ -285,8 +29,7 @@ namespace Eugenix
             _program = MakeProgramFromFiles("shaders/SimpleVertex.vert", "shaders/SimplePhong.frag");
             _lampProgram = MakeProgramFromFiles("shaders/SimpleVertex.vert", "shaders/SimpleUnlit.frag");
 
-            // Set up vertex data (and buffer(s)) and attribute pointers
-            const std::vector<Vertex> vertices =
+            const std::vector<Render::Vertex::PosNormalUV> vertices =
             {
                 // Z- (back face)
                 {{-0.5f, -0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}, {0.0f, 0.0f}},
@@ -337,7 +80,7 @@ namespace Eugenix
                 {{-0.5f,  0.5f, -0.5f}, { 0.0f,  1.0f,  0.0f}, {0.0f, 1.0f}}
             };
 
-            const std::vector<Vertex> planeVertices =
+            const std::vector<Render::Vertex::PosNormalUV> planeVertices =
             {
                 {{ 5.0f, -0.5f,  5.0f},  {0.0f, 1.0f, 0.0f}, {2.0f, 0.0f}},
                 {{-5.0f, -0.5f,  5.0f},  {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
@@ -352,23 +95,19 @@ namespace Eugenix
             vbo.Create();
             vbo.Storage(Core::MakeData(std::span{ vertices }));
 
-            //Render::OpenGL::Buffer ebo;
-            //ebo.Create();
-            //ebo.Storage(Core::MakeData(std::span { indices }));
-
             constexpr Render::Attribute position_attribute{ 0, 3, Render::DataType::Float, false, 0 };
-            constexpr Render::Attribute normal_attribute{ 1, 3, Render::DataType::Float, false, offsetof(Vertex, normal) };
-            constexpr Render::Attribute uv_attribute{ 2, 2, Render::DataType::Float, false, offsetof(Vertex, uv) };
+            constexpr Render::Attribute normal_attribute{ 1, 3, Render::DataType::Float, false, offsetof(Render::Vertex::PosNormalUV, normal) };
+            constexpr Render::Attribute uv_attribute{ 2, 2, Render::DataType::Float, false, offsetof(Render::Vertex::PosNormalUV, uv) };
 
             _cubeVao.Create();
-            _cubeVao.AttachVertices(vbo, sizeof(Vertex));
+            _cubeVao.AttachVertices(vbo, sizeof(Render::Vertex::PosNormalUV));
             //_cubeVao.AttachIndices(ebo);
             _cubeVao.Attribute(position_attribute);
             _cubeVao.Attribute(normal_attribute);
             _cubeVao.Attribute(uv_attribute);
 
             _lightSourceVao.Create();
-            _lightSourceVao.AttachVertices(vbo, sizeof(Vertex));
+            _lightSourceVao.AttachVertices(vbo, sizeof(Render::Vertex::PosNormalUV));
             _lightSourceVao.Attribute(position_attribute);
             _lightSourceVao.Attribute(uv_attribute);
 
@@ -377,7 +116,7 @@ namespace Eugenix
             planeVbo.Storage(Core::MakeData(std::span{ planeVertices }));
 
             _planeVao.Create();
-            _planeVao.AttachVertices(planeVbo, sizeof(Vertex));
+            _planeVao.AttachVertices(planeVbo, sizeof(Render::Vertex::PosNormalUV));
             _planeVao.Attribute(position_attribute);
             _planeVao.Attribute(normal_attribute);
             _planeVao.Attribute(uv_attribute);
@@ -414,13 +153,13 @@ namespace Eugenix
         {
             // Camera controls
             if (keys[GLFW_KEY_W])
-                camera.ProcessKeyboard(FORWARD, deltaTime);
+                _camera.ProcessKeyboard(FORWARD, deltaTime);
             if (keys[GLFW_KEY_S])
-                camera.ProcessKeyboard(BACKWARD, deltaTime);
+                _camera.ProcessKeyboard(BACKWARD, deltaTime);
             if (keys[GLFW_KEY_A])
-                camera.ProcessKeyboard(LEFT, deltaTime);
+                _camera.ProcessKeyboard(LEFT, deltaTime);
             if (keys[GLFW_KEY_D])
-                camera.ProcessKeyboard(RIGHT, deltaTime);
+                _camera.ProcessKeyboard(RIGHT, deltaTime);
 
             for (auto& light : lights)
             {
@@ -431,8 +170,8 @@ namespace Eugenix
                 }
                 else if (light.type == LightType::Spot)
                 {
-                    light.position = camera.Position;
-                    light.direction = camera.Front;
+                    light.position = _camera.Position;
+                    light.direction = _camera.Front;
                 }
             }
         }
@@ -499,13 +238,13 @@ namespace Eugenix
 
             _program.Bind();
 
-            glm::mat4 view = camera.GetViewMatrix();
+            glm::mat4 view = _camera.GetViewMatrix();
             projection = glm::perspective(glm::radians(45.0f), (GLfloat)width() / (GLfloat)height(), 0.1f, 100.0f);
 
             _program.SetUniform("view", view);
             _program.SetUniform("projection", projection);
 
-            _program.SetUniform("viewPos", camera.Position);
+            _program.SetUniform("viewPos", _camera.Position);
 
             _program.SetUniform("material.diffuse", 0);
             _program.SetUniform("material.specular", 1);
@@ -689,13 +428,10 @@ namespace Eugenix
             lastX = xPos;
             lastY = yPos;
 
-            camera.ProcessMouseMovement(xoffset, yoffset);
+            _camera.ProcessMouseMovement(xoffset, yoffset);
         }
 
     private:
-        Assets::ImageLoader _imageLoader{};
-        Assets::ObjModelLoader _modelLoader{};
-
         Render::Model _model;
 
         Render::OpenGL::Texture2D _cubeDiffuseTexture;
