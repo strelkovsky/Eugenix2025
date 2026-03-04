@@ -127,4 +127,21 @@ namespace Eugenix::Render::OpenGL
 		assert(false && "Invalid PipelineFeature");
 		return 0;
 	}
+
+	constexpr GLbitfield to_opengl_type(ClearFlags combined)
+	{
+		GLbitfield result = 0;
+		const auto bits = static_cast<unsigned>(combined);
+
+		if ((bits & static_cast<unsigned>(ClearFlags::Color)) != 0)
+			result |= GL_COLOR_BUFFER_BIT;
+
+		if ((bits & static_cast<unsigned>(ClearFlags::Depth)) != 0)
+			result |= GL_DEPTH_BUFFER_BIT;
+
+		if ((bits & static_cast<unsigned>(ClearFlags::Stencil)) != 0)
+			result |= GL_STENCIL_BUFFER_BIT;
+
+		return result;
+	}
 } // namespace Eugenix::Render::OpenGL

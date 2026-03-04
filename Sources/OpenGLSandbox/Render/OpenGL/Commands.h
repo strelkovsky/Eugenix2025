@@ -12,9 +12,9 @@ namespace Eugenix::Render::OpenGL::Commands
 		glClearColor(r, g, b, 1.0f);
 	}
 
-	inline void Clear(uint32_t mask)
+	inline void Clear(ClearFlags mask)
 	{
-		glClear(mask);
+		glClear(to_opengl_type(mask));
 	}
 
 	inline void Viewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height)

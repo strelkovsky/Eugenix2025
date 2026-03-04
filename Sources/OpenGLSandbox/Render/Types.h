@@ -69,6 +69,18 @@ namespace Eugenix::Render
 		PolygonOffsetFill
 	};
 
+	enum struct ClearFlags : uint32_t
+	{
+		Color = 1 << 0, 
+		Depth = 1 << 1, 
+		Stencil = 1 << 2
+	};
+
+	constexpr ClearFlags operator|(ClearFlags lhs, ClearFlags rhs)
+	{
+		return static_cast<ClearFlags>(static_cast<unsigned>(lhs) | static_cast<unsigned>(rhs));
+	}
+
 	// TODO : rename to binding (see SharedData)
 	enum struct BufferBinding
 	{
