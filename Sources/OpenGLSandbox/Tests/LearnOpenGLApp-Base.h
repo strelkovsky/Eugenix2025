@@ -2,10 +2,82 @@
 
 #include "LearnOpenGL-Shared.h"
 
+#include "Core/Data.h"
+
 // Sandbox headers
 #include "App/SandboxApp.h"
 #include "Assets/ImageLoader.h"
 #include "Assets/ObjModelLoader.h"
+#include "Render/Vertex.h"
+
+namespace
+{
+    const std::vector<Eugenix::Render::Vertex::PosNormalUV> cubeVertices =
+    {
+        // Z- (back face)
+        {{-0.5f, -0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}, {0.0f, 0.0f}},
+        {{ 0.5f, -0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}, {1.0f, 0.0f}},
+        {{ 0.5f,  0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}, {1.0f, 1.0f}},
+        {{ 0.5f,  0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}, {1.0f, 1.0f}},
+        {{-0.5f,  0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}, {0.0f, 1.0f}},
+        {{-0.5f, -0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}, {0.0f, 0.0f}},
+
+        // Z+ (front face)
+        {{-0.5f, -0.5f,  0.5f}, { 0.0f,  0.0f,  1.0f}, {0.0f, 0.0f}},
+        {{ 0.5f, -0.5f,  0.5f}, { 0.0f,  0.0f,  1.0f}, {1.0f, 0.0f}},
+        {{ 0.5f,  0.5f,  0.5f}, { 0.0f,  0.0f,  1.0f}, {1.0f, 1.0f}},
+        {{ 0.5f,  0.5f,  0.5f}, { 0.0f,  0.0f,  1.0f}, {1.0f, 1.0f}},
+        {{-0.5f,  0.5f,  0.5f}, { 0.0f,  0.0f,  1.0f}, {0.0f, 1.0f}},
+        {{-0.5f, -0.5f,  0.5f}, { 0.0f,  0.0f,  1.0f}, {0.0f, 0.0f}},
+
+        // X- (left face)
+        {{-0.5f,  0.5f,  0.5f}, {-1.0f,  0.0f,  0.0f}, {1.0f, 0.0f}},
+        {{-0.5f,  0.5f, -0.5f}, {-1.0f,  0.0f,  0.0f}, {1.0f, 1.0f}},
+        {{-0.5f, -0.5f, -0.5f}, {-1.0f,  0.0f,  0.0f}, {0.0f, 1.0f}},
+        {{-0.5f, -0.5f, -0.5f}, {-1.0f,  0.0f,  0.0f}, {0.0f, 1.0f}},
+        {{-0.5f, -0.5f,  0.5f}, {-1.0f,  0.0f,  0.0f}, {0.0f, 0.0f}},
+        {{-0.5f,  0.5f,  0.5f}, {-1.0f,  0.0f,  0.0f}, {1.0f, 0.0f}},
+
+        // X+ (right face)
+        {{ 0.5f,  0.5f,  0.5f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 0.0f}},
+        {{ 0.5f,  0.5f, -0.5f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 1.0f}},
+        {{ 0.5f, -0.5f, -0.5f}, { 1.0f,  0.0f,  0.0f}, {0.0f, 1.0f}},
+        {{ 0.5f, -0.5f, -0.5f}, { 1.0f,  0.0f,  0.0f}, {0.0f, 1.0f}},
+        {{ 0.5f, -0.5f,  0.5f}, { 1.0f,  0.0f,  0.0f}, {0.0f, 0.0f}},
+        {{ 0.5f,  0.5f,  0.5f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 0.0f}},
+
+        // Y- (bottom face)
+        {{-0.5f, -0.5f, -0.5f}, { 0.0f, -1.0f,  0.0f}, {0.0f, 1.0f}},
+        {{ 0.5f, -0.5f, -0.5f}, { 0.0f, -1.0f,  0.0f}, {1.0f, 1.0f}},
+        {{ 0.5f, -0.5f,  0.5f}, { 0.0f, -1.0f,  0.0f}, {1.0f, 0.0f}},
+        {{ 0.5f, -0.5f,  0.5f}, { 0.0f, -1.0f,  0.0f}, {1.0f, 0.0f}},
+        {{-0.5f, -0.5f,  0.5f}, { 0.0f, -1.0f,  0.0f}, {0.0f, 0.0f}},
+        {{-0.5f, -0.5f, -0.5f}, { 0.0f, -1.0f,  0.0f}, {0.0f, 1.0f}},
+
+        // Y+ (top face)
+        {{-0.5f,  0.5f, -0.5f}, { 0.0f,  1.0f,  0.0f}, {0.0f, 1.0f}},
+        {{ 0.5f,  0.5f, -0.5f}, { 0.0f,  1.0f,  0.0f}, {1.0f, 1.0f}},
+        {{ 0.5f,  0.5f,  0.5f}, { 0.0f,  1.0f,  0.0f}, {1.0f, 0.0f}},
+        {{ 0.5f,  0.5f,  0.5f}, { 0.0f,  1.0f,  0.0f}, {1.0f, 0.0f}},
+        {{-0.5f,  0.5f,  0.5f}, { 0.0f,  1.0f,  0.0f}, {0.0f, 0.0f}},
+        {{-0.5f,  0.5f, -0.5f}, { 0.0f,  1.0f,  0.0f}, {0.0f, 1.0f}}
+    };
+
+    const std::vector<Eugenix::Render::Vertex::PosNormalUV> planeVertices =
+    {
+        {{ 5.0f, -0.5f,  5.0f},  {0.0f, 1.0f, 0.0f}, {2.0f, 0.0f}},
+        {{-5.0f, -0.5f,  5.0f},  {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+        {{-5.0f, -0.5f, -5.0f},  {0.0f, 1.0f, 0.0f}, {0.0f, 2.0f}},
+
+        {{ 5.0f, -0.5f,  5.0f},  {0.0f, 1.0f, 0.0f}, {2.0f, 0.0f}},
+        {{-5.0f, -0.5f, -5.0f},  {0.0f, 1.0f, 0.0f}, {0.0f, 2.0f}},
+        {{ 5.0f, -0.5f, -5.0f},  {0.0f, 1.0f, 0.0f}, {2.0f, 2.0f}}
+    };
+
+    constexpr Eugenix::Render::Attribute position_attribute{ 0, 3, Eugenix::Render::DataType::Float, false, 0 };
+    constexpr Eugenix::Render::Attribute normal_attribute  { 1, 3, Eugenix::Render::DataType::Float, false, offsetof(Eugenix::Render::Vertex::PosNormalUV, normal) };
+    constexpr Eugenix::Render::Attribute uv_attribute      { 2, 2, Eugenix::Render::DataType::Float, false, offsetof(Eugenix::Render::Vertex::PosNormalUV, uv) };
+}
 
 namespace Eugenix
 {
@@ -13,15 +85,69 @@ namespace Eugenix
 	class LearnOpenGLAppBase : public SandboxApp
 	{
 	protected:
+        bool onInit() override
+        {
+            initCommon();
+
+            return true;
+        }
+
         void initCommon()
         {
+            createCube();
+            createPlane();
+            createLightSource();
+        }
 
+        void createCube()
+        {
+            Render::OpenGL::Buffer vbo;
+            vbo.Create();
+            vbo.Storage(Core::MakeData(std::span{ cubeVertices }));
+
+            _cubeVao.Create();
+            _cubeVao.AttachVertices(vbo, sizeof(Render::Vertex::PosNormalUV));
+            _cubeVao.Attribute(position_attribute);
+            _cubeVao.Attribute(normal_attribute);
+            _cubeVao.Attribute(uv_attribute);
+        }
+
+        void createPlane()
+        {
+            Render::OpenGL::Buffer planeVbo;
+            planeVbo.Create();
+            planeVbo.Storage(Core::MakeData(std::span{ planeVertices }));
+
+            _planeVao.Create();
+            _planeVao.AttachVertices(planeVbo, sizeof(Render::Vertex::PosNormalUV));
+            _planeVao.Attribute(position_attribute);
+            _planeVao.Attribute(normal_attribute);
+            _planeVao.Attribute(uv_attribute);
+        }
+
+        void createLightSource()
+        {
+            Render::OpenGL::Buffer vbo;
+            vbo.Create();
+            vbo.Storage(Core::MakeData(std::span{ cubeVertices }));
+
+            _lightSourceVao.Create();
+            _lightSourceVao.AttachVertices(vbo, sizeof(Render::Vertex::PosNormalUV));
+            _lightSourceVao.Attribute(position_attribute);
+            _lightSourceVao.Attribute(uv_attribute);
         }
 
 		Assets::ImageLoader _imageLoader{};
 		Assets::ObjModelLoader _modelLoader{};
 
 		Camera2 _camera{ glm::vec3(0.0f, 0.0f, 4.0f) };
+
+        int _selectedLightIndex;
+
+        // Shared geometry
+        Render::OpenGL::VertexArray _cubeVao;
+        Render::OpenGL::VertexArray _planeVao;
+        Render::OpenGL::VertexArray _lightSourceVao;
 
         std::vector<Light> lights =
         {

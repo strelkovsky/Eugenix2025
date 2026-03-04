@@ -16,8 +16,6 @@
 
 namespace Eugenix
 {
-    int selectedLightIndex;
-
     struct Framebuffer
     {
         void Create(int width, int height, GLint internalFormat, GLenum format)
@@ -74,7 +72,7 @@ namespace Eugenix
         GLuint _depthStencilBuffer{};
     };
 
-    class LearnOpenGLApp final : public LearnOpenGLAppBase
+    class LearnOpenGLFramebuffersApp final : public LearnOpenGLAppBase
     {
     protected:
 
@@ -89,6 +87,8 @@ namespace Eugenix
 
         bool onInit() override
         {
+            LearnOpenGLAppBase::onInit();
+
             setupFrameBuffers();
 
             _program = MakeProgramFromFiles("shaders/SimpleVertex.vert", "shaders/SimplePhong.frag");
@@ -99,68 +99,6 @@ namespace Eugenix
             _kernelEffectProgram = MakeProgramFromFiles("shaders/quad.vert", "shaders/SimpleKernelEffect.frag");
             _blurEffectProgram = MakeProgramFromFiles("shaders/quad.vert", "shaders/SimpleBlur.frag");
             _tonemapPipeline = MakeProgramFromFiles("shaders/quad.vert", "shaders/SimpleTonemap.frag");
-
-            // Set up vertex data (and buffer(s)) and attribute pointers
-            const std::vector<Render::Vertex::PosNormalUV> vertices =
-            {
-                // Z- (back face)
-                {{-0.5f, -0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}, {0.0f, 0.0f}},
-                {{ 0.5f, -0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}, {1.0f, 0.0f}},
-                {{ 0.5f,  0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}, {1.0f, 1.0f}},
-                {{ 0.5f,  0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}, {1.0f, 1.0f}},
-                {{-0.5f,  0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}, {0.0f, 1.0f}},
-                {{-0.5f, -0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}, {0.0f, 0.0f}},
-
-                // Z+ (front face)
-                {{-0.5f, -0.5f,  0.5f}, { 0.0f,  0.0f,  1.0f}, {0.0f, 0.0f}},
-                {{ 0.5f, -0.5f,  0.5f}, { 0.0f,  0.0f,  1.0f}, {1.0f, 0.0f}},
-                {{ 0.5f,  0.5f,  0.5f}, { 0.0f,  0.0f,  1.0f}, {1.0f, 1.0f}},
-                {{ 0.5f,  0.5f,  0.5f}, { 0.0f,  0.0f,  1.0f}, {1.0f, 1.0f}},
-                {{-0.5f,  0.5f,  0.5f}, { 0.0f,  0.0f,  1.0f}, {0.0f, 1.0f}},
-                {{-0.5f, -0.5f,  0.5f}, { 0.0f,  0.0f,  1.0f}, {0.0f, 0.0f}},
-
-                // X- (left face)
-                {{-0.5f,  0.5f,  0.5f}, {-1.0f,  0.0f,  0.0f}, {1.0f, 0.0f}},
-                {{-0.5f,  0.5f, -0.5f}, {-1.0f,  0.0f,  0.0f}, {1.0f, 1.0f}},
-                {{-0.5f, -0.5f, -0.5f}, {-1.0f,  0.0f,  0.0f}, {0.0f, 1.0f}},
-                {{-0.5f, -0.5f, -0.5f}, {-1.0f,  0.0f,  0.0f}, {0.0f, 1.0f}},
-                {{-0.5f, -0.5f,  0.5f}, {-1.0f,  0.0f,  0.0f}, {0.0f, 0.0f}},
-                {{-0.5f,  0.5f,  0.5f}, {-1.0f,  0.0f,  0.0f}, {1.0f, 0.0f}},
-
-                // X+ (right face)
-                {{ 0.5f,  0.5f,  0.5f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 0.0f}},
-                {{ 0.5f,  0.5f, -0.5f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 1.0f}},
-                {{ 0.5f, -0.5f, -0.5f}, { 1.0f,  0.0f,  0.0f}, {0.0f, 1.0f}},
-                {{ 0.5f, -0.5f, -0.5f}, { 1.0f,  0.0f,  0.0f}, {0.0f, 1.0f}},
-                {{ 0.5f, -0.5f,  0.5f}, { 1.0f,  0.0f,  0.0f}, {0.0f, 0.0f}},
-                {{ 0.5f,  0.5f,  0.5f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 0.0f}},
-
-                // Y- (bottom face)
-                {{-0.5f, -0.5f, -0.5f}, { 0.0f, -1.0f,  0.0f}, {0.0f, 1.0f}},
-                {{ 0.5f, -0.5f, -0.5f}, { 0.0f, -1.0f,  0.0f}, {1.0f, 1.0f}},
-                {{ 0.5f, -0.5f,  0.5f}, { 0.0f, -1.0f,  0.0f}, {1.0f, 0.0f}},
-                {{ 0.5f, -0.5f,  0.5f}, { 0.0f, -1.0f,  0.0f}, {1.0f, 0.0f}},
-                {{-0.5f, -0.5f,  0.5f}, { 0.0f, -1.0f,  0.0f}, {0.0f, 0.0f}},
-                {{-0.5f, -0.5f, -0.5f}, { 0.0f, -1.0f,  0.0f}, {0.0f, 1.0f}},
-
-                // Y+ (top face)
-                {{-0.5f,  0.5f, -0.5f}, { 0.0f,  1.0f,  0.0f}, {0.0f, 1.0f}},
-                {{ 0.5f,  0.5f, -0.5f}, { 0.0f,  1.0f,  0.0f}, {1.0f, 1.0f}},
-                {{ 0.5f,  0.5f,  0.5f}, { 0.0f,  1.0f,  0.0f}, {1.0f, 0.0f}},
-                {{ 0.5f,  0.5f,  0.5f}, { 0.0f,  1.0f,  0.0f}, {1.0f, 0.0f}},
-                {{-0.5f,  0.5f,  0.5f}, { 0.0f,  1.0f,  0.0f}, {0.0f, 0.0f}},
-                {{-0.5f,  0.5f, -0.5f}, { 0.0f,  1.0f,  0.0f}, {0.0f, 1.0f}}
-            };
-
-            const std::vector<Render::Vertex::PosNormalUV> planeVertices = {
-                {{-5.0f, -0.5f,  5.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-                {{ 5.0f, -0.5f,  5.0f}, {0.0f, 1.0f, 0.0f}, {2.0f, 0.0f}},
-                {{-5.0f, -0.5f, -5.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 2.0f}},
-
-                {{ 5.0f, -0.5f,  5.0f}, {0.0f, 1.0f, 0.0f}, {2.0f, 0.0f}},
-                {{ 5.0f, -0.5f, -5.0f}, {0.0f, 1.0f, 0.0f}, {2.0f, 2.0f}},
-                {{-5.0f, -0.5f, -5.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 2.0f}}
-            };
 
             const std::vector<Render::Vertex::Sprite> quadVertices =
             { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
@@ -185,36 +123,6 @@ namespace Eugenix
                 {{ 0.3f,  0.7f},  {1.0f, 0.0f}},
                 {{ 0.3f,  1.0f},  {1.0f, 1.0f}}
             };
-
-            Render::OpenGL::Buffer vbo;
-            vbo.Create();
-            vbo.Storage(Core::MakeData(std::span{ vertices }));
-
-            constexpr Render::Attribute position_attribute{ 0, 3, Render::DataType::Float, false, 0 };
-            constexpr Render::Attribute normal_attribute{ 1, 3, Render::DataType::Float, false, offsetof(Render::Vertex::PosNormalUV, normal) };
-            constexpr Render::Attribute uv_attribute{ 2, 2, Render::DataType::Float, false, offsetof(Render::Vertex::PosNormalUV, uv) };
-
-            _cubeVao.Create();
-            _cubeVao.AttachVertices(vbo, sizeof(Render::Vertex::PosNormalUV));
-            //_cubeVao.AttachIndices(ebo);
-            _cubeVao.Attribute(position_attribute);
-            _cubeVao.Attribute(normal_attribute);
-            _cubeVao.Attribute(uv_attribute);
-
-            _lightSourceVao.Create();
-            _lightSourceVao.AttachVertices(vbo, sizeof(Render::Vertex::PosNormalUV));
-            _lightSourceVao.Attribute(position_attribute);
-            _lightSourceVao.Attribute(uv_attribute);
-
-            Render::OpenGL::Buffer planeVbo;
-            planeVbo.Create();
-            planeVbo.Storage(Core::MakeData(std::span{ planeVertices }));
-
-            _planeVao.Create();
-            _planeVao.AttachVertices(planeVbo, sizeof(Render::Vertex::PosNormalUV));
-            _planeVao.Attribute(position_attribute);
-            _planeVao.Attribute(normal_attribute);
-            _planeVao.Attribute(uv_attribute);
 
             // screen quad VAO
             Render::OpenGL::Buffer quadVbo;
@@ -616,9 +524,6 @@ namespace Eugenix
         Render::OpenGL::Texture2D _cubeSpecularTexture;
         Render::OpenGL::Texture2D _metalAlbedo;
 
-        Render::OpenGL::VertexArray _cubeVao;
-        Render::OpenGL::VertexArray _planeVao;
-        Render::OpenGL::VertexArray _lightSourceVao;
         Render::OpenGL::VertexArray _quadVao;
         Render::OpenGL::VertexArray _quad2Vao;
 
