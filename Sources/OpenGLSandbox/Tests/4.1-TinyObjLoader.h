@@ -118,7 +118,6 @@ namespace Eugenix
 			{
 				_transform.Reset();
 				_transform.Scale({ 0.1f, 0.1f, 0.1f });
-				//_program.SetUniform("model", _transform.Matrix());
 				_transformUbo.Update(Core::MakeData(&_transform.Matrix()));
 				_model.Render();
 			}
@@ -127,7 +126,6 @@ namespace Eugenix
 				_transform.Reset();
 				_transform.Translate({ 0.5f, 0.2f, 0.4f });
 				_transform.Scale({ 0.1f, 0.1f, 0.1f });
-				//_program.SetUniform("model", _transform.Matrix());
 				_transformUbo.Update(Core::MakeData(&_transform.Matrix()));
 
 				_sampler.Bind(0);
@@ -139,7 +137,6 @@ namespace Eugenix
 			{
 				_transform.Reset();
 				_transform.Scale({ 5.0f, 1.0f, 5.0f });
-				//_program.SetUniform("model", _transform.Matrix());
 				_transformUbo.Update(Core::MakeData(&_transform.Matrix()));
 
 				_sampler.Bind(0);
