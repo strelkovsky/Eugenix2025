@@ -24,68 +24,72 @@ namespace Eugenix
             return true;
         }
 
-        void initCommonGeometry()
+        void onKeyHandle(int key, int code, int action, int mode) override
         {
-            createCube();
-            createPlane();
-            createLightSource();
+            if (key == GLFW_KEY_TAB && action == GLFW_PRESS)
+            {
+                _isLineMode = !_isLineMode;
+
+                if (_isLineMode)
+                {
+                    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+                }
+                else
+                {
+                    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+                }
+            }
+
+            if (key == GLFW_KEY_F1 && action == GLFW_PRESS)
+            {
+                _lockCursor = !_lockCursor;
+                glfwSetInputMode(WindowHandle(), GLFW_CURSOR, _lockCursor ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+            }
+
+            if (action == GLFW_PRESS)
+                _keys[key] = true;
+            else if (action == GLFW_RELEASE)
+                _keys[key] = false;
         }
 
-        void createCube()
+        void onMouseHandle(double xPos, double yPos) override
         {
-            Render::OpenGL::Buffer vbo;
-            vbo.Create();
-            vbo.Storage(Core::MakeData(std::span{ cubeVertices }));
+            if (!_lockCursor)
+            {
+                _firstMouse = true;
+                return;
+            }
 
-            _cubeVao.Create();
-            _cubeVao.AttachVertices(vbo, sizeof(Render::Vertex::PosNormalUV));
-            _cubeVao.Attribute(position_attribute);
-            _cubeVao.Attribute(normal_attribute);
-            _cubeVao.Attribute(uv_attribute);
-        }
+            if (_firstMouse)
+            {
+                _lastX = xPos;
+                _lastY = yPos;
+                _firstMouse = false;
+            }
 
-        void createPlane()
-        {
-            Render::OpenGL::Buffer planeVbo;
-            planeVbo.Create();
-            planeVbo.Storage(Core::MakeData(std::span{ planeVertices }));
+            float xoffset = xPos - _lastX;
+            float yoffset = _lastY - yPos; // Обратный порядок вычитания потому что оконные Y-координаты возрастают с верху вниз 
 
-            _planeVao.Create();
-            _planeVao.AttachVertices(planeVbo, sizeof(Render::Vertex::PosNormalUV));
-            _planeVao.Attribute(position_attribute);
-            _planeVao.Attribute(normal_attribute);
-            _planeVao.Attribute(uv_attribute);
-        }
+            _lastX = xPos;
+            _lastY = yPos;
 
-        void createLightSource()
-        {
-            Render::OpenGL::Buffer vbo;
-            vbo.Create();
-            vbo.Storage(Core::MakeData(std::span{ cubeVertices }));
-
-            _lightSourceVao.Create();
-            _lightSourceVao.AttachVertices(vbo, sizeof(Render::Vertex::PosNormalUV));
-            _lightSourceVao.Attribute(position_attribute);
-            _lightSourceVao.Attribute(uv_attribute);
-        }
-
-        void initCommonShaders()
-        {
-            _defaultShader = MakeProgramFromFiles("shaders/SimpleVertex.vert", "shaders/SimplePhong.frag");
-            _lampShader = MakeProgramFromFiles("shaders/SimpleVertex.vert", "shaders/SimpleUnlit.frag");
+            _camera.ProcessMouseMovement(xoffset, yoffset);
         }
 
 		Assets::ImageLoader _imageLoader{};
 		Assets::ObjModelLoader _modelLoader{};
 
 		Camera2 _camera{ glm::vec3(0.0f, 0.0f, 4.0f) };
-        GLfloat _lastX;
-        GLfloat _lastY;
+        float _lastX;
+        float _lastY;
         bool _firstMouse{ true };
         bool _isLineMode{};
         bool _lockCursor{ true };
 
         int _selectedLightIndex;
+
+        // Common input
+        bool _keys[1024];
 
         // Common geometry
         Render::OpenGL::VertexArray _cubeVao;
@@ -95,6 +99,19 @@ namespace Eugenix
         // Common shaders
         Render::OpenGL::ShaderProgram _defaultShader;
         Render::OpenGL::ShaderProgram _lampShader;
+
+        // Common textures
+        Render::OpenGL::Texture2D _cubeDiffuseTexture;
+        Render::OpenGL::Texture2D _cubeSpecularTexture;
+        Render::OpenGL::Texture2D _metalAlbedo;
+
+        // Common samplers
+        Render::OpenGL::Sampler _defaultSampler;
+
+        // Common UBOs
+        Render::Model _model; // TODO : Transform UBO
+
+
 
         std::vector<Light> lights =
         {
@@ -159,5 +176,57 @@ namespace Eugenix
                 .quadratic = 0.032f
             },
         };
+
+        private:
+            void initCommonGeometry()
+            {
+                createCube();
+                createPlane();
+                createLightSource();
+            }
+
+            void createCube()
+            {
+                Render::OpenGL::Buffer vbo;
+                vbo.Create();
+                vbo.Storage(Core::MakeData(std::span{ cubeVertices }));
+
+                _cubeVao.Create();
+                _cubeVao.AttachVertices(vbo, sizeof(Render::Vertex::PosNormalUV));
+                _cubeVao.Attribute(position_attribute);
+                _cubeVao.Attribute(normal_attribute);
+                _cubeVao.Attribute(uv_attribute);
+            }
+
+            void createPlane()
+            {
+                Render::OpenGL::Buffer planeVbo;
+                planeVbo.Create();
+                planeVbo.Storage(Core::MakeData(std::span{ planeVertices }));
+
+                _planeVao.Create();
+                _planeVao.AttachVertices(planeVbo, sizeof(Render::Vertex::PosNormalUV));
+                _planeVao.Attribute(position_attribute);
+                _planeVao.Attribute(normal_attribute);
+                _planeVao.Attribute(uv_attribute);
+            }
+
+            void createLightSource()
+            {
+                Render::OpenGL::Buffer vbo;
+                vbo.Create();
+                vbo.Storage(Core::MakeData(std::span{ cubeVertices }));
+
+                _lightSourceVao.Create();
+                _lightSourceVao.AttachVertices(vbo, sizeof(Render::Vertex::PosNormalUV));
+                _lightSourceVao.Attribute(position_attribute);
+                _lightSourceVao.Attribute(uv_attribute);
+            }
+
+            void initCommonShaders()
+            {
+                _defaultShader = MakeProgramFromFiles("shaders/SimpleVertex.vert", "shaders/SimplePhong.frag");
+                _lampShader = MakeProgramFromFiles("shaders/SimpleVertex.vert", "shaders/SimpleUnlit.frag");
+            }
 	};
 }

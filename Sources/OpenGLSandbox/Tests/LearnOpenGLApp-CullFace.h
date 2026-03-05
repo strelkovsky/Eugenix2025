@@ -43,13 +43,13 @@ namespace Eugenix
         void onUpdate(float deltaTime) override
         {
             // Camera controls
-            if (keys[GLFW_KEY_W])
+            if (_keys[GLFW_KEY_W])
                 _camera.ProcessKeyboard(FORWARD, deltaTime);
-            if (keys[GLFW_KEY_S])
+            if (_keys[GLFW_KEY_S])
                 _camera.ProcessKeyboard(BACKWARD, deltaTime);
-            if (keys[GLFW_KEY_A])
+            if (_keys[GLFW_KEY_A])
                 _camera.ProcessKeyboard(LEFT, deltaTime);
-            if (keys[GLFW_KEY_D])
+            if (_keys[GLFW_KEY_D])
                 _camera.ProcessKeyboard(RIGHT, deltaTime);
 
             for (auto& light : lights)
@@ -267,24 +267,11 @@ namespace Eugenix
             }
         }
 
-        bool keys[1024];
         bool cull_face{ true };
 
         void onKeyHandle(int key, int code, int action, int mode) override
         {
-            if (key == GLFW_KEY_TAB && action == GLFW_PRESS)
-            {
-                _isLineMode = !_isLineMode;
-
-                if (_isLineMode)
-                {
-                    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-                }
-                else
-                {
-                    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-                }
-            }
+            LearnOpenGLAppBase::onKeyHandle(key, code, action, mode);
 
             if (key == GLFW_KEY_F2 && action == GLFW_PRESS)
             {
@@ -295,49 +282,11 @@ namespace Eugenix
                 else
                     Render::OpenGL::Pipeline::Enable(Render::PipelineFeature::CullFace);
             }
-
-            if (key == GLFW_KEY_F1 && action == GLFW_PRESS)
-            {
-                _lockCursor = !_lockCursor;
-                glfwSetInputMode(WindowHandle(), GLFW_CURSOR, _lockCursor ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
-            }
-
-            if (action == GLFW_PRESS)
-                keys[key] = true;
-            else if (action == GLFW_RELEASE)
-                keys[key] = false;
         }
 
         void onMouseHandle(double xPos, double yPos) override
         {
-            if (!_lockCursor)
-            {
-                _firstMouse = true;
-                return;
-            }
-
-
-            if (_firstMouse)
-            {
-                _lastX = xPos;
-                _lastY = yPos;
-                _firstMouse = false;
-            }
-
-            GLfloat xoffset = xPos - _lastX;
-            GLfloat yoffset = _lastY - yPos; // Обратный порядок вычитания потому что оконные Y-координаты возрастают с верху вниз 
-
-            _lastX = xPos;
-            _lastY = yPos;
-
-            _camera.ProcessMouseMovement(xoffset, yoffset);
+            LearnOpenGLAppBase::onMouseHandle(xPos, yPos);
         }
-
-    private:
-        Render::Model _model;
-
-        Render::OpenGL::Texture2D _cubeDiffuseTexture;
-        Render::OpenGL::Texture2D _cubeSpecularTexture;
-        Render::OpenGL::Texture2D _metalAlbedo;
     };
 }
