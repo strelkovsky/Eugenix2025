@@ -80,7 +80,6 @@ namespace Eugenix
 
             setupFrameBuffers();
 
-            _lampProgram = MakeProgramFromFiles("shaders/SimpleVertex.vert", "shaders/SimpleUnlit.frag");
             _screenProgram = MakeProgramFromFiles("shaders/quad.vert", "shaders/SimpleSampler.frag");
             _colorInverseProgram = MakeProgramFromFiles("shaders/quad.vert", "shaders/SimpleColorInverse.frag");
             _grayScaleProgram = MakeProgramFromFiles("shaders/quad.vert", "shaders/SimpleGrayScale.frag");
@@ -164,7 +163,7 @@ namespace Eugenix
 
             glfwSetInputMode(WindowHandle(), GLFW_CURSOR, _lockCursor ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 
-            lastX = (float)width() / 2.0f, lastY = (float)height() / 2.0f;
+            _lastX = (float)width() / 2.0f, _lastY = (float)height() / 2.0f;
 
             _model = _modelLoader.Load("Models/nanosuit/nanosuit.obj");
 
@@ -395,10 +394,10 @@ namespace Eugenix
                 Render::OpenGL::Commands::DrawVertices(Render::PrimitiveType::Triangles, 6);
             }
 
-            _lampProgram.Bind();
+            _lampShader.Bind();
 
-            _lampProgram.SetUniform("view", view);
-            _lampProgram.SetUniform("projection", projection);
+            _lampShader.SetUniform("view", view);
+            _lampShader.SetUniform("projection", projection);
 
             _lightSourceVao.Bind();
             for (unsigned int i = 0; i < lights.size(); i++)
@@ -410,8 +409,8 @@ namespace Eugenix
                     model = glm::mat4(1.0f);
                     model = glm::translate(model, light.position);
                     model = glm::scale(model, glm::vec3(0.2f)); // Make it a smaller cube
-                    _lampProgram.SetUniform("model", model);
-                    _lampProgram.SetUniform("lightColor", light.diffuse);
+                    _lampShader.SetUniform("model", model);
+                    _lampShader.SetUniform("lightColor", light.diffuse);
                     Render::OpenGL::Commands::DrawVertices(Render::PrimitiveType::Triangles, 36);
                 }
             }
@@ -484,23 +483,22 @@ namespace Eugenix
         {
             if (!_lockCursor)
             {
-                firstMouse = true;
+                _firstMouse = true;
                 return;
             }
 
-
-            if (firstMouse)
+            if (_firstMouse)
             {
-                lastX = xPos;
-                lastY = yPos;
-                firstMouse = false;
+                _lastX = xPos;
+                _lastY = yPos;
+                _firstMouse = false;
             }
 
-            GLfloat xoffset = xPos - lastX;
-            GLfloat yoffset = lastY - yPos; // Обратный порядок вычитания потому что оконные Y-координаты возрастают с верху вниз 
+            GLfloat xoffset = xPos - _lastX;
+            GLfloat yoffset = _lastY - yPos; // Обратный порядок вычитания потому что оконные Y-координаты возрастают с верху вниз 
 
-            lastX = xPos;
-            lastY = yPos;
+            _lastX = xPos;
+            _lastY = yPos;
 
             _camera.ProcessMouseMovement(xoffset, yoffset);
         }
@@ -515,18 +513,11 @@ namespace Eugenix
         Render::OpenGL::VertexArray _quadVao;
         Render::OpenGL::VertexArray _quad2Vao;
 
-        Render::OpenGL::ShaderProgram _lampProgram;
         Render::OpenGL::ShaderProgram _screenProgram;
         Render::OpenGL::ShaderProgram _colorInverseProgram;
         Render::OpenGL::ShaderProgram _grayScaleProgram;
         Render::OpenGL::ShaderProgram _kernelEffectProgram;
         Render::OpenGL::ShaderProgram _blurEffectProgram;
         Render::OpenGL::ShaderProgram _tonemapPipeline;
-
-        GLfloat lastX, lastY;
-        bool firstMouse{ true };
-
-        bool _isLineMode{};
-        bool _lockCursor{ true };
     };
 }

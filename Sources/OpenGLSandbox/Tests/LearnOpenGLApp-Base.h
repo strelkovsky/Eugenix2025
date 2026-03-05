@@ -31,11 +31,6 @@ namespace Eugenix
             createLightSource();
         }
 
-        void initCommonShaders()
-        {
-            createDefaultShader();
-        }
-
         void createCube()
         {
             Render::OpenGL::Buffer vbo;
@@ -74,15 +69,21 @@ namespace Eugenix
             _lightSourceVao.Attribute(uv_attribute);
         }
 
-        void createDefaultShader()
+        void initCommonShaders()
         {
             _defaultShader = MakeProgramFromFiles("shaders/SimpleVertex.vert", "shaders/SimplePhong.frag");
+            _lampShader = MakeProgramFromFiles("shaders/SimpleVertex.vert", "shaders/SimpleUnlit.frag");
         }
 
 		Assets::ImageLoader _imageLoader{};
 		Assets::ObjModelLoader _modelLoader{};
 
 		Camera2 _camera{ glm::vec3(0.0f, 0.0f, 4.0f) };
+        GLfloat _lastX;
+        GLfloat _lastY;
+        bool _firstMouse{ true };
+        bool _isLineMode{};
+        bool _lockCursor{ true };
 
         int _selectedLightIndex;
 
@@ -93,6 +94,7 @@ namespace Eugenix
 
         // Common shaders
         Render::OpenGL::ShaderProgram _defaultShader;
+        Render::OpenGL::ShaderProgram _lampShader;
 
         std::vector<Light> lights =
         {

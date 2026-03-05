@@ -12,8 +12,6 @@ namespace Eugenix
         {
             LearnOpenGLAppBase::onInit();
 
-            _lampProgram = MakeProgramFromFiles("shaders/SimpleVertex.vert", "shaders/SimpleUnlit.frag");
-
             auto img = _imageLoader.Load("Textures/container2.png");
             _cubeDiffuseTexture.Create();
             _cubeDiffuseTexture.Upload(img);
@@ -32,7 +30,7 @@ namespace Eugenix
 
             glfwSetInputMode(WindowHandle(), GLFW_CURSOR, _lockCursor ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 
-            lastX = (float)width() / 2.0f, lastY = (float)height() / 2.0f;
+            _lastX = (float)width() / 2.0f, _lastY = (float)height() / 2.0f;
 
             _model = _modelLoader.Load("Models/nanosuit/nanosuit.obj");
 
@@ -71,11 +69,11 @@ namespace Eugenix
             ImGui::Begin("Light Control");
 
             int lightCount = std::max(1, (int)lights.size());
-            ImGui::SliderInt("Select Light", &selectedLightIndex, 0, lightCount - 1);
+            ImGui::SliderInt("Select Light", &_selectedLightIndex, 0, lightCount - 1);
 
             static const char* light_types[] = { "Directional", "Point", "Spot" };
 
-            auto& selectedLight = lights[selectedLightIndex];
+            auto& selectedLight = lights[_selectedLightIndex];
 
             int type = static_cast<int>(selectedLight.type);
             if (ImGui::Combo("Light Type", &type, light_types, IM_ARRAYSIZE(light_types)))
@@ -244,10 +242,10 @@ namespace Eugenix
                 Render::OpenGL::Commands::DrawVertices(Render::PrimitiveType::Triangles, 6);
             }
 
-            _lampProgram.Bind();
+            _lampShader.Bind();
 
-            _lampProgram.SetUniform("view", view);
-            _lampProgram.SetUniform("projection", projection);
+            _lampShader.SetUniform("view", view);
+            _lampShader.SetUniform("projection", projection);
 
             _lightSourceVao.Bind();
             for (unsigned int i = 0; i < lights.size(); i++)
@@ -259,8 +257,8 @@ namespace Eugenix
                     model = glm::mat4(1.0f);
                     model = glm::translate(model, light.position);
                     model = glm::scale(model, glm::vec3(0.2f)); // Make it a smaller cube
-                    _lampProgram.SetUniform("model", model);
-                    _lampProgram.SetUniform("lightColor", light.diffuse);
+                    _lampShader.SetUniform("model", model);
+                    _lampShader.SetUniform("lightColor", light.diffuse);
                     Render::OpenGL::Commands::DrawVertices(Render::PrimitiveType::Triangles, 36);
                 }
             }
@@ -300,23 +298,23 @@ namespace Eugenix
         {
             if (!_lockCursor)
             {
-                firstMouse = true;
+                _firstMouse = true;
                 return;
             }
 
 
-            if (firstMouse)
+            if (_firstMouse)
             {
-                lastX = xPos;
-                lastY = yPos;
-                firstMouse = false;
+                _lastX = xPos;
+                _lastY = yPos;
+                _firstMouse = false;
             }
 
-            GLfloat xoffset = xPos - lastX;
-            GLfloat yoffset = lastY - yPos; // Обратный порядок вычитания потому что оконные Y-координаты возрастают с верху вниз 
+            GLfloat xoffset = xPos - _lastX;
+            GLfloat yoffset = _lastY - yPos; // Обратный порядок вычитания потому что оконные Y-координаты возрастают с верху вниз 
 
-            lastX = xPos;
-            lastY = yPos;
+            _lastX = xPos;
+            _lastY = yPos;
 
             _camera.ProcessMouseMovement(xoffset, yoffset);
         }
@@ -327,13 +325,5 @@ namespace Eugenix
         Render::OpenGL::Texture2D _cubeDiffuseTexture;
         Render::OpenGL::Texture2D _cubeSpecularTexture;
         Render::OpenGL::Texture2D _metalAlbedo;
-
-        Render::OpenGL::ShaderProgram _lampProgram;
-
-        GLfloat lastX, lastY;
-        bool firstMouse{ true };
-
-        bool _isLineMode{};
-        bool _lockCursor{ true };
     };
 }
