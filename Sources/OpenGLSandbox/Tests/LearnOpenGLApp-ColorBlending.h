@@ -44,28 +44,10 @@ namespace Eugenix
             _grassVao.Attribute(normal_attribute);
             _grassVao.Attribute(uv_attribute);
 
-            auto img = _imageLoader.Load("Textures/container2.png");
-            _cubeDiffuseTexture.Create();
-            _cubeDiffuseTexture.Upload(img);
-
-            img = _imageLoader.Load("Textures/container2_specular.png");
-            _cubeSpecularTexture.Create();
-            _cubeSpecularTexture.Upload(img, {.colorSpace = Render::TextureColorSpace::Linear});
-
-            img = _imageLoader.Load("Textures/metal.png");
-            _metalAlbedo.Create();
-            _metalAlbedo.Upload(img);
-
-            img = _imageLoader.Load("Textures/blending_transparent_window.png");
+            const auto img = _imageLoader.Load("Textures/blending_transparent_window.png");
             _transparentTexture.Create();
             _transparentTexture.Upload(img);
-            
-            _defaultSampler.Create();
-            _defaultSampler.Parameter(Render::TextureParam::WrapS, Render::TextureWrapping::Repeat);
-            _defaultSampler.Parameter(Render::TextureParam::WrapT, Render::TextureWrapping::Repeat);
-            _defaultSampler.Parameter(Render::TextureParam::MinFilter, Render::TextureFilter::Linear);
-            _defaultSampler.Parameter(Render::TextureParam::MagFilter, Render::TextureFilter::Linear);
-
+           
             _alphaSampler.Create();
             _alphaSampler.Parameter(Render::TextureParam::WrapS, Render::TextureWrapping::ClampToEdge);
             _alphaSampler.Parameter(Render::TextureParam::WrapT, Render::TextureWrapping::ClampToEdge);
@@ -89,29 +71,8 @@ namespace Eugenix
 
         void onUpdate(float deltaTime) override
         {
-            // Camera controls
-            if (_keys[GLFW_KEY_W])
-                _camera.ProcessKeyboard(FORWARD, deltaTime);
-            if (_keys[GLFW_KEY_S])
-                _camera.ProcessKeyboard(BACKWARD, deltaTime);
-            if (_keys[GLFW_KEY_A])
-                _camera.ProcessKeyboard(LEFT, deltaTime);
-            if (_keys[GLFW_KEY_D])
-                _camera.ProcessKeyboard(RIGHT, deltaTime);
-
-            for (auto& light : lights)
-            {
-                if (light.type == LightType::Point)
-                {
-                    light.position.x = 1.0f + sin(glfwGetTime()) * 2.0f;
-                    light.position.y = sin(glfwGetTime() / 2.0f) * 1.0f;
-                }
-                else if (light.type == LightType::Spot)
-                {
-                    light.position = _camera.Position;
-                    light.direction = _camera.Front;
-                }
-            }
+            proceedCamera(deltaTime);
+            proceedLights(deltaTime);
         }
 
         void onDebugUI() override

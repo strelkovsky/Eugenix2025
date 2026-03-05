@@ -20,6 +20,8 @@ namespace Eugenix
         {
             initCommonGeometry();
             initCommonShaders();
+            initCommonTextures();
+            initCommonSamplers();
 
             return true;
         }
@@ -76,6 +78,36 @@ namespace Eugenix
             _camera.ProcessMouseMovement(xoffset, yoffset);
         }
 
+        void proceedCamera(float deltaTime)
+        {
+            // Camera controls
+            if (_keys[GLFW_KEY_W])
+                _camera.ProcessKeyboard(FORWARD, deltaTime);
+            if (_keys[GLFW_KEY_S])
+                _camera.ProcessKeyboard(BACKWARD, deltaTime);
+            if (_keys[GLFW_KEY_A])
+                _camera.ProcessKeyboard(LEFT, deltaTime);
+            if (_keys[GLFW_KEY_D])
+                _camera.ProcessKeyboard(RIGHT, deltaTime);
+        }
+
+        void proceedLights(float deltaTime)
+        {
+            for (auto& light : lights)
+            {
+                if (light.type == LightType::Point)
+                {
+                    light.position.x = 1.0f + sin(glfwGetTime()) * 2.0f;
+                    light.position.y = sin(glfwGetTime() / 2.0f) * 1.0f;
+                }
+                else if (light.type == LightType::Spot)
+                {
+                    light.position = _camera.Position;
+                    light.direction = _camera.Front;
+                }
+            }
+        }
+
 		Assets::ImageLoader _imageLoader{};
 		Assets::ObjModelLoader _modelLoader{};
 
@@ -110,8 +142,6 @@ namespace Eugenix
 
         // Common UBOs
         Render::Model _model; // TODO : Transform UBO
-
-
 
         std::vector<Light> lights =
         {
@@ -177,56 +207,80 @@ namespace Eugenix
             },
         };
 
-        private:
-            void initCommonGeometry()
-            {
-                createCube();
-                createPlane();
-                createLightSource();
-            }
+    private:
+        void initCommonGeometry()
+        {
+            createCube();
+            createPlane();
+            createLightSource();
+        }
 
-            void createCube()
-            {
-                Render::OpenGL::Buffer vbo;
-                vbo.Create();
-                vbo.Storage(Core::MakeData(std::span{ cubeVertices }));
+        void createCube()
+        {
+            Render::OpenGL::Buffer vbo;
+            vbo.Create();
+            vbo.Storage(Core::MakeData(std::span{ cubeVertices }));
 
-                _cubeVao.Create();
-                _cubeVao.AttachVertices(vbo, sizeof(Render::Vertex::PosNormalUV));
-                _cubeVao.Attribute(position_attribute);
-                _cubeVao.Attribute(normal_attribute);
-                _cubeVao.Attribute(uv_attribute);
-            }
+            _cubeVao.Create();
+            _cubeVao.AttachVertices(vbo, sizeof(Render::Vertex::PosNormalUV));
+            _cubeVao.Attribute(position_attribute);
+            _cubeVao.Attribute(normal_attribute);
+            _cubeVao.Attribute(uv_attribute);
+        }
 
-            void createPlane()
-            {
-                Render::OpenGL::Buffer planeVbo;
-                planeVbo.Create();
-                planeVbo.Storage(Core::MakeData(std::span{ planeVertices }));
+        void createPlane()
+        {
+            Render::OpenGL::Buffer planeVbo;
+            planeVbo.Create();
+            planeVbo.Storage(Core::MakeData(std::span{ planeVertices }));
 
-                _planeVao.Create();
-                _planeVao.AttachVertices(planeVbo, sizeof(Render::Vertex::PosNormalUV));
-                _planeVao.Attribute(position_attribute);
-                _planeVao.Attribute(normal_attribute);
-                _planeVao.Attribute(uv_attribute);
-            }
+            _planeVao.Create();
+            _planeVao.AttachVertices(planeVbo, sizeof(Render::Vertex::PosNormalUV));
+            _planeVao.Attribute(position_attribute);
+            _planeVao.Attribute(normal_attribute);
+            _planeVao.Attribute(uv_attribute);
+        }
 
-            void createLightSource()
-            {
-                Render::OpenGL::Buffer vbo;
-                vbo.Create();
-                vbo.Storage(Core::MakeData(std::span{ cubeVertices }));
+        void createLightSource()
+        {
+            Render::OpenGL::Buffer vbo;
+            vbo.Create();
+            vbo.Storage(Core::MakeData(std::span{ cubeVertices }));
 
-                _lightSourceVao.Create();
-                _lightSourceVao.AttachVertices(vbo, sizeof(Render::Vertex::PosNormalUV));
-                _lightSourceVao.Attribute(position_attribute);
-                _lightSourceVao.Attribute(uv_attribute);
-            }
+            _lightSourceVao.Create();
+            _lightSourceVao.AttachVertices(vbo, sizeof(Render::Vertex::PosNormalUV));
+            _lightSourceVao.Attribute(position_attribute);
+            _lightSourceVao.Attribute(uv_attribute);
+        }
 
-            void initCommonShaders()
-            {
-                _defaultShader = MakeProgramFromFiles("shaders/SimpleVertex.vert", "shaders/SimplePhong.frag");
-                _lampShader = MakeProgramFromFiles("shaders/SimpleVertex.vert", "shaders/SimpleUnlit.frag");
-            }
+        void initCommonShaders()
+        {
+            _defaultShader = MakeProgramFromFiles("shaders/SimpleVertex.vert", "shaders/SimplePhong.frag");
+            _lampShader = MakeProgramFromFiles("shaders/SimpleVertex.vert", "shaders/SimpleUnlit.frag");
+        }
+
+        void initCommonTextures()
+        {
+            auto img = _imageLoader.Load("Textures/container2.png");
+            _cubeDiffuseTexture.Create();
+            _cubeDiffuseTexture.Upload(img);
+
+            img = _imageLoader.Load("Textures/container2_specular.png");
+            _cubeSpecularTexture.Create();
+            _cubeSpecularTexture.Upload(img, { .colorSpace = Render::TextureColorSpace::Linear });
+
+            img = _imageLoader.Load("Textures/metal.png");
+            _metalAlbedo.Create();
+            _metalAlbedo.Upload(img);
+        }
+
+        void initCommonSamplers()
+        {
+            _defaultSampler.Create();
+            _defaultSampler.Parameter(Render::TextureParam::WrapS, Render::TextureWrapping::Repeat);
+            _defaultSampler.Parameter(Render::TextureParam::WrapT, Render::TextureWrapping::Repeat);
+            _defaultSampler.Parameter(Render::TextureParam::MinFilter, Render::TextureFilter::Linear);
+            _defaultSampler.Parameter(Render::TextureParam::MagFilter, Render::TextureFilter::Linear);
+        }
 	};
 }

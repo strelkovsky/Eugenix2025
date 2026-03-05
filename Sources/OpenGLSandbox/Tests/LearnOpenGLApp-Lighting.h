@@ -12,18 +12,6 @@ namespace Eugenix
         {
             LearnOpenGLAppBase::onInit();
 
-            auto img = _imageLoader.Load("Textures/container2.png");
-            _cubeDiffuseTexture.Create();
-            _cubeDiffuseTexture.Upload(img);
-
-            img = _imageLoader.Load("Textures/container2_specular.png");
-            _cubeSpecularTexture.Create();
-            _cubeSpecularTexture.Upload(img);
-
-            img = _imageLoader.Load("Textures/metal.png");
-            _metalAlbedo.Create();
-            _metalAlbedo.Upload(img);
-
             Render::OpenGL::Commands::Clear(0.1f, 0.1f, 0.1f);
 
             Render::OpenGL::Pipeline::Enable(Render::PipelineFeature::DepthTest);
@@ -39,29 +27,8 @@ namespace Eugenix
 
         void onUpdate(float deltaTime) override
         {
-            // Camera controls
-            if (_keys[GLFW_KEY_W])
-                _camera.ProcessKeyboard(FORWARD, deltaTime);
-            if (_keys[GLFW_KEY_S])
-                _camera.ProcessKeyboard(BACKWARD, deltaTime);
-            if (_keys[GLFW_KEY_A])
-                _camera.ProcessKeyboard(LEFT, deltaTime);
-            if (_keys[GLFW_KEY_D])
-                _camera.ProcessKeyboard(RIGHT, deltaTime);
-
-            for (auto& light : lights)
-            {
-                if (light.type == LightType::Point)
-                {
-                    light.position.x = 1.0f + sin(glfwGetTime()) * 2.0f;
-                    light.position.y = sin(glfwGetTime() / 2.0f) * 1.0f;
-                }
-                else if (light.type == LightType::Spot)
-                {
-                    light.position = _camera.Position;
-                    light.direction = _camera.Front;
-                }
-            }
+            proceedCamera(deltaTime);
+            proceedLights(deltaTime);
         }
 
         void onDebugUI() override
