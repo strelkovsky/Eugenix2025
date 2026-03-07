@@ -64,18 +64,6 @@ namespace Eugenix
 
             _skyboxProgram = MakeProgramFromFiles("shaders/SimpleSkybox.vert", "shaders/SimpleSkybox.frag");
 
-            const std::vector<Render::Vertex::Sprite> quadVertices =
-            { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
-                // positions   // texCoords
-                {{-1.0f,  1.0f},  {0.0f, 1.0f}},
-                {{-1.0f, -1.0f},  {0.0f, 0.0f}},
-                {{ 1.0f, -1.0f},  {1.0f, 0.0f}},
-
-                {{-1.0f,  1.0f},  {0.0f, 1.0f}},
-                {{ 1.0f, -1.0f},  {1.0f, 0.0f}},
-                {{ 1.0f,  1.0f},  {1.0f, 1.0f}}
-            };
-
             const std::vector<Render::Vertex::Pos> skyboxVertices =
             {
                 // positions          
@@ -121,16 +109,6 @@ namespace Eugenix
                 {{-1.0f, -1.0f,  1.0f}},
                 {{ 1.0f, -1.0f,  1.0f}}
             };
-
-            // screen quad VAO
-            Render::OpenGL::Buffer quadVbo;
-            quadVbo.Create();
-            quadVbo.Storage(Core::MakeData(std::span{ quadVertices }));
-
-            _quadVao.Create();
-            _quadVao.AttachVertices(quadVbo, sizeof(Render::Vertex::Sprite));
-            _quadVao.Attribute({ 0, 2, Render::DataType::Float, false, 0 });
-            _quadVao.Attribute({ 1, 2, Render::DataType::Float, false, offsetof(Render::Vertex::Sprite, uv) });
 
             // Skybox
             Render::OpenGL::Buffer skyboxVbo;
@@ -342,7 +320,6 @@ namespace Eugenix
         }
 
     private:
-        Render::OpenGL::VertexArray _quadVao;
         Render::OpenGL::VertexArray _skyboxVao;
 
         Render::OpenGL::ShaderProgram _skyboxProgram;
