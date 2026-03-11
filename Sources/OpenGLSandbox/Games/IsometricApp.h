@@ -90,7 +90,7 @@ namespace Eugenix
             _map.GenerateCorners();
 
             Render::OpenGL::Pipeline::Enable(Render::PipelineFeature::Blend);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            Render::OpenGL::Pipeline::Blend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
             Render::OpenGL::Commands::Clear(0.5f, 0.5f, 0.5f);
 

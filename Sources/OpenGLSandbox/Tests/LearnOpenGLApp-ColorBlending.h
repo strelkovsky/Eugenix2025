@@ -58,7 +58,7 @@ namespace Eugenix
 
             Render::OpenGL::Pipeline::Enable(Render::PipelineFeature::DepthTest);
             Render::OpenGL::Pipeline::Enable(Render::PipelineFeature::Blend);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            Render::OpenGL::Pipeline::Blend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
             glfwSetInputMode(WindowHandle(), GLFW_CURSOR, _lockCursor ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 
