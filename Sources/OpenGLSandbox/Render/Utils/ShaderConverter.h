@@ -4,7 +4,7 @@
 
 namespace fs = std::filesystem;
 
-namespace Eugenix
+namespace Eugenix::Render
 {
 	class ShaderConverter
 	{
@@ -47,4 +47,4 @@ namespace Eugenix
 			     throw std::runtime_error(std::format("glslangvalidator failed (rc={}): {}", rc, cmd));
 		}
 	};
-} // namespace Eugenix
+} // namespace Eugenix::Render
