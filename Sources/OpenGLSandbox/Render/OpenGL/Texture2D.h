@@ -84,7 +84,6 @@ namespace Eugenix::Render::OpenGL
 		void Storage(int width, int height, int channels, const TextureDesc& desc)
 		{
 			const bool srgb = (desc.colorSpace == TextureColorSpace::SRGB);
-			printf("is sRGB - %s\n", srgb ? "yes" : "no");
 			auto [internalFormat, _] = ChooseTextureFormat(channels, srgb);
 
 			uint32_t levels = desc.mipLevels ? desc.mipLevels
