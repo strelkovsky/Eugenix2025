@@ -5,6 +5,7 @@
 #include "SandboxApp.h"
 
 #include "Render/OpenGL/EugenixGL.h"
+#include "Render/OpenGL/Pipeline.h"
 
 #include "Engine/CompileConfig.h"
 #include "Engine/Core/Log.h"
@@ -184,6 +185,12 @@ namespace Eugenix
 				if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 				{
 					glfwSetWindowShouldClose(window, true);
+				}
+
+				if (key == GLFW_KEY_TAB && action == GLFW_PRESS)
+				{
+					//Render::OpenGL::Pipeline::EnableSolidMode();
+					//Render::OpenGL::Pipeline::EnableLinesMode();
 				}
 
 				auto* self = static_cast<SandboxApp*>(glfwGetWindowUserPointer(window));
