@@ -292,7 +292,11 @@ namespace Eugenix
 
         void initCommonUBOs()
         {
-
+            // TODO!!!
+            // Instead of 3 call glBindBufferBase
+            //const std::vector ubo_handles{ transform_ubo.handle(), camera_ubo.handle(), material_ubo.handle() };
+            //glBindBuffersBase(GL_UNIFORM_BUFFER, core::buffer::transform, core::buffer::count, ubo_handles.data());
+            //opengl::Buffer::bind(ubo_handles);
         }
 	};
 }
