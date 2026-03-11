@@ -21,19 +21,17 @@ namespace Eugenix::Render::OpenGL
 			glDeleteSamplers(1, & _handle);
 		}
 
-		// TODO : Sampler
 		void Parameter(TextureParam param, TextureWrapping wrapping)
 		{
 			glSamplerParameteri(_handle, to_opengl_type(param), to_opengl_type(wrapping));
 		}
 
-		// TODO : Sampler
 		void Parameter(TextureParam param, TextureFilter filter)
 		{
 			glSamplerParameteri(_handle, to_opengl_type(param), to_opengl_type(filter));
 		}
 
-		void Bind(uint32_t location)
+		void Bind(uint32_t location) const
 		{
 			glBindSampler(location, _handle);
 		}
