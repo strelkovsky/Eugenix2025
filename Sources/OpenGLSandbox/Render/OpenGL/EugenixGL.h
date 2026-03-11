@@ -8,7 +8,7 @@
 
 namespace Eugenix::Render::OpenGL
 {
-	bool Init()
+	inline bool Init()
 	{
 #ifdef EUGENIX_OPENGL_GLAD
 		return gladLoadGL();
