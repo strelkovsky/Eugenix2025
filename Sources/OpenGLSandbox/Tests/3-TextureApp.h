@@ -120,7 +120,8 @@ namespace Eugenix
 			_brickTexture.Create();
 			_brickTexture.Upload(brickData);
 
-			const auto dirtData = _imageLoader.Load("Textures/dirt.png");
+			//const auto dirtData = _imageLoader.Load("Textures/dirt.png");
+			const auto dirtData = Assets::MakeEmptyImage(100, 100, 3);
 			_dirtTexture.Create();
 			_dirtTexture.Upload(dirtData);
 		}
