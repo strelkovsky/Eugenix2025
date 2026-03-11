@@ -240,5 +240,8 @@ namespace Eugenix
         {
             LearnOpenGLAppBase::onMouseHandle(xPos, yPos);
         }
+
+        private:
+            Render::Model _model;
     };
 }

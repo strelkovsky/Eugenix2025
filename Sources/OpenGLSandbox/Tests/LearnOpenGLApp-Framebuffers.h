@@ -437,5 +437,7 @@ namespace Eugenix
         Render::OpenGL::ShaderProgram _kernelEffectProgram;
         Render::OpenGL::ShaderProgram _blurEffectProgram;
         Render::OpenGL::ShaderProgram _tonemapPipeline;
+
+        Render::Model _model;
     };
 }

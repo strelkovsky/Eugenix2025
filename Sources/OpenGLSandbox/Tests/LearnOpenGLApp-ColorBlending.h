@@ -323,5 +323,7 @@ namespace Eugenix
         Render::OpenGL::Sampler _alphaSampler;
 
         Render::OpenGL::VertexArray _grassVao;
+
+        Render::Model _model;
     };
 }

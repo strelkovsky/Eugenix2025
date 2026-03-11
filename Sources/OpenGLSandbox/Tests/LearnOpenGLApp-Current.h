@@ -346,5 +346,7 @@ namespace Eugenix
         Render::OpenGL::VertexArray _skyboxVao;
 
         Render::OpenGL::ShaderProgram _skyboxProgram;
+
+        Render::Model _model;
     };
 }

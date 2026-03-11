@@ -22,6 +22,7 @@ namespace Eugenix
             initCommonShaders();
             initCommonTextures();
             initCommonSamplers();
+            initCommonUBOs();
 
             return true;
         }
@@ -141,7 +142,13 @@ namespace Eugenix
         Render::OpenGL::Sampler _defaultSampler;
 
         // Common UBOs
-        Render::Model _model; // TODO : Transform UBO
+        Render::OpenGL::Buffer _cameraUbo{};
+        Render::OpenGL::Buffer _transformUbo{};
+        Render::OpenGL::Buffer _materialUbo{};
+
+        Render::Data::Camera _cameraData{};
+        Math::Transform _transform{};
+        glm::vec4 _color{ 1.0f };
 
         std::vector<Light> lights =
         {
@@ -281,6 +288,11 @@ namespace Eugenix
             _defaultSampler.Parameter(Render::TextureParam::WrapT, Render::TextureWrapping::Repeat);
             _defaultSampler.Parameter(Render::TextureParam::MinFilter, Render::TextureFilter::Linear);
             _defaultSampler.Parameter(Render::TextureParam::MagFilter, Render::TextureFilter::Linear);
+        }
+
+        void initCommonUBOs()
+        {
+
         }
 	};
 }
