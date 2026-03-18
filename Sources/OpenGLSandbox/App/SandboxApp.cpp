@@ -169,6 +169,8 @@ namespace Eugenix
 			return false;
 		}
 
+		glfwSetInputMode(_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
 		glfwSetWindowUserPointer(_window, this);
 
 		for (size_t i = 0; i < 1024; i++)

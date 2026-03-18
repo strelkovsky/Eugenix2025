@@ -105,6 +105,7 @@ namespace Eugenix::Render::OpenGL
 		switch (filter)
 		{
 		case TextureFilter::Linear: return GL_LINEAR;
+		case TextureFilter::MipMapLinear: return GL_LINEAR_MIPMAP_LINEAR;
 		case TextureFilter::Nearest: return GL_NEAREST;
 		}
 		assert(false && "Invalid TextureFilter");

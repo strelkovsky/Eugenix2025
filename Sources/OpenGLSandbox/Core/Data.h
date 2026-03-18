@@ -17,6 +17,12 @@ namespace Eugenix::Core
 		return { ptr, sizeof(type) };
 	}
 
+	template <typename T, std::size_t N>
+	static Data MakeData(const T(&arr)[N])
+	{
+		return { arr, N * sizeof(T) };
+	}
+
 	template <class T, std::size_t N>
 	inline Data MakeData(std::span<const T, N> s) 
 	{

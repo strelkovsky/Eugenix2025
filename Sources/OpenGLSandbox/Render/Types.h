@@ -49,6 +49,7 @@ namespace Eugenix::Render
 	enum struct TextureFilter
 	{
 		Linear,
+		MipMapLinear,
 		Nearest
 	};
 
