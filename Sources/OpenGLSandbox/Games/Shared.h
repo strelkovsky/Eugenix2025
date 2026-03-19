@@ -3,9 +3,7 @@
 #include <cstdint>
 #include <numbers>
 
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-#include <assimp/Importer.hpp>
+#include "Assets/AssimpModelLoader.h"
 
 namespace core::primitive
 {

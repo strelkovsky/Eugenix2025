@@ -4,10 +4,6 @@
 
 #include <btBulletCollisionCommon.h>
 
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-#include <assimp/Importer.hpp>
-
 #include "Shared.h"
 
 // Engine headers
