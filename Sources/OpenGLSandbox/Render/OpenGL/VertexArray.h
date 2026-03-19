@@ -25,22 +25,29 @@ namespace Eugenix
 				glDeleteVertexArrays(1, &_handle);
 			}
 
-			void AttachVertices(const Buffer& buffer, GLint stride)
+			void AttachVertices(uint32_t bindigSlot, const Buffer& buffer, GLint stride)
 			{
-				//assert(bufferHandle > 0);
-				glVertexArrayVertexBuffer(_handle, 0, buffer.NativeHandle(), 0, stride);
+				assert(buffer.NativeHandle() > 0);
+				glVertexArrayVertexBuffer(_handle, bindigSlot, buffer.NativeHandle(), 0, stride);
 			}
 
 			void AttachIndices(const Buffer& buffer)
 			{
-				//assert(bufferHandle > 0);
+				assert(buffer.NativeHandle() > 0);
 				glVertexArrayElementBuffer(_handle, buffer.NativeHandle());
 			}
 
 			void Attribute(const Attribute& attribute)
 			{
-				glVertexArrayAttribFormat(_handle, attribute.index, attribute.size, to_opengl_type(attribute.type), attribute.normalized ? GL_TRUE : GL_FALSE, attribute.offset);
-				glVertexArrayAttribBinding(_handle, attribute.index, 0);
+				glVertexArrayAttribFormat(
+					_handle, 
+					attribute.index, 
+					attribute.size, 
+					to_opengl_type(attribute.type), 
+					attribute.normalized ? GL_TRUE : GL_FALSE, 
+					attribute.offset);
+
+				glVertexArrayAttribBinding(_handle, attribute.index, attribute.binding);
 				glEnableVertexArrayAttrib(_handle, attribute.index);
 			}
 

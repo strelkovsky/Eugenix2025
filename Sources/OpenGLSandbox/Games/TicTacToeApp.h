@@ -100,7 +100,7 @@ public:
         constexpr Eugenix::Render::Attribute position_attr{ 0, 3, Eugenix::Render::DataType::Float, GL_FALSE, 0 };
 
         _vao.Create();
-        _vao.AttachVertices(_vbo, sizeof(float) * 3);
+        _vao.AttachVertices(0, _vbo, sizeof(float) * 3);
         _vao.Attribute(position_attr);
     }
 
@@ -193,7 +193,7 @@ private:
 
         _vao.Destroy();
         _vao.Create();
-        _vao.AttachVertices(_vbo, sizeof(float) * 3);
+        _vao.AttachVertices(0, _vbo, sizeof(float) * 3);
         _vao.Attribute(position_attr);
     }
 
@@ -323,7 +323,7 @@ namespace Eugenix
             oEbo.Storage(Core::MakeData(o_geometry.elements));
 
             _oVao.Create();
-            _oVao.AttachVertices(oVbo, sizeof(glm::vec3));
+            _oVao.AttachVertices(0, oVbo, sizeof(glm::vec3));
             _oVao.AttachIndices(oEbo);
             _oVao.Attribute(position_attribute);
 
@@ -346,7 +346,7 @@ namespace Eugenix
             xEbo.Storage(Core::MakeData(x_geometry.elements));
 
             _xVao.Create();
-            _xVao.AttachVertices(xVbo, sizeof(glm::vec3));
+            _xVao.AttachVertices(0, xVbo, sizeof(glm::vec3));
             _xVao.AttachIndices(xEbo);
             _xVao.Attribute(position_attribute);
 
@@ -374,7 +374,7 @@ namespace Eugenix
             gridEbo.Storage(Core::MakeData(grid_geometry.elements));
 
             _gridVao.Create();
-            _gridVao.AttachVertices(gridVbo, sizeof(glm::vec3));
+            _gridVao.AttachVertices(0, gridVbo, sizeof(glm::vec3));
             _gridVao.AttachIndices(gridEbo);
             _gridVao.Attribute(position_attribute);
 

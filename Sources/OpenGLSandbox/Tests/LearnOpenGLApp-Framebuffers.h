@@ -117,7 +117,7 @@ namespace Eugenix
             quadVbo.Storage(Core::MakeData(std::span{ quadVertices }));
 
             _quadVao.Create();
-            _quadVao.AttachVertices(quadVbo, sizeof(Render::Vertex::Sprite));
+            _quadVao.AttachVertices(0, quadVbo, sizeof(Render::Vertex::Sprite));
             _quadVao.Attribute({ 0, 2, Render::DataType::Float, false, 0 });
             _quadVao.Attribute({ 1, 2, Render::DataType::Float, false, offsetof(Render::Vertex::Sprite, uv) });
 
@@ -127,7 +127,7 @@ namespace Eugenix
             quad2Vbo.Storage(Core::MakeData(std::span{ quadVertices2 }));
 
             _quad2Vao.Create();
-            _quad2Vao.AttachVertices(quad2Vbo, sizeof(Render::Vertex::Sprite));
+            _quad2Vao.AttachVertices(0, quad2Vbo, sizeof(Render::Vertex::Sprite));
             _quad2Vao.Attribute({ 0, 2, Render::DataType::Float, false, 0 });
             _quad2Vao.Attribute({ 1, 2, Render::DataType::Float, false, offsetof(Render::Vertex::Sprite, uv) });
 

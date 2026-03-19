@@ -68,7 +68,7 @@ namespace Eugenix
             constexpr Eugenix::Render::Attribute texcoord_attribute{ 1, 2, Eugenix::Render::DataType::Float, GL_FALSE, offsetof(TileVertex,uv) };
 
             _tileVao.Create();
-            _tileVao.AttachVertices(_tileVbo, sizeof(glm::vec2) + sizeof(glm::vec2));
+            _tileVao.AttachVertices(0, _tileVbo, sizeof(glm::vec2) + sizeof(glm::vec2));
             _tileVao.AttachIndices(_tileEbo);
             _tileVao.Attribute(position_attribute);
             _tileVao.Attribute(texcoord_attribute);

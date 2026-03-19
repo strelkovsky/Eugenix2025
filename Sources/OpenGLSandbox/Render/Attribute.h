@@ -13,5 +13,6 @@ namespace Eugenix::Render
 		DataType type{};
 		bool normalized;
 		uint32_t offset{};
+		uint32_t binding{ 0 };
 	};
 } // namespace Eugenix::Render

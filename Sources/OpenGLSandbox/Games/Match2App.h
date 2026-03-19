@@ -108,7 +108,7 @@ namespace Eugenix
 			constexpr Render::Attribute position_attribute{ 0, 3, Render::DataType::Float, false, 0 };
 
 			_cardVao.Create();
-			_cardVao.AttachVertices(_cardVbo, sizeof(glm::vec3));
+			_cardVao.AttachVertices(0, _cardVbo, sizeof(glm::vec3));
 			_cardVao.AttachIndices(_cardEbo);
 			_cardVao.Attribute(position_attribute);
 

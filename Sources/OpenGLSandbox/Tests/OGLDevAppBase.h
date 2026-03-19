@@ -157,7 +157,7 @@ namespace Eugenix
             _ibo.Storage(Core::MakeData(indices));
 
             _vao.Create();
-            _vao.AttachVertices(_vbo, sizeof(Vertex));
+            _vao.AttachVertices(0, _vbo, sizeof(Vertex));
             _vao.AttachIndices(_ibo);
             _vao.Attribute({ 0, 3, Render::DataType::Float, false, 0 });
             _vao.Attribute({ 1, 2, Render::DataType::Float, false, sizeof(glm::vec3) });

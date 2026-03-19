@@ -39,7 +39,7 @@ namespace Eugenix
             grassVbo.Storage(Core::MakeData(std::span{ grassVertices }));
 
             _grassVao.Create();
-            _grassVao.AttachVertices(grassVbo, sizeof(Render::Vertex::PosNormalUV));
+            _grassVao.AttachVertices(0, grassVbo, sizeof(Render::Vertex::PosNormalUV));
             _grassVao.Attribute(position_attribute);
             _grassVao.Attribute(normal_attribute);
             _grassVao.Attribute(uv_attribute);

@@ -92,7 +92,7 @@ namespace Eugenix
 			_triangleVbo.Storage(Core::MakeData(&triangle_vertices), GL_DYNAMIC_STORAGE_BIT);
 
 			_triangleVao.Create();
-			_triangleVao.AttachVertices(_triangleVbo, sizeof(float) * 6);
+			_triangleVao.AttachVertices(0, _triangleVbo, sizeof(float) * 6);
 
 			for (const auto& attrib : Render::Vertex::PosColor::layout)
 			{

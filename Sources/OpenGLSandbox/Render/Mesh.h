@@ -22,7 +22,7 @@ namespace Eugenix::Render
 			_vbo.Storage(Eugenix::Core::MakeData(verts));
 
 			_vao.Create();
-			_vao.AttachVertices(_vbo, TVertex::stride);
+			_vao.AttachVertices(0, _vbo, TVertex::stride);
 
 			for (auto& a : TVertex::layout)
 			{

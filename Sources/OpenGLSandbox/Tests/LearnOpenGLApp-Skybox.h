@@ -116,7 +116,7 @@ namespace Eugenix
             skyboxVbo.Storage(Core::MakeData(std::span{ skyboxVertices }));
 
             _skyboxVao.Create();
-            _skyboxVao.AttachVertices(skyboxVbo, sizeof(Render::Vertex::Pos));
+            _skyboxVao.AttachVertices(0, skyboxVbo, sizeof(Render::Vertex::Pos));
             _skyboxVao.Attribute({ 0, 3, Render::DataType::Float, false, 0 });
 
             Render::OpenGL::Commands::Clear(0.1f, 0.1f, 0.1f);

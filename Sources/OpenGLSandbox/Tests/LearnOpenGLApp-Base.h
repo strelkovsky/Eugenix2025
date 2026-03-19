@@ -229,7 +229,7 @@ namespace Eugenix
             vbo.Storage(Core::MakeData(std::span{ cubeVertices }));
 
             _cubeVao.Create();
-            _cubeVao.AttachVertices(vbo, sizeof(Render::Vertex::PosNormalUV));
+            _cubeVao.AttachVertices(0, vbo, sizeof(Render::Vertex::PosNormalUV));
             _cubeVao.Attribute(position_attribute);
             _cubeVao.Attribute(normal_attribute);
             _cubeVao.Attribute(uv_attribute);
@@ -242,7 +242,7 @@ namespace Eugenix
             planeVbo.Storage(Core::MakeData(std::span{ planeVertices }));
 
             _planeVao.Create();
-            _planeVao.AttachVertices(planeVbo, sizeof(Render::Vertex::PosNormalUV));
+            _planeVao.AttachVertices(0, planeVbo, sizeof(Render::Vertex::PosNormalUV));
             _planeVao.Attribute(position_attribute);
             _planeVao.Attribute(normal_attribute);
             _planeVao.Attribute(uv_attribute);
@@ -255,7 +255,7 @@ namespace Eugenix
             vbo.Storage(Core::MakeData(std::span{ cubeVertices }));
 
             _lightSourceVao.Create();
-            _lightSourceVao.AttachVertices(vbo, sizeof(Render::Vertex::PosNormalUV));
+            _lightSourceVao.AttachVertices(0, vbo, sizeof(Render::Vertex::PosNormalUV));
             _lightSourceVao.Attribute(position_attribute);
             _lightSourceVao.Attribute(uv_attribute);
         }

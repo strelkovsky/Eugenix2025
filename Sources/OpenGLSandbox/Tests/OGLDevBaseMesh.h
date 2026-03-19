@@ -34,6 +34,7 @@
 
 #include "OGLDevMath.h"
 
+#include "Assets/ImageLoader.h"
 #include "Render/OpenGL/EugenixGL.h"
 #include "Render/OpenGL/Texture2D.h"
 
@@ -74,15 +75,14 @@ public:
 
     bool LoadMesh(const std::string& Filename)
     {
-        // Release the previously loaded mesh (if it exists)
         Clear();
 
-        // Create the VAO
-        glGenVertexArrays(1, &m_VAO);
-        glBindVertexArray(m_VAO);
+        _vao.Create();
 
-        // Create the buffers for the vertices attributes
-        glGenBuffers(ARRAY_SIZE_IN_ELEMENTS(m_Buffers), m_Buffers);
+        for (int i = 0; i < ARRAY_SIZE_IN_ELEMENTS(_buffers); i++)
+        {
+            _buffers[i].Create();
+        }
 
         bool Ret = false;
         Assimp::Importer Importer;
@@ -106,16 +106,19 @@ public:
 
     void Render()
     {
-        glBindVertexArray(m_VAO);
+        _vao.Bind();
 
-        for (unsigned int i = 0; i < m_Meshes.size(); i++) {
+        _sampler.Bind(0);
+
+        for (unsigned int i = 0; i < m_Meshes.size(); i++) 
+        {
             unsigned int MaterialIndex = m_Meshes[i].MaterialIndex;
 
             assert(MaterialIndex < m_Textures.size());
 
-            if (m_Textures[MaterialIndex]) 
+            if (m_Textures[MaterialIndex].NativeHandle() != 0) 
             {
-                m_Textures[MaterialIndex]->Bind(COLOR_TEXTURE_UNIT);
+                m_Textures[MaterialIndex].Bind(0);
             }
 
             glDrawElementsBaseVertex(GL_TRIANGLES,
@@ -124,42 +127,39 @@ public:
                 (void*)(sizeof(unsigned int) * m_Meshes[i].BaseIndex),
                 m_Meshes[i].BaseVertex);
         }
-
-        // Make sure the VAO is not changed from the outside
-        glBindVertexArray(0);
     }
 
     void Render(unsigned int NumInstances, const glm::mat4* WVPMats, const glm::mat4* WorldMats)
     {
-        glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[WVP_MAT_VB]);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4) * NumInstances, WVPMats, GL_DYNAMIC_DRAW);
+        //glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[WVP_MAT_VB]);
+        //glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4) * NumInstances, WVPMats, GL_DYNAMIC_DRAW);
 
-        glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[WORLD_MAT_VB]);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4) * NumInstances, WorldMats, GL_DYNAMIC_DRAW);
+        //glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[WORLD_MAT_VB]);
+        //glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4) * NumInstances, WorldMats, GL_DYNAMIC_DRAW);
 
-        glBindVertexArray(m_VAO);
+        //glBindVertexArray(m_VAO);
 
-        for (unsigned int i = 0; i < m_Meshes.size(); i++) 
-        {
-            const unsigned int MaterialIndex = m_Meshes[i].MaterialIndex;
+        //for (unsigned int i = 0; i < m_Meshes.size(); i++) 
+        //{
+        //    const unsigned int MaterialIndex = m_Meshes[i].MaterialIndex;
 
-            assert(MaterialIndex < m_Textures.size());
+        //    assert(MaterialIndex < m_Textures.size());
 
-            if (m_Textures[MaterialIndex]) 
-            {
-                m_Textures[MaterialIndex]->Bind(GL_TEXTURE0);
-            }
+        //    if (m_Textures[MaterialIndex].NativeHandle() > 0) 
+        //    {
+        //        m_Textures[MaterialIndex].Bind(GL_TEXTURE0);
+        //    }
 
-            glDrawElementsInstancedBaseVertex(GL_TRIANGLES,
-                m_Meshes[i].NumIndices,
-                GL_UNSIGNED_INT,
-                (void*)(sizeof(unsigned int) * m_Meshes[i].BaseIndex),
-                NumInstances,
-                m_Meshes[i].BaseVertex);
-        }
+        //    glDrawElementsInstancedBaseVertex(GL_TRIANGLES,
+        //        m_Meshes[i].NumIndices,
+        //        GL_UNSIGNED_INT,
+        //        (void*)(sizeof(unsigned int) * m_Meshes[i].BaseIndex),
+        //        NumInstances,
+        //        m_Meshes[i].BaseVertex);
+        //}
 
-        // Make sure the VAO is not changed from the outside
-        glBindVertexArray(0);
+        //// Make sure the VAO is not changed from the outside
+        //glBindVertexArray(0);
     }
 
     WorldTransform& GetWorldTransform() { return m_worldTransform; }
@@ -169,18 +169,17 @@ private:
     {
         for (unsigned int i = 0; i < m_Textures.size(); i++) 
         {
-            SAFE_DELETE(m_Textures[i]);
+            m_Textures[i].Destroy();
         }
 
-        if (m_Buffers[0] != 0) 
+        for (int i = 0; i < ARRAY_SIZE_IN_ELEMENTS(_buffers); i++)
         {
-            glDeleteBuffers(ARRAY_SIZE_IN_ELEMENTS(m_Buffers), m_Buffers);
+            _buffers[i].Destroy();
         }
 
-        if (m_VAO != 0) 
+        if (_vao.NativeHandle() != 0)
         {
-            glDeleteVertexArrays(1, &m_VAO);
-            m_VAO = 0;
+            _vao.Destroy();
         }
     }
 
@@ -288,12 +287,14 @@ private:
         bool Ret = true;
 
         // Initialize the materials
-        for (unsigned int i = 0; i < pScene->mNumMaterials; i++) {
+        for (unsigned int i = 0; i < pScene->mNumMaterials; i++) 
+        {
             const aiMaterial* pMaterial = pScene->mMaterials[i];
 
-            m_Textures[i] = NULL;
+            m_Textures[i].Create();
 
-            if (pMaterial->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
+            if (pMaterial->GetTextureCount(aiTextureType_DIFFUSE) > 0) 
+            {
                 aiString Path;
 
                 if (pMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &Path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS) 
@@ -307,43 +308,50 @@ private:
 
                     std::string FullPath = Dir + "/" + p;
 
-                    /*m_Textures[i] = new Texture(GL_TEXTURE_2D, FullPath.c_str());
+                    printf("full path - %s\n", FullPath.c_str());
 
-                    if (!m_Textures[i]->Load()) {
+                    auto imgData = _imageLoader.Load(FullPath);
+
+                    m_Textures[i].Upload(imgData);
+
+                    if (!imgData.pixels.get())
+                    {
                         printf("Error loading texture '%s'\n", FullPath.c_str());
-                        delete m_Textures[i];
-                        m_Textures[i] = NULL;
+                        m_Textures[i].Destroy();
                         Ret = false;
                     }
-                    else {
+                    else 
+                    {
                         printf("Loaded texture '%s'\n", FullPath.c_str());
-                    }*/
+                    }
                 }
             }
         }
+
+        _sampler.Create();
+        _sampler.Parameter(Eugenix::Render::TextureParam::MinFilter, Eugenix::Render::TextureFilter::Linear);
+        _sampler.Parameter(Eugenix::Render::TextureParam::MagFilter, Eugenix::Render::TextureFilter::Linear);
+        _sampler.Parameter(Eugenix::Render::TextureParam::WrapS, Eugenix::Render::TextureWrapping::ClampToEdge);
+        _sampler.Parameter(Eugenix::Render::TextureParam::WrapT, Eugenix::Render::TextureWrapping::ClampToEdge);
 
         return Ret;
     }
 
     void PopulateBuffers()
     {
-        glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[POS_VB]);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(m_Positions[0]) * m_Positions.size(), &m_Positions[0], GL_STATIC_DRAW);
-        glEnableVertexAttribArray(POSITION_LOCATION);
-        glVertexAttribPointer(POSITION_LOCATION, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        _buffers[POS_VB].Storage(Eugenix::Core::MakeData(m_Positions));
+        _buffers[TEXCOORD_VB].Storage(Eugenix::Core::MakeData(m_TexCoords));
+        _buffers[NORMAL_VB].Storage(Eugenix::Core::MakeData(m_Normals));
+        _buffers[INDEX_BUFFER].Storage(Eugenix::Core::MakeData(m_Indices));
 
-        glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[TEXCOORD_VB]);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(m_TexCoords[0]) * m_TexCoords.size(), &m_TexCoords[0], GL_STATIC_DRAW);
-        glEnableVertexAttribArray(TEX_COORD_LOCATION);
-        glVertexAttribPointer(TEX_COORD_LOCATION, 2, GL_FLOAT, GL_FALSE, 0, 0);
+        _vao.AttachVertices(0, _buffers[POS_VB], sizeof(m_Positions[0]));
+        _vao.AttachVertices(1, _buffers[TEXCOORD_VB], sizeof(m_TexCoords[0]));
+        _vao.AttachVertices(2, _buffers[NORMAL_VB], sizeof(m_Normals[0]));
+        _vao.AttachIndices(_buffers[INDEX_BUFFER]);
 
-        glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[NORMAL_VB]);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(m_Normals[0]) * m_Normals.size(), &m_Normals[0], GL_STATIC_DRAW);
-        glEnableVertexAttribArray(NORMAL_LOCATION);
-        glVertexAttribPointer(NORMAL_LOCATION, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_Buffers[INDEX_BUFFER]);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(m_Indices[0]) * m_Indices.size(), &m_Indices[0], GL_STATIC_DRAW);
+        _vao.Attribute({ POSITION_LOCATION,  3, Eugenix::Render::DataType::Float, false, 0, 0 });
+        _vao.Attribute({ TEX_COORD_LOCATION, 2, Eugenix::Render::DataType::Float, false, 0, 1 });
+        _vao.Attribute({ NORMAL_LOCATION,    3, Eugenix::Render::DataType::Float, false, 0, 2 });
     }
 
 #define INVALID_MATERIAL 0xFFFFFFFF
@@ -360,8 +368,12 @@ private:
     };
 
     WorldTransform m_worldTransform;
-    GLuint m_VAO = 0;
-    GLuint m_Buffers[NUM_BUFFERS] = { 0 };
+
+    Eugenix::Render::OpenGL::VertexArray _vao;
+    Eugenix::Render::OpenGL::Buffer _buffers[NUM_BUFFERS] = {};
+
+    //GLuint m_VAO = 0;
+    //GLuint m_Buffers[NUM_BUFFERS] = { 0 };
 
     struct BasicMeshEntry {
         BasicMeshEntry()
@@ -379,13 +391,17 @@ private:
     };
 
     std::vector<BasicMeshEntry> m_Meshes;
-    std::vector<Eugenix::Render::OpenGL::Texture2D*> m_Textures;
+    std::vector<Eugenix::Render::OpenGL::Texture2D> m_Textures;
+    Eugenix::Render::OpenGL::Sampler _sampler;
 
     // Temporary space for vertex stuff before we load them into the GPU
     std::vector<glm::vec3> m_Positions;
     std::vector<glm::vec3> m_Normals;
     std::vector<glm::vec2> m_TexCoords;
     std::vector<unsigned int> m_Indices;
+
+    // «десь ему не место?..
+    Eugenix::Assets::ImageLoader _imageLoader;
 };
 
 
