@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "OGLDevBaseMesh.h"
 #include "OGLDevCamera.h"
 #include "OGLDevCommon.h"
 #include "OGLDevMath.h"
@@ -36,6 +37,8 @@ namespace Eugenix
 
             glEnable(GL_DEPTH_TEST);
 
+            _mesh.LoadMesh("models/spider/spider.obj");
+
             return true;
         }
 
@@ -70,15 +73,31 @@ namespace Eugenix
 
             _shaderProgram.Bind();
 
-            _commonSampler.Bind(0);
-            _bricksTexture.Bind(0);
+            {
+                _commonSampler.Bind(0);
+                _bricksTexture.Bind(0);
 
-            auto finalMatrix = projection * _camera.GetViewMatrix() * cubeWorldTransform.GetMatrix();
-            _shaderProgram.SetUniform("gWorld", finalMatrix);
+                auto finalMatrix = projection * _camera.GetViewMatrix() * cubeWorldTransform.GetMatrix();
+                _shaderProgram.SetUniform("gWorld", finalMatrix);
 
-            _vao.Bind();
+                _vao.Bind();
 
-            Render::OpenGL::Commands::DrawIndexed(Render::PrimitiveType::Triangles, 36, Render::DataType::UInt);
+                Render::OpenGL::Commands::DrawIndexed(Render::PrimitiveType::Triangles, 36, Render::DataType::UInt);
+            }
+            {
+                WorldTransform& worldTransform = _mesh.GetWorldTransform();
+
+                worldTransform.SetScale(0.01f);
+                worldTransform.SetPosition(0.0f, 0.0f, 2.0f);
+                worldTransform.Rotate(0.0f, 0.0f, 0.0f);
+
+                glm::mat4 World = worldTransform.GetMatrix();
+
+                auto finalMatrix = projection * _camera.GetViewMatrix() * World;
+                _shaderProgram.SetUniform("gWorld", finalMatrix);
+
+                _mesh.Render();
+            }
         }
 
         void onKeyHandle(int key, int code, int action, int mode) override
@@ -200,6 +219,7 @@ namespace Eugenix
         Render::OpenGL::VertexArray _vao;
 
         Render::OpenGL::ShaderProgram _shaderProgram;
+        Render::OpenGL::ShaderProgram _modelShaderProgram;
 
         Render::OpenGL::Sampler _commonSampler;
         Render::OpenGL::Texture2D _bricksTexture;
@@ -221,5 +241,7 @@ namespace Eugenix
         //FreeLookCameraController _cameraController;
 
         WorldTransform cubeWorldTransform;
+
+        BasicMesh _mesh;
 	};
 }
