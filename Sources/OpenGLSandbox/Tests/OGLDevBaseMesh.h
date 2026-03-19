@@ -3,9 +3,9 @@
 #include <map>
 #include <string>
 #include <vector>
-#include <assimp/Importer.hpp>      // C++ importer interface
-#include <assimp/scene.h>       // Output data structure
-#include <assimp/postprocess.h> // Post processing flags
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 #include "OGLDevMath.h"
 
@@ -32,6 +32,32 @@ struct MeshVertex
     glm::vec3 normal;
 };
 
+// CPU-mesh
+struct MeshData
+{
+    struct SubMesh
+    {
+        uint32_t numIndices{};
+        uint32_t baseVertex{};
+        uint32_t baseIndex{};
+        uint32_t materialIndex{ invalid_material };
+    };
+
+    std::vector<MeshVertex> vertices;
+    std::vector<uint32_t> indicies;
+    std::vector<MeshData::SubMesh> subMeshes;
+};
+
+class MeshLoader
+{
+public:
+    MeshData Load(const std::filesystem::path& filename)
+    {
+
+    }
+};
+
+// GPU-mesh
 class BasicMesh
 {
 public:
@@ -43,6 +69,11 @@ public:
     ~BasicMesh()
     {
         clear();
+    }
+
+    void CreateFromData(const MeshData& data)
+    {
+
     }
 
     bool LoadMesh(const std::filesystem::path& filename)
@@ -64,7 +95,7 @@ public:
             return false;
         }
 
-        if (!initFromScene(scene, filename.string()))
+        if (!initFromScene(scene, filename))
         {
             clear();
             return false;
@@ -77,7 +108,7 @@ public:
     {
         _vao.Bind();
 
-        for (const auto& submesh : _subMeshes)
+        for (const auto& submesh : _meshData.subMeshes)
         {
             uint32_t MaterialIndex = submesh.materialIndex;
 
@@ -142,24 +173,20 @@ private:
             }
         }
 
-        _vbo.Destroy();
-        _ibo.Destroy();
+        if (_vbo.NativeHandle() != 0) { _vbo.Destroy(); }
+        if (_ibo.NativeHandle() != 0) { _ibo.Destroy(); }
+        if (_vao.NativeHandle() != 0) { _vao.Destroy(); }
 
-        if (_vao.NativeHandle() != 0)
-        {
-            _vao.Destroy();
-        }
-
-        _subMeshes.clear();
+        _meshData.subMeshes.clear();
         _textures.clear();
 
-        _vertices.clear();
-        _indices.clear();
+        _meshData.vertices.clear();
+        _meshData.indicies.clear();
     }
 
     bool initFromScene(const aiScene* pScene, const std::filesystem::path& path)
     {
-        _subMeshes.resize(pScene->mNumMeshes);
+        _meshData.subMeshes.resize(pScene->mNumMeshes);
         _textures.resize(pScene->mNumMaterials);
 
         uint32_t numVertices = 0;
@@ -181,27 +208,27 @@ private:
 
     void countVerticesAndIndices(const aiScene* pScene, uint32_t& NumVertices, uint32_t& NumIndices)
     {
-        for (uint32_t i = 0; i < _subMeshes.size(); i++)
+        for (uint32_t i = 0; i < _meshData.subMeshes.size(); i++)
         {
-            _subMeshes[i].materialIndex = pScene->mMeshes[i]->mMaterialIndex;
-            _subMeshes[i].numIndices = pScene->mMeshes[i]->mNumFaces * 3;
-            _subMeshes[i].baseVertex = NumVertices;
-            _subMeshes[i].baseIndex = NumIndices;
+            _meshData.subMeshes[i].materialIndex = pScene->mMeshes[i]->mMaterialIndex;
+            _meshData.subMeshes[i].numIndices = pScene->mMeshes[i]->mNumFaces * 3;
+            _meshData.subMeshes[i].baseVertex = NumVertices;
+            _meshData.subMeshes[i].baseIndex = NumIndices;
 
             NumVertices += pScene->mMeshes[i]->mNumVertices;
-            NumIndices += _subMeshes[i].numIndices;
+            NumIndices += _meshData.subMeshes[i].numIndices;
         }
     }
 
     void reserveSpace(uint32_t numVertices, uint32_t numIndices)
     {
-        _vertices.reserve(numVertices);
-        _indices.reserve(numIndices);
+        _meshData.vertices.reserve(numVertices);
+        _meshData.indicies.reserve(numIndices);
     }
 
     void initAllMeshes(const aiScene* pScene)
     {
-        for (uint32_t i = 0; i < _subMeshes.size(); i++) 
+        for (uint32_t i = 0; i < _meshData.subMeshes.size(); i++)
         {
             const aiMesh* paiMesh = pScene->mMeshes[i];
             initSingleMesh(paiMesh);
@@ -218,7 +245,7 @@ private:
             const aiVector3D& normal = paiMesh->HasNormals() ? paiMesh->mNormals[i] : Zero3D;
             const aiVector3D& uv = paiMesh->HasTextureCoords(0) ? paiMesh->mTextureCoords[0][i] : Zero3D;
 
-            _vertices.emplace_back(MeshVertex
+            _meshData.vertices.emplace_back(MeshVertex
             {
                 { pos.x, pos.y, pos.z },
                 { uv.x, uv.y },
@@ -231,9 +258,9 @@ private:
             const aiFace& Face = paiMesh->mFaces[i];
             assert(Face.mNumIndices == 3);
 
-            _indices.push_back(Face.mIndices[0]);
-            _indices.push_back(Face.mIndices[1]);
-            _indices.push_back(Face.mIndices[2]);
+            _meshData.indicies.push_back(Face.mIndices[0]);
+            _meshData.indicies.push_back(Face.mIndices[1]);
+            _meshData.indicies.push_back(Face.mIndices[2]);
         }
     }
 
@@ -262,7 +289,7 @@ private:
 
                     const auto full_path = dir / p;
 
-                    printf("full path - %s\n", full_path.c_str());
+                    printf("full path - %s\n", full_path.string().c_str());
 
                     auto imgData = _imageLoader.Load(full_path.string());
 
@@ -286,8 +313,8 @@ private:
 
     void populateBuffers()
     {
-        _vbo.Storage(Eugenix::Core::MakeData(_vertices));
-        _ibo.Storage(Eugenix::Core::MakeData(_indices));
+        _vbo.Storage(Eugenix::Core::MakeData(_meshData.vertices));
+        _ibo.Storage(Eugenix::Core::MakeData(_meshData.indicies));
 
         _vao.AttachVertices(0, _vbo, sizeof(MeshVertex));
         _vao.AttachIndices(_ibo);
@@ -296,8 +323,8 @@ private:
         _vao.Attribute({ tex_coord_location, 2, Eugenix::Render::DataType::Float, false, offsetof(MeshVertex, uv), 0 });
         _vao.Attribute({ normal_location,   3, Eugenix::Render::DataType::Float, false, offsetof(MeshVertex, normal), 0 });
 
-        _vertices.clear();
-        _indices.clear();
+        _meshData.vertices.clear();
+        _meshData.indicies.clear();
     }
 
     WorldTransform _worldTransform;
@@ -306,20 +333,12 @@ private:
     Eugenix::Render::OpenGL::Buffer _vbo;
     Eugenix::Render::OpenGL::Buffer _ibo;
 
-    struct SubMesh
-    {
-        uint32_t numIndices{};
-        uint32_t baseVertex{};
-        uint32_t baseIndex{};
-        uint32_t materialIndex{ invalid_material };
-    };
-
-    std::vector<SubMesh> _subMeshes;
     std::vector<Eugenix::Render::OpenGL::Texture2D> _textures;
 
     // Temporary space for vertex stuff before we load them into the GPU
-    std::vector<MeshVertex> _vertices;
-    std::vector<uint32_t> _indices;
+    //std::vector<MeshVertex> _vertices;
+    //std::vector<uint32_t> _indices;
+    MeshData _meshData{};
 
     // «десь ему не место?..
     Eugenix::Assets::ImageLoader _imageLoader;
