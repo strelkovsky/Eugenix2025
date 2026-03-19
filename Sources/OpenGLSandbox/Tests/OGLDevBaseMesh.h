@@ -17,22 +17,20 @@ static constexpr uint32_t position_location = 0;
 static constexpr uint32_t tex_coord_location = 1;
 static constexpr uint32_t normal_location = 2;
 
-#define ARRAY_SIZE_IN_ELEMENTS(a) (sizeof(a)/sizeof(a[0]))
+static constexpr uint32_t invalid_material = std::numeric_limits<uint32_t>::max();
 
-#define ASSIMP_LOAD_FLAGS (aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices)
+static constexpr uint32_t assimp_load_flags =
+    aiProcess_Triangulate |
+    aiProcess_GenSmoothNormals |
+    aiProcess_FlipUVs |
+    aiProcess_JoinIdenticalVertices;
 
-#define COLOR_TEXTURE_UNIT              GL_TEXTURE0
-#define COLOR_TEXTURE_UNIT_INDEX        0
-#define SHADOW_TEXTURE_UNIT             GL_TEXTURE1
-#define SHADOW_TEXTURE_UNIT_INDEX       1
-#define NORMAL_TEXTURE_UNIT             GL_TEXTURE2
-#define NORMAL_TEXTURE_UNIT_INDEX       2
-#define RANDOM_TEXTURE_UNIT             GL_TEXTURE3
-#define RANDOM_TEXTURE_UNIT_INDEX       3
-#define DISPLACEMENT_TEXTURE_UNIT       GL_TEXTURE4
-#define DISPLACEMENT_TEXTURE_UNIT_INDEX 4
-#define MOTION_TEXTURE_UNIT             GL_TEXTURE5
-#define MOTION_TEXTURE_UNIT_INDEX       5
+struct MeshVertex
+{
+    glm::vec3 position;
+    glm::vec2 uv;
+    glm::vec3 normal;
+};
 
 class BasicMesh
 {
@@ -44,33 +42,31 @@ public:
 
     ~BasicMesh()
     {
-        Clear();
+        clear();
     }
 
     bool LoadMesh(const std::filesystem::path& filename)
     {
-        Clear();
+        clear();
 
         _vao.Create();
-        for (auto& buffer : _buffers)
-        {
-            buffer.Create();
-        }
+        _vbo.Create();
+        _ibo.Create();
 
         Assimp::Importer importer;
 
-        const aiScene* scene = importer.ReadFile(filename.string(), ASSIMP_LOAD_FLAGS);
+        const aiScene* scene = importer.ReadFile(filename.string(), assimp_load_flags);
 
         if (!scene)
         {
             printf("Error parsing '%s': '%s'\n", filename.string(), importer.GetErrorString());
-            Clear();
+            clear();
             return false;
         }
 
-        if (!InitFromScene(scene, filename.string()))
+        if (!initFromScene(scene, filename.string()))
         {
-            Clear();
+            clear();
             return false;
         }
 
@@ -81,22 +77,22 @@ public:
     {
         _vao.Bind();
 
-        for (uint32_t i = 0; i < _subMeshes.size(); i++) 
+        for (const auto& submesh : _subMeshes)
         {
-            uint32_t MaterialIndex = _subMeshes[i].materialIndex;
+            uint32_t MaterialIndex = submesh.materialIndex;
 
-            assert(MaterialIndex < m_Textures.size());
+            assert(MaterialIndex < _textures.size());
 
-            if (m_Textures[MaterialIndex].NativeHandle() != 0) 
+            if (_textures[MaterialIndex].NativeHandle() != 0) 
             {
-                m_Textures[MaterialIndex].Bind(0);
+                _textures[MaterialIndex].Bind(0);
             }
 
             glDrawElementsBaseVertex(GL_TRIANGLES,
-                _subMeshes[i].numIndices,
+                submesh.numIndices,
                 GL_UNSIGNED_INT,
-                (void*)(sizeof(uint32_t) * _subMeshes[i].baseIndex),
-                _subMeshes[i].baseVertex);
+                (void*)(sizeof(uint32_t) * submesh.baseIndex),
+                submesh.baseVertex);
         }
     }
 
@@ -114,11 +110,11 @@ public:
         //{
         //    const uint32_t MaterialIndex = _subMeshes[i].MaterialIndex;
 
-        //    assert(MaterialIndex < m_Textures.size());
+        //    assert(MaterialIndex < _textures.size());
 
-        //    if (m_Textures[MaterialIndex].NativeHandle() > 0) 
+        //    if (_textures[MaterialIndex].NativeHandle() > 0) 
         //    {
-        //        m_Textures[MaterialIndex].Bind(GL_TEXTURE0);
+        //        _textures[MaterialIndex].Bind(GL_TEXTURE0);
         //    }
 
         //    glDrawElementsInstancedBaseVertex(GL_TRIANGLES,
@@ -136,9 +132,9 @@ public:
     WorldTransform& GetWorldTransform() { return _worldTransform; }
 
 private:
-    void Clear()
+    void clear()
     {
-        for (auto& texture : m_Textures)
+        for (auto& texture : _textures)
         {
             if (texture.NativeHandle() != 0)
             {
@@ -146,13 +142,8 @@ private:
             }
         }
 
-        for (auto& buffer : _buffers)
-        {
-            if (buffer.NativeHandle() != 0)
-            {
-                buffer.Destroy();
-            }
-        }
+        _vbo.Destroy();
+        _ibo.Destroy();
 
         if (_vao.NativeHandle() != 0)
         {
@@ -160,39 +151,35 @@ private:
         }
 
         _subMeshes.clear();
-        m_Textures.clear();
+        _textures.clear();
 
-        _positions.clear();
-        _normals.clear();
-        _uvs.clear();
+        _vertices.clear();
         _indices.clear();
     }
 
-    bool InitFromScene(const aiScene* pScene, const std::string& Filename)
+    bool initFromScene(const aiScene* pScene, const std::filesystem::path& path)
     {
         _subMeshes.resize(pScene->mNumMeshes);
-        m_Textures.resize(pScene->mNumMaterials);
+        _textures.resize(pScene->mNumMaterials);
 
         uint32_t numVertices = 0;
         uint32_t numIndices = 0;
 
-        CountVerticesAndIndices(pScene, numVertices, numIndices);
+        countVerticesAndIndices(pScene, numVertices, numIndices);
+        reserveSpace(numVertices, numIndices);
+        initAllMeshes(pScene);
 
-        ReserveSpace(numVertices, numIndices);
-
-        InitAllMeshes(pScene);
-
-        if (!InitMaterials(pScene, Filename)) 
+        if (!initMaterials(pScene, path))
         {
             return false;
         }
 
-        PopulateBuffers();
+        populateBuffers();
 
         return true;
     }
 
-    void CountVerticesAndIndices(const aiScene* pScene, uint32_t& NumVertices, uint32_t& NumIndices)
+    void countVerticesAndIndices(const aiScene* pScene, uint32_t& NumVertices, uint32_t& NumIndices)
     {
         for (uint32_t i = 0; i < _subMeshes.size(); i++)
         {
@@ -206,24 +193,22 @@ private:
         }
     }
 
-    void ReserveSpace(uint32_t numVertices, uint32_t numIndices)
+    void reserveSpace(uint32_t numVertices, uint32_t numIndices)
     {
-        _positions.reserve(numVertices);
-        _normals.reserve(numVertices);
-        _uvs.reserve(numVertices);
+        _vertices.reserve(numVertices);
         _indices.reserve(numIndices);
     }
 
-    void InitAllMeshes(const aiScene* pScene)
+    void initAllMeshes(const aiScene* pScene)
     {
         for (uint32_t i = 0; i < _subMeshes.size(); i++) 
         {
             const aiMesh* paiMesh = pScene->mMeshes[i];
-            InitSingleMesh(paiMesh);
+            initSingleMesh(paiMesh);
         }
     }
 
-    void InitSingleMesh(const aiMesh* paiMesh)
+    void initSingleMesh(const aiMesh* paiMesh)
     {
         const aiVector3D Zero3D(0.0f, 0.0f, 0.0f);
 
@@ -233,9 +218,12 @@ private:
             const aiVector3D& normal = paiMesh->HasNormals() ? paiMesh->mNormals[i] : Zero3D;
             const aiVector3D& uv = paiMesh->HasTextureCoords(0) ? paiMesh->mTextureCoords[0][i] : Zero3D;
 
-            _positions.emplace_back(pos.x, pos.y, pos.z);
-            _normals.emplace_back(normal.x, normal.y, normal.z);
-            _uvs.emplace_back(uv.x, uv.y);
+            _vertices.emplace_back(MeshVertex
+            {
+                { pos.x, pos.y, pos.z },
+                { uv.x, uv.y },
+                { normal.x, normal.y, normal.z },
+            });
         }
 
         for (uint32_t i = 0; i < paiMesh->mNumFaces; ++i) 
@@ -249,7 +237,7 @@ private:
         }
     }
 
-    bool InitMaterials(const aiScene* pScene, const std::filesystem::path& filename)
+    bool initMaterials(const aiScene* pScene, const std::filesystem::path& filename)
     {
         const auto dir = filename.has_parent_path() ? filename.parent_path() : std::filesystem::path(".");
 
@@ -257,7 +245,7 @@ private:
         {
             const aiMaterial* pMaterial = pScene->mMaterials[i];
 
-            m_Textures[i].Create();
+            _textures[i].Create();
 
             if (pMaterial->GetTextureCount(aiTextureType_DIFFUSE) > 0) 
             {
@@ -278,12 +266,12 @@ private:
 
                     auto imgData = _imageLoader.Load(full_path.string());
 
-                    m_Textures[i].Upload(imgData);
+                    _textures[i].Upload(imgData);
 
                     if (!imgData.pixels.get())
                     {
                         printf("Error loading texture '%s'\n", full_path.string().c_str());
-                        m_Textures[i].Destroy();
+                        _textures[i].Destroy();
                         return false;
                     }
                     else 
@@ -297,62 +285,41 @@ private:
         return true;
     }
 
-    void PopulateBuffers()
+    void populateBuffers()
     {
-        _buffers[POS_VB].Storage(Eugenix::Core::MakeData(_positions));
-        _buffers[TEXCOORD_VB].Storage(Eugenix::Core::MakeData(_uvs));
-        _buffers[NORMAL_VB].Storage(Eugenix::Core::MakeData(_normals));
-        _buffers[INDEX_BUFFER].Storage(Eugenix::Core::MakeData(_indices));
+        _vbo.Storage(Eugenix::Core::MakeData(_vertices));
+        _ibo.Storage(Eugenix::Core::MakeData(_indices));
 
-        _vao.AttachVertices(0, _buffers[POS_VB], sizeof(_positions[0]));
-        _vao.AttachVertices(1, _buffers[TEXCOORD_VB], sizeof(_uvs[0]));
-        _vao.AttachVertices(2, _buffers[NORMAL_VB], sizeof(_normals[0]));
-        _vao.AttachIndices(_buffers[INDEX_BUFFER]);
+        _vao.AttachVertices(0, _vbo, sizeof(MeshVertex));
+        _vao.AttachIndices(_ibo);
 
-        _vao.Attribute({ position_location,  3, Eugenix::Render::DataType::Float, false, 0, 0 });
-        _vao.Attribute({ tex_coord_location, 2, Eugenix::Render::DataType::Float, false, 0, 1 });
-        _vao.Attribute({ normal_location,    3, Eugenix::Render::DataType::Float, false, 0, 2 });
+        _vao.Attribute({ position_location, 3, Eugenix::Render::DataType::Float, false, offsetof(MeshVertex, position), 0 });
+        _vao.Attribute({ tex_coord_location, 2, Eugenix::Render::DataType::Float, false, offsetof(MeshVertex, uv), 0 });
+        _vao.Attribute({ normal_location,   3, Eugenix::Render::DataType::Float, false, offsetof(MeshVertex, normal), 0 });
 
-        _positions.clear();
-        _normals.clear();
-        _uvs.clear();
+        _vertices.clear();
         _indices.clear();
     }
-
-#define INVALID_MATERIAL 0xFFFFFFFF
-
-    enum BUFFER_TYPE 
-    {
-        INDEX_BUFFER = 0,
-        POS_VB = 1,
-        TEXCOORD_VB = 2,
-        NORMAL_VB = 3,
-        WVP_MAT_VB = 4,
-        WORLD_MAT_VB = 5,
-        NUM_BUFFERS = 6
-    };
 
     WorldTransform _worldTransform;
 
     Eugenix::Render::OpenGL::VertexArray _vao;
-    Eugenix::Render::OpenGL::Buffer _buffers[NUM_BUFFERS] = {};
+    Eugenix::Render::OpenGL::Buffer _vbo;
+    Eugenix::Render::OpenGL::Buffer _ibo;
 
     struct SubMesh
     {
         uint32_t numIndices{};
         uint32_t baseVertex{};
         uint32_t baseIndex{};
-        uint32_t materialIndex{ INVALID_MATERIAL };
+        uint32_t materialIndex{ invalid_material };
     };
 
     std::vector<SubMesh> _subMeshes;
-    std::vector<Eugenix::Render::OpenGL::Texture2D> m_Textures;
-    Eugenix::Render::OpenGL::Sampler _sampler;
+    std::vector<Eugenix::Render::OpenGL::Texture2D> _textures;
 
     // Temporary space for vertex stuff before we load them into the GPU
-    std::vector<glm::vec3> _positions;
-    std::vector<glm::vec3> _normals;
-    std::vector<glm::vec2> _uvs;
+    std::vector<MeshVertex> _vertices;
     std::vector<uint32_t> _indices;
 
     // «десь ему не место?..
