@@ -1,36 +1,11 @@
-/*
-
-        Copyright 2011 Etay Meiri
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
-#ifndef OGLDEV_BASIC_MESH_H
-#define OGLDEV_BASIC_MESH_H
+#pragma once
 
 #include <map>
 #include <string>
 #include <vector>
-//#include <GL/glew.h>
 #include <assimp/Importer.hpp>      // C++ importer interface
 #include <assimp/scene.h>       // Output data structure
 #include <assimp/postprocess.h> // Post processing flags
-
-//#include "ogldev_util.h"
-//#include "ogldev_math_3d.h"
-//#include "ogldev_texture.h"
-//#include "ogldev_world_transform.h"
 
 #include "OGLDevMath.h"
 
@@ -38,17 +13,13 @@
 #include "Render/OpenGL/EugenixGL.h"
 #include "Render/OpenGL/Texture2D.h"
 
-#define POSITION_LOCATION  0
-#define TEX_COORD_LOCATION 1
-#define NORMAL_LOCATION    2
+static constexpr uint32_t position_location = 0;
+static constexpr uint32_t tex_coord_location = 1;
+static constexpr uint32_t normal_location = 2;
 
 #define ARRAY_SIZE_IN_ELEMENTS(a) (sizeof(a)/sizeof(a[0]))
 
 #define ASSIMP_LOAD_FLAGS (aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices)
-
-#define SAFE_DELETE(p) if (p) { delete p; p = NULL; }
-
-#define GLCheckError() (glGetError() == GL_NO_ERROR)
 
 #define COLOR_TEXTURE_UNIT              GL_TEXTURE0
 #define COLOR_TEXTURE_UNIT_INDEX        0
@@ -66,53 +37,53 @@
 class BasicMesh
 {
 public:
-    BasicMesh() {};
+    BasicMesh() = default;
+
+    BasicMesh(const BasicMesh&) = delete;
+    BasicMesh& operator=(const BasicMesh&) = delete;
 
     ~BasicMesh()
     {
         Clear();
     }
 
-    bool LoadMesh(const std::string& Filename)
+    bool LoadMesh(const std::filesystem::path& filename)
     {
         Clear();
 
         _vao.Create();
-
-        for (int i = 0; i < ARRAY_SIZE_IN_ELEMENTS(_buffers); i++)
+        for (auto& buffer : _buffers)
         {
-            _buffers[i].Create();
+            buffer.Create();
         }
 
-        bool Ret = false;
-        Assimp::Importer Importer;
+        Assimp::Importer importer;
 
-        const aiScene* pScene = Importer.ReadFile(Filename.c_str(), ASSIMP_LOAD_FLAGS);
+        const aiScene* scene = importer.ReadFile(filename.string(), ASSIMP_LOAD_FLAGS);
 
-        if (pScene)
+        if (!scene)
         {
-            Ret = InitFromScene(pScene, Filename);
-        }
-        else
-        {
-            printf("Error parsing '%s': '%s'\n", Filename.c_str(), Importer.GetErrorString());
+            printf("Error parsing '%s': '%s'\n", filename.string(), importer.GetErrorString());
+            Clear();
+            return false;
         }
 
-        // Make sure the VAO is not changed from the outside
-        glBindVertexArray(0);
+        if (!InitFromScene(scene, filename.string()))
+        {
+            Clear();
+            return false;
+        }
 
-        return Ret;
+        return true;
     }
 
     void Render()
     {
         _vao.Bind();
 
-        _sampler.Bind(0);
-
-        for (unsigned int i = 0; i < m_Meshes.size(); i++) 
+        for (uint32_t i = 0; i < _subMeshes.size(); i++) 
         {
-            unsigned int MaterialIndex = m_Meshes[i].MaterialIndex;
+            uint32_t MaterialIndex = _subMeshes[i].materialIndex;
 
             assert(MaterialIndex < m_Textures.size());
 
@@ -122,14 +93,14 @@ public:
             }
 
             glDrawElementsBaseVertex(GL_TRIANGLES,
-                m_Meshes[i].NumIndices,
+                _subMeshes[i].numIndices,
                 GL_UNSIGNED_INT,
-                (void*)(sizeof(unsigned int) * m_Meshes[i].BaseIndex),
-                m_Meshes[i].BaseVertex);
+                (void*)(sizeof(uint32_t) * _subMeshes[i].baseIndex),
+                _subMeshes[i].baseVertex);
         }
     }
 
-    void Render(unsigned int NumInstances, const glm::mat4* WVPMats, const glm::mat4* WorldMats)
+    void Render(uint32_t NumInstances, const glm::mat4* WVPMats, const glm::mat4* WorldMats)
     {
         //glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[WVP_MAT_VB]);
         //glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4) * NumInstances, WVPMats, GL_DYNAMIC_DRAW);
@@ -139,9 +110,9 @@ public:
 
         //glBindVertexArray(m_VAO);
 
-        //for (unsigned int i = 0; i < m_Meshes.size(); i++) 
+        //for (uint32_t i = 0; i < _subMeshes.size(); i++) 
         //{
-        //    const unsigned int MaterialIndex = m_Meshes[i].MaterialIndex;
+        //    const uint32_t MaterialIndex = _subMeshes[i].MaterialIndex;
 
         //    assert(MaterialIndex < m_Textures.size());
 
@@ -151,49 +122,63 @@ public:
         //    }
 
         //    glDrawElementsInstancedBaseVertex(GL_TRIANGLES,
-        //        m_Meshes[i].NumIndices,
+        //        _subMeshes[i].NumIndices,
         //        GL_UNSIGNED_INT,
-        //        (void*)(sizeof(unsigned int) * m_Meshes[i].BaseIndex),
+        //        (void*)(sizeof(uint32_t) * _subMeshes[i].BaseIndex),
         //        NumInstances,
-        //        m_Meshes[i].BaseVertex);
+        //        _subMeshes[i].BaseVertex);
         //}
 
         //// Make sure the VAO is not changed from the outside
         //glBindVertexArray(0);
     }
 
-    WorldTransform& GetWorldTransform() { return m_worldTransform; }
+    WorldTransform& GetWorldTransform() { return _worldTransform; }
 
 private:
     void Clear()
     {
-        for (unsigned int i = 0; i < m_Textures.size(); i++) 
+        for (auto& texture : m_Textures)
         {
-            m_Textures[i].Destroy();
+            if (texture.NativeHandle() != 0)
+            {
+                texture.Destroy();
+            }
         }
 
-        for (int i = 0; i < ARRAY_SIZE_IN_ELEMENTS(_buffers); i++)
+        for (auto& buffer : _buffers)
         {
-            _buffers[i].Destroy();
+            if (buffer.NativeHandle() != 0)
+            {
+                buffer.Destroy();
+            }
         }
 
         if (_vao.NativeHandle() != 0)
         {
             _vao.Destroy();
         }
+
+        _subMeshes.clear();
+        m_Textures.clear();
+
+        _positions.clear();
+        _normals.clear();
+        _uvs.clear();
+        _indices.clear();
     }
 
     bool InitFromScene(const aiScene* pScene, const std::string& Filename)
     {
-        m_Meshes.resize(pScene->mNumMeshes);
+        _subMeshes.resize(pScene->mNumMeshes);
         m_Textures.resize(pScene->mNumMaterials);
 
-        unsigned int NumVertices = 0;
-        unsigned int NumIndices = 0;
+        uint32_t numVertices = 0;
+        uint32_t numIndices = 0;
 
-        CountVerticesAndIndices(pScene, NumVertices, NumIndices);
+        CountVerticesAndIndices(pScene, numVertices, numIndices);
 
-        ReserveSpace(NumVertices, NumIndices);
+        ReserveSpace(numVertices, numIndices);
 
         InitAllMeshes(pScene);
 
@@ -204,34 +189,34 @@ private:
 
         PopulateBuffers();
 
-        return GLCheckError();
+        return true;
     }
 
-    void CountVerticesAndIndices(const aiScene* pScene, unsigned int& NumVertices, unsigned int& NumIndices)
+    void CountVerticesAndIndices(const aiScene* pScene, uint32_t& NumVertices, uint32_t& NumIndices)
     {
-        for (unsigned int i = 0; i < m_Meshes.size(); i++) 
+        for (uint32_t i = 0; i < _subMeshes.size(); i++)
         {
-            m_Meshes[i].MaterialIndex = pScene->mMeshes[i]->mMaterialIndex;
-            m_Meshes[i].NumIndices = pScene->mMeshes[i]->mNumFaces * 3;
-            m_Meshes[i].BaseVertex = NumVertices;
-            m_Meshes[i].BaseIndex = NumIndices;
+            _subMeshes[i].materialIndex = pScene->mMeshes[i]->mMaterialIndex;
+            _subMeshes[i].numIndices = pScene->mMeshes[i]->mNumFaces * 3;
+            _subMeshes[i].baseVertex = NumVertices;
+            _subMeshes[i].baseIndex = NumIndices;
 
             NumVertices += pScene->mMeshes[i]->mNumVertices;
-            NumIndices += m_Meshes[i].NumIndices;
+            NumIndices += _subMeshes[i].numIndices;
         }
     }
 
-    void ReserveSpace(unsigned int NumVertices, unsigned int NumIndices)
+    void ReserveSpace(uint32_t numVertices, uint32_t numIndices)
     {
-        m_Positions.reserve(NumVertices);
-        m_Normals.reserve(NumVertices);
-        m_TexCoords.reserve(NumVertices);
-        m_Indices.reserve(NumIndices);
+        _positions.reserve(numVertices);
+        _normals.reserve(numVertices);
+        _uvs.reserve(numVertices);
+        _indices.reserve(numIndices);
     }
 
     void InitAllMeshes(const aiScene* pScene)
     {
-        for (unsigned int i = 0; i < m_Meshes.size(); i++) 
+        for (uint32_t i = 0; i < _subMeshes.size(); i++) 
         {
             const aiMesh* paiMesh = pScene->mMeshes[i];
             InitSingleMesh(paiMesh);
@@ -242,52 +227,33 @@ private:
     {
         const aiVector3D Zero3D(0.0f, 0.0f, 0.0f);
 
-        // Populate the vertex attribute vectors
-        for (unsigned int i = 0; i < paiMesh->mNumVertices; i++) 
+        for (uint32_t i = 0; i < paiMesh->mNumVertices; ++i)
         {
-            const aiVector3D& pPos = paiMesh->mVertices[i];
-            const aiVector3D& pNormal = paiMesh->mNormals[i];
-            const aiVector3D& pTexCoord = paiMesh->HasTextureCoords(0) ? paiMesh->mTextureCoords[0][i] : Zero3D;
+            const aiVector3D& pos = paiMesh->mVertices[i];
+            const aiVector3D& normal = paiMesh->HasNormals() ? paiMesh->mNormals[i] : Zero3D;
+            const aiVector3D& uv = paiMesh->HasTextureCoords(0) ? paiMesh->mTextureCoords[0][i] : Zero3D;
 
-            m_Positions.push_back(glm::vec3(pPos.x, pPos.y, pPos.z));
-            m_Normals.push_back(glm::vec3(pNormal.x, pNormal.y, pNormal.z));
-            m_TexCoords.push_back(glm::vec2(pTexCoord.x, pTexCoord.y));
+            _positions.emplace_back(pos.x, pos.y, pos.z);
+            _normals.emplace_back(normal.x, normal.y, normal.z);
+            _uvs.emplace_back(uv.x, uv.y);
         }
 
-        // Populate the index buffer
-        for (unsigned int i = 0; i < paiMesh->mNumFaces; i++) 
+        for (uint32_t i = 0; i < paiMesh->mNumFaces; ++i) 
         {
             const aiFace& Face = paiMesh->mFaces[i];
             assert(Face.mNumIndices == 3);
-            m_Indices.push_back(Face.mIndices[0]);
-            m_Indices.push_back(Face.mIndices[1]);
-            m_Indices.push_back(Face.mIndices[2]);
+
+            _indices.push_back(Face.mIndices[0]);
+            _indices.push_back(Face.mIndices[1]);
+            _indices.push_back(Face.mIndices[2]);
         }
     }
 
-    bool InitMaterials(const aiScene* pScene, const std::string& Filename)
+    bool InitMaterials(const aiScene* pScene, const std::filesystem::path& filename)
     {
-        // Extract the directory part from the file name
-        size_t SlashIndex = Filename.find_last_of("/");
-        std::string Dir;
+        const auto dir = filename.has_parent_path() ? filename.parent_path() : std::filesystem::path(".");
 
-        if (SlashIndex == -1) 
-        {
-            Dir = ".";
-        }
-        else if (SlashIndex == 0) 
-        {
-            Dir = "/";
-        }
-        else 
-        {
-            Dir = Filename.substr(0, SlashIndex);
-        }
-
-        bool Ret = true;
-
-        // Initialize the materials
-        for (unsigned int i = 0; i < pScene->mNumMaterials; i++) 
+        for (uint32_t i = 0; i < pScene->mNumMaterials; i++) 
         {
             const aiMaterial* pMaterial = pScene->mMaterials[i];
 
@@ -306,58 +272,57 @@ private:
                         p = p.substr(2, p.size() - 2);
                     }
 
-                    std::string FullPath = Dir + "/" + p;
+                    const auto full_path = dir / p;
 
-                    printf("full path - %s\n", FullPath.c_str());
+                    printf("full path - %s\n", full_path.c_str());
 
-                    auto imgData = _imageLoader.Load(FullPath);
+                    auto imgData = _imageLoader.Load(full_path.string());
 
                     m_Textures[i].Upload(imgData);
 
                     if (!imgData.pixels.get())
                     {
-                        printf("Error loading texture '%s'\n", FullPath.c_str());
+                        printf("Error loading texture '%s'\n", full_path.string().c_str());
                         m_Textures[i].Destroy();
-                        Ret = false;
+                        return false;
                     }
                     else 
                     {
-                        printf("Loaded texture '%s'\n", FullPath.c_str());
+                        printf("Loaded texture '%s'\n", full_path.string().c_str());
                     }
                 }
             }
         }
 
-        _sampler.Create();
-        _sampler.Parameter(Eugenix::Render::TextureParam::MinFilter, Eugenix::Render::TextureFilter::Linear);
-        _sampler.Parameter(Eugenix::Render::TextureParam::MagFilter, Eugenix::Render::TextureFilter::Linear);
-        _sampler.Parameter(Eugenix::Render::TextureParam::WrapS, Eugenix::Render::TextureWrapping::ClampToEdge);
-        _sampler.Parameter(Eugenix::Render::TextureParam::WrapT, Eugenix::Render::TextureWrapping::ClampToEdge);
-
-        return Ret;
+        return true;
     }
 
     void PopulateBuffers()
     {
-        _buffers[POS_VB].Storage(Eugenix::Core::MakeData(m_Positions));
-        _buffers[TEXCOORD_VB].Storage(Eugenix::Core::MakeData(m_TexCoords));
-        _buffers[NORMAL_VB].Storage(Eugenix::Core::MakeData(m_Normals));
-        _buffers[INDEX_BUFFER].Storage(Eugenix::Core::MakeData(m_Indices));
+        _buffers[POS_VB].Storage(Eugenix::Core::MakeData(_positions));
+        _buffers[TEXCOORD_VB].Storage(Eugenix::Core::MakeData(_uvs));
+        _buffers[NORMAL_VB].Storage(Eugenix::Core::MakeData(_normals));
+        _buffers[INDEX_BUFFER].Storage(Eugenix::Core::MakeData(_indices));
 
-        _vao.AttachVertices(0, _buffers[POS_VB], sizeof(m_Positions[0]));
-        _vao.AttachVertices(1, _buffers[TEXCOORD_VB], sizeof(m_TexCoords[0]));
-        _vao.AttachVertices(2, _buffers[NORMAL_VB], sizeof(m_Normals[0]));
+        _vao.AttachVertices(0, _buffers[POS_VB], sizeof(_positions[0]));
+        _vao.AttachVertices(1, _buffers[TEXCOORD_VB], sizeof(_uvs[0]));
+        _vao.AttachVertices(2, _buffers[NORMAL_VB], sizeof(_normals[0]));
         _vao.AttachIndices(_buffers[INDEX_BUFFER]);
 
-        _vao.Attribute({ POSITION_LOCATION,  3, Eugenix::Render::DataType::Float, false, 0, 0 });
-        _vao.Attribute({ TEX_COORD_LOCATION, 2, Eugenix::Render::DataType::Float, false, 0, 1 });
-        _vao.Attribute({ NORMAL_LOCATION,    3, Eugenix::Render::DataType::Float, false, 0, 2 });
+        _vao.Attribute({ position_location,  3, Eugenix::Render::DataType::Float, false, 0, 0 });
+        _vao.Attribute({ tex_coord_location, 2, Eugenix::Render::DataType::Float, false, 0, 1 });
+        _vao.Attribute({ normal_location,    3, Eugenix::Render::DataType::Float, false, 0, 2 });
+
+        _positions.clear();
+        _normals.clear();
+        _uvs.clear();
+        _indices.clear();
     }
 
 #define INVALID_MATERIAL 0xFFFFFFFF
 
-
-    enum BUFFER_TYPE {
+    enum BUFFER_TYPE 
+    {
         INDEX_BUFFER = 0,
         POS_VB = 1,
         TEXCOORD_VB = 2,
@@ -367,42 +332,29 @@ private:
         NUM_BUFFERS = 6
     };
 
-    WorldTransform m_worldTransform;
+    WorldTransform _worldTransform;
 
     Eugenix::Render::OpenGL::VertexArray _vao;
     Eugenix::Render::OpenGL::Buffer _buffers[NUM_BUFFERS] = {};
 
-    //GLuint m_VAO = 0;
-    //GLuint m_Buffers[NUM_BUFFERS] = { 0 };
-
-    struct BasicMeshEntry {
-        BasicMeshEntry()
-        {
-            NumIndices = 0;
-            BaseVertex = 0;
-            BaseIndex = 0;
-            MaterialIndex = INVALID_MATERIAL;
-        }
-
-        unsigned int NumIndices;
-        unsigned int BaseVertex;
-        unsigned int BaseIndex;
-        unsigned int MaterialIndex;
+    struct SubMesh
+    {
+        uint32_t numIndices{};
+        uint32_t baseVertex{};
+        uint32_t baseIndex{};
+        uint32_t materialIndex{ INVALID_MATERIAL };
     };
 
-    std::vector<BasicMeshEntry> m_Meshes;
+    std::vector<SubMesh> _subMeshes;
     std::vector<Eugenix::Render::OpenGL::Texture2D> m_Textures;
     Eugenix::Render::OpenGL::Sampler _sampler;
 
     // Temporary space for vertex stuff before we load them into the GPU
-    std::vector<glm::vec3> m_Positions;
-    std::vector<glm::vec3> m_Normals;
-    std::vector<glm::vec2> m_TexCoords;
-    std::vector<unsigned int> m_Indices;
+    std::vector<glm::vec3> _positions;
+    std::vector<glm::vec3> _normals;
+    std::vector<glm::vec2> _uvs;
+    std::vector<uint32_t> _indices;
 
     // «десь ему не место?..
     Eugenix::Assets::ImageLoader _imageLoader;
 };
-
-
-#endif  /* OGLDEV_BASIC_MESH_H */

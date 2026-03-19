@@ -26,6 +26,7 @@ namespace Eugenix
             createGeometry();
             createShaderProgram();
             createTextures();
+            createSamplers();
 
             Render::OpenGL::Commands::Clear(0.5f, 0.5f, 0.5f);
             // когда у вас есть замкнутая поверхность, нужно включить отбраковку граней, чтобы включить
@@ -85,6 +86,8 @@ namespace Eugenix
                 Render::OpenGL::Commands::DrawIndexed(Render::PrimitiveType::Triangles, 36, Render::DataType::UInt);
             }
             {
+                _modelSampler.Bind(0);
+
                 WorldTransform& worldTransform = _mesh.GetWorldTransform();
 
                 worldTransform.SetScale(0.01f);
@@ -202,16 +205,25 @@ namespace Eugenix
 
         void createTextures()
         {
+            auto img = _imageLoader.Load("Textures/bricks.jpg");
+            
+            _bricksTexture.Create();
+            _bricksTexture.Upload(img);
+        }
+
+        void createSamplers()
+        {
             _commonSampler.Create();
             _commonSampler.Parameter(Render::TextureParam::MinFilter, Render::TextureFilter::MipMapLinear);
             _commonSampler.Parameter(Render::TextureParam::MagFilter, Render::TextureFilter::Linear);
             _commonSampler.Parameter(Render::TextureParam::WrapS, Render::TextureWrapping::Repeat);
             _commonSampler.Parameter(Render::TextureParam::WrapT, Render::TextureWrapping::Repeat);
 
-            auto img = _imageLoader.Load("Textures/bricks.jpg");
-            
-            _bricksTexture.Create();
-            _bricksTexture.Upload(img);
+            _modelSampler.Create();
+            _modelSampler.Parameter(Render::TextureParam::MinFilter, Render::TextureFilter::Linear);
+            _modelSampler.Parameter(Render::TextureParam::MagFilter, Render::TextureFilter::Linear);
+            _modelSampler.Parameter(Render::TextureParam::WrapS, Render::TextureWrapping::ClampToEdge);
+            _modelSampler.Parameter(Render::TextureParam::WrapT, Render::TextureWrapping::ClampToEdge);
         }
 
         Render::OpenGL::Buffer _vbo;
@@ -221,8 +233,9 @@ namespace Eugenix
         Render::OpenGL::ShaderProgram _shaderProgram;
         Render::OpenGL::ShaderProgram _modelShaderProgram;
 
-        Render::OpenGL::Sampler _commonSampler;
         Render::OpenGL::Texture2D _bricksTexture;
+        Render::OpenGL::Sampler _commonSampler;
+        Render::OpenGL::Sampler _modelSampler;
 
         float Scale = 0.5f;
         float AngleInRadians = 0.0f;
