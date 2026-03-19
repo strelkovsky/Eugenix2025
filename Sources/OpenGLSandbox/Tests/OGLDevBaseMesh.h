@@ -59,7 +59,7 @@ public:
 
         if (!scene)
         {
-            printf("Error parsing '%s': '%s'\n", filename.string(), importer.GetErrorString());
+            printf("Error parsing '%s': '%s'\n", filename.string().c_str(), importer.GetErrorString());
             clear();
             return false;
         }
