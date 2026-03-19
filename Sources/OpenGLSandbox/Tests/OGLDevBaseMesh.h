@@ -266,8 +266,6 @@ private:
 
                     auto imgData = _imageLoader.Load(full_path.string());
 
-                    _textures[i].Upload(imgData);
-
                     if (!imgData.pixels.get())
                     {
                         printf("Error loading texture '%s'\n", full_path.string().c_str());
@@ -276,6 +274,7 @@ private:
                     }
                     else 
                     {
+                        _textures[i].Upload(imgData);
                         printf("Loaded texture '%s'\n", full_path.string().c_str());
                     }
                 }
