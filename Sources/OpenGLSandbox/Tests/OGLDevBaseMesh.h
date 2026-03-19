@@ -3,12 +3,10 @@
 #include <map>
 #include <string>
 #include <vector>
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
 
 #include "OGLDevMath.h"
 
+#include "Assets/AssimpModelLoader.h"
 #include "Assets/ImageLoader.h"
 #include "Render/OpenGL/EugenixGL.h"
 #include "Render/OpenGL/Texture2D.h"
@@ -18,12 +16,6 @@ static constexpr uint32_t tex_coord_location = 1;
 static constexpr uint32_t normal_location = 2;
 
 static constexpr uint32_t invalid_material = std::numeric_limits<uint32_t>::max();
-
-static constexpr uint32_t assimp_load_flags =
-    aiProcess_Triangulate |
-    aiProcess_GenSmoothNormals |
-    aiProcess_FlipUVs |
-    aiProcess_JoinIdenticalVertices;
 
 struct MeshVertex
 {
@@ -84,13 +76,10 @@ public:
         _vbo.Create();
         _ibo.Create();
 
-        Assimp::Importer importer;
-
-        const aiScene* scene = importer.ReadFile(filename.string(), assimp_load_flags);
+        const aiScene* scene = _modelLoader.Load(filename.string());
 
         if (!scene)
         {
-            printf("Error parsing '%s': '%s'\n", filename.string().c_str(), importer.GetErrorString());
             clear();
             return false;
         }
@@ -336,10 +325,9 @@ private:
     std::vector<Eugenix::Render::OpenGL::Texture2D> _textures;
 
     // Temporary space for vertex stuff before we load them into the GPU
-    //std::vector<MeshVertex> _vertices;
-    //std::vector<uint32_t> _indices;
     MeshData _meshData{};
 
-    // Çהוסü ולף םו לוסעמ?..
-    Eugenix::Assets::ImageLoader _imageLoader;
+    // Çהוסü םו לוסעמ?..
+    Eugenix::Assets::AssimpModelLoader _modelLoader{};
+    Eugenix::Assets::ImageLoader _imageLoader{};
 };

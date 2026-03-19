@@ -11,6 +11,7 @@
 
 // Sandbox headers
 #include "App/SandboxApp.h"
+#include "Assets/AssimpModelLoader.h"
 #include "Render/OpenGL/Buffer.h"
 #include "Render/OpenGL/Commands.h"
 #include "Render/OpenGL/ShaderProgram.h"
@@ -294,9 +295,7 @@ namespace Eugenix
 
             constexpr Eugenix::Render::Attribute position_attribute{ 0, 3, Eugenix::Render::DataType::Float, GL_FALSE,  0 };
 
-            Assimp::Importer pieces_importer;
-
-            const auto pieces = pieces_importer.ReadFile("Models/tictactoe/grid_pieces.obj", 0);
+            const auto pieces = _modelLoader.Load ("Models/tictactoe/grid_pieces.obj");
             const auto o_mesh = pieces->mMeshes[1];
             const auto x_mesh = pieces->mMeshes[0];
 
@@ -346,9 +345,7 @@ namespace Eugenix
             _xVao.AttachIndices(xEbo);
             _xVao.Attribute(position_attribute);
 
-            Assimp::Importer grid_importer;
-
-            const auto grid_scene = grid_importer.ReadFile("Models/tictactoe/grid.obj", 0);
+            const auto grid_scene = _modelLoader.Load("Models/tictactoe/grid.obj");
             const auto grid_mesh = grid_scene->mMeshes[0];
 
             for (auto i = 0; i < grid_mesh->mNumVertices; i++)
@@ -561,6 +558,8 @@ namespace Eugenix
 
     private:
         //core::data::camera camera_data;
+
+        Assets::AssimpModelLoader _modelLoader{};
 
         Render::OpenGL::ShaderProgram _program;
 

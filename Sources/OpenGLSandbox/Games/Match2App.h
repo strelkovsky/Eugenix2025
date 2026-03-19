@@ -1,12 +1,10 @@
 #pragma once
 
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-
 #include <glm/gtc/random.hpp>
 
 // Sandbox headers
 #include "App/SandboxApp.h"
+#include "Assets/AssimpModelLoader.h"
 #include "Core/Math/Math.h"
 #include "Render/Attribute.h"
 #include "Render/SharedData.h"
@@ -78,7 +76,7 @@ namespace Eugenix
 	protected:
 		bool onInit() override
 		{
-			const auto card_scene = _cardImporter.ReadFile("Models/card.obj", 0);
+			const auto card_scene = _modelLoader.Load("Models/card.obj");
 			const auto card_mesh = card_scene->mMeshes[0];
 
 			for (auto i = 0; i < card_mesh->mNumVertices; i++)
@@ -417,7 +415,7 @@ namespace Eugenix
 		}
 
 	private:
-		Assimp::Importer _cardImporter;
+		Assets::AssimpModelLoader _modelLoader{};
 
 		//Render::OpenGL::Buffer _cardVbo;
 		Render::OpenGL::Buffer _cardEbo;
