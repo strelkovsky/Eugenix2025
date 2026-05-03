@@ -46,6 +46,10 @@ namespace Eugenix
 			_texture2.Create();
 			_texture2.Upload(data);
 
+			data = _imageLoader.Load("models/box_terrain/textures/medieval_blocks_05_diff_4k.jpg");
+			_texture2.Create();
+			_texture2.Upload(data);
+
 			_sampler.Create();
 			_sampler.Parameter(Render::TextureParam::WrapS, Render::TextureWrapping::Repeat);
 			_sampler.Parameter(Render::TextureParam::WrapT, Render::TextureWrapping::Repeat);
@@ -56,6 +60,7 @@ namespace Eugenix
 
 			_model = _modelLoader.Load("Models/nanosuit/nanosuit.obj");
 			_plane = _modelLoader.Load("Models/plane.obj");
+			_testModel = _modelLoader.Load("Models/box_terrain/box_terrain.obj");
 
 			const std::vector<Render::Vertex::PosNormalUV> vertices =
 			{ {
@@ -140,6 +145,15 @@ namespace Eugenix
 
 				_plane.Render();
 			}
+			{
+				_transform.Reset();
+				_transformUbo.Update(Core::MakeData(&_transform.Matrix()));
+
+				_sampler.Bind(0);
+				_texture3.Bind(0);
+
+				_testModel.Render();
+			}
 		}
 
 	private:
@@ -161,11 +175,13 @@ namespace Eugenix
 		Render::OpenGL::ShaderProgram _program;
 		Render::OpenGL::Texture2D _texture;
 		Render::OpenGL::Texture2D _texture2;
+		Render::OpenGL::Texture2D _texture3;
 		Render::OpenGL::Sampler _sampler;
 
 		Render::Model _model;
 		Render::Model _customModel;
 		Render::Model _plane;
+		Render::Model _testModel;
 
 		Camera _camera{};
 
