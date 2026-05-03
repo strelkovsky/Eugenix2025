@@ -22,6 +22,10 @@ public:
         m_rotation.y = y;
         m_rotation.z = z;
     }
+    void SetPosition(const glm::vec3& position)
+    {
+        m_pos = position;
+    }
     void SetPosition(float x, float y, float z)
     {
         m_pos.x = x;
@@ -36,7 +40,7 @@ public:
         m_rotation.z += z;
     }
 
-    glm::mat4 GetMatrix()
+    glm::mat4 GetMatrix() const
     {
         glm::mat4 worldTransformMat{ 1.0f };
 

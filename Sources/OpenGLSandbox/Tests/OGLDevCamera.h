@@ -9,86 +9,27 @@ struct Camera3
     Camera3(const glm::vec3& position = { 0.0f, 0.0f, 1.0f })
         : _position{ position }
         , _up{ 0.0f, 1.0f, 0.0f }
-        , _yaw{ -90.0f }
+        , _yaw{ -90.0f } // по-умолчанию взгляд вдоль -Z
         , _pitch{ 0.0f }
     {
         _worldUp = { 0.0f, 1.0f, 0.0f };
         UpdateVectors();
     }
 
-    glm::mat4 GetViewMatrix()
+    glm::mat4 GetViewMatrix() const
     {
         return glm::lookAt(_position, _position + _forward, _up);
     }
 
-    //void ProceedKey(int key)
-    //{
-    //    glm::vec3 right = glm::normalize(glm::cross(_forward, _up));
-    //    glm::vec3 left = -right;
+    glm::vec3 GetPosition() const
+    {
+        return _position;
+    }
 
-    //    const float step = _speed /* * deltaTime*/;
-
-    //    switch (key)
-    //    {
-    //    case GLFW_KEY_W:
-    //        _position += _forward * step;
-    //        break;
-
-    //    case GLFW_KEY_S:
-    //        _position -= _forward * step;
-    //        break;
-
-    //    case GLFW_KEY_A:
-    //        _position += left * step;
-    //        break;
-
-    //    case GLFW_KEY_D:
-    //        _position += right * step;
-    //        break;
-
-    //    case GLFW_KEY_Q:
-    //        _position.y += step;
-    //        break;
-
-    //    case GLFW_KEY_E:
-    //        _position.y -= step;
-    //        break;
-
-    //    default:
-    //        break;
-    //    }
-    //}
-
-    //void ProceedMouse(double xpos, double ypos)
-    //{
-    //    if (_firstMouse)
-    //    {
-    //        _lastMouseX = xpos;
-    //        _lastMouseY = ypos;
-    //        _firstMouse = false;
-    //        return;
-    //    }
-
-    //    double xoffset = xpos - _lastMouseX;
-    //    double yoffset = _lastMouseY - ypos;
-
-    //    _lastMouseX = xpos;
-    //    _lastMouseY = ypos;
-
-    //    xoffset *= _sensitivity;
-    //    yoffset *= _sensitivity;
-
-    //    _yaw += static_cast<float>(xoffset);
-    //    _pitch += static_cast<float>(yoffset);
-    //    _pitch = glm::clamp(_pitch, -89.0f, 89.0f);
-
-    //    UpdateVectors();
-    //}
-
-    //void ResetMouseTracking()
-    //{
-    //    _firstMouse = true;
-    //}
+    glm::vec3 GetForward() const
+    {
+        return _forward;
+    }
 
     void OffsetYawPitch(float yawOffsetDeg, float pitchOffsetDeg)
     {
@@ -116,12 +57,11 @@ struct Camera3
 private:
     void UpdateVectors()
     {
-        glm::vec3 direction;
-        direction.x = cos(glm::radians(_yaw)) * cos(glm::radians(_pitch));
-        direction.y = sin(glm::radians(_pitch));
-        direction.z = sin(glm::radians(_yaw)) * cos(glm::radians(_pitch));
+        _forward.x = cos(glm::radians(_yaw)) * cos(glm::radians(_pitch));
+        _forward.y = sin(glm::radians(_pitch));
+        _forward.z = sin(glm::radians(_yaw)) * cos(glm::radians(_pitch));
 
-        _forward = glm::normalize(direction);
+        _forward = glm::normalize(_forward);
         _right   = glm::normalize(glm::cross(_forward, glm::vec3(0.0f, 1.0f, 0.0f)));
         _up      = glm::normalize(glm::cross(_right, _forward));
     }
