@@ -8,6 +8,21 @@
 #include "Render/Attribute.h"
 #include "Buffer.h"
 
+namespace
+{
+	constexpr bool use_integer_format(Eugenix::Render::DataType type)
+	{
+		switch (type)
+		{
+		case Eugenix::Render::DataType::Int:
+		case Eugenix::Render::DataType::UInt:
+			return true;
+		default:
+			return false;
+		}
+	}
+}
+
 namespace Eugenix
 {
 	namespace Render::OpenGL
@@ -39,13 +54,25 @@ namespace Eugenix
 
 			void Attribute(const Attribute& attribute)
 			{
-				glVertexArrayAttribFormat(
-					_handle, 
-					attribute.index, 
-					attribute.size, 
-					to_opengl_type(attribute.type), 
-					attribute.normalized ? GL_TRUE : GL_FALSE, 
-					attribute.offset);
+				if (use_integer_format(attribute.type))
+				{
+					glVertexArrayAttribIFormat(
+						_handle,
+						attribute.index,
+						attribute.size,
+						to_opengl_type(attribute.type),
+						attribute.offset);
+				}
+				else
+				{
+					glVertexArrayAttribFormat(
+						_handle,
+						attribute.index,
+						attribute.size,
+						to_opengl_type(attribute.type),
+						attribute.normalized ? GL_TRUE : GL_FALSE,
+						attribute.offset);
+				}
 
 				glVertexArrayAttribBinding(_handle, attribute.index, attribute.binding);
 				glEnableVertexArrayAttrib(_handle, attribute.index);
