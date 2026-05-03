@@ -5,36 +5,142 @@
 
 namespace Eugenix
 {
+    static GLenum ToSizedInternalFormat(GLint internalFormat)
+    {
+        switch (internalFormat)
+        {
+        case GL_RGB:
+            return GL_RGB8;
+
+        case GL_RGBA:
+            return GL_RGBA8;
+
+        case GL_RGB16F:
+            return GL_RGB16F;
+
+        case GL_RGBA16F:
+            return GL_RGBA16F;
+
+        case GL_RGB32F:
+            return GL_RGB32F;
+
+        case GL_RGBA32F:
+            return GL_RGBA32F;
+
+        default:
+            return static_cast<GLenum>(internalFormat);
+        }
+    }
+
     struct Framebuffer
     {
         void Create(int width, int height, GLint internalFormat, GLenum format)
         {
-            glGenFramebuffers(1, &_fboId);
-            glBindFramebuffer(GL_FRAMEBUFFER, _fboId);
+            _width = width;
+            _height = height;
+            _internalFormat = internalFormat;
+            _format = format;
 
-            glGenTextures(1, &_colorBuffer);
-            glBindTexture(GL_TEXTURE_2D, _colorBuffer);
-            GLenum type = (internalFormat == GL_RGBA16F) ? GL_FLOAT : GL_UNSIGNED_BYTE;
-            glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, type, NULL);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glBindTexture(GL_TEXTURE_2D, 0);
+            glCreateFramebuffers(1, &_fboId);
 
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorBuffer, 0);
+            glCreateTextures(GL_TEXTURE_2D, 1, &_colorBuffer);
 
-            glGenRenderbuffers(1, &_depthStencilBuffer);
-            glBindRenderbuffer(GL_RENDERBUFFER, _depthStencilBuffer);
-            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
-            glBindRenderbuffer(GL_RENDERBUFFER, 0);
+            GLenum type = (_internalFormat == GL_RGBA16F) ? GL_FLOAT : GL_UNSIGNED_BYTE;
 
-            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, _depthStencilBuffer);
+            //glTexImage2D принимал unsized internal format типа GL_RGB, а glTextureStorage2D требует sized internal format.
+            const GLenum sizedInternalFormat = ToSizedInternalFormat(_internalFormat);
 
-            if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            glTextureStorage2D(
+                _colorBuffer,
+                1,
+                sizedInternalFormat,
+                _width,
+                _height
+            );
+
+            glTextureParameteri(_colorBuffer, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTextureParameteri(_colorBuffer, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTextureParameteri(_colorBuffer, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTextureParameteri(_colorBuffer, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+            glNamedFramebufferTexture(
+                _fboId,
+                GL_COLOR_ATTACHMENT0,
+                _colorBuffer,
+                0
+            );
+
+            glCreateRenderbuffers(1, &_depthStencilBuffer);
+
+            glNamedRenderbufferStorage(
+                _depthStencilBuffer,
+                GL_DEPTH24_STENCIL8,
+                _width,
+                _height
+            );
+
+            glNamedFramebufferRenderbuffer(
+                _fboId,
+                GL_DEPTH_STENCIL_ATTACHMENT,
+                GL_RENDERBUFFER,
+                _depthStencilBuffer
+            );
+
+            constexpr GLenum drawBuffers[] = { GL_COLOR_ATTACHMENT0 };
+            glNamedFramebufferDrawBuffers(_fboId, 1, drawBuffers);
+
+            if (glCheckNamedFramebufferStatus(_fboId, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
             {
                 std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
             }
 
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            //glGenFramebuffers(1, &_fboId);
+            //glBindFramebuffer(GL_FRAMEBUFFER, _fboId);
+
+            //glGenTextures(1, &_colorBuffer);
+            //glBindTexture(GL_TEXTURE_2D, _colorBuffer);
+            //GLenum type = (internalFormat == GL_RGBA16F) ? GL_FLOAT : GL_UNSIGNED_BYTE;
+            //glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, type, NULL);
+            //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            //glBindTexture(GL_TEXTURE_2D, 0);
+
+            //glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorBuffer, 0);
+
+            //glGenRenderbuffers(1, &_depthStencilBuffer);
+            //glBindRenderbuffer(GL_RENDERBUFFER, _depthStencilBuffer);
+            //glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+            //glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+            //glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, _depthStencilBuffer);
+
+            //if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            //{
+            //    std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+            //}
+
+            //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+
+        void Destroy()
+        {
+            if (_depthStencilBuffer != 0)
+            {
+                glDeleteRenderbuffers(1, &_depthStencilBuffer);
+                _depthStencilBuffer = 0;
+            }
+
+            if (_colorBuffer != 0)
+            {
+                glDeleteTextures(1, &_colorBuffer);
+                _colorBuffer = 0;
+            }
+
+            if (_fboId != 0)
+            {
+                glDeleteFramebuffers(1, &_fboId);
+                _fboId = 0;
+            }
         }
 
         void Bind()
@@ -44,21 +150,82 @@ namespace Eugenix
 
         void Resize(int width, int height)
         {
-            glBindTexture(GL_TEXTURE_2D, _colorBuffer);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-            glBindRenderbuffer(GL_RENDERBUFFER, _depthStencilBuffer);
-            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+            if (width == _width && height == _height)
+                return;
+
+            _width = width;
+            _height = height;
+
+            // Immutable storage cannot be resized.
+            // Need to recreate texture and renderbuffer.
+
+            if (_colorBuffer != 0)
+                glDeleteTextures(1, &_colorBuffer);
+
+            if (_depthStencilBuffer != 0)
+                glDeleteRenderbuffers(1, &_depthStencilBuffer);
+
+            glCreateTextures(GL_TEXTURE_2D, 1, &_colorBuffer);
+
+            const GLenum sizedInternalFormat = ToSizedInternalFormat(_internalFormat);
+
+            glTextureStorage2D(
+                _colorBuffer,
+                1,
+                sizedInternalFormat,
+                _width,
+                _height
+            );
+
+            glTextureParameteri(_colorBuffer, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTextureParameteri(_colorBuffer, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTextureParameteri(_colorBuffer, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTextureParameteri(_colorBuffer, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+            glNamedFramebufferTexture(
+                _fboId,
+                GL_COLOR_ATTACHMENT0,
+                _colorBuffer,
+                0
+            );
+
+            glCreateRenderbuffers(1, &_depthStencilBuffer);
+
+            glNamedRenderbufferStorage(
+                _depthStencilBuffer,
+                GL_DEPTH24_STENCIL8,
+                _width,
+                _height
+            );
+
+            glNamedFramebufferRenderbuffer(
+                _fboId,
+                GL_DEPTH_STENCIL_ATTACHMENT,
+                GL_RENDERBUFFER,
+                _depthStencilBuffer
+            );
+
+            if (glCheckNamedFramebufferStatus(_fboId, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            {
+                std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete after resize!" << std::endl;
+            }
         }
 
-        void BindColorAttachment()
+        void BindColorAttachment(GLuint unit = 0) const
         {
-            glBindTexture(GL_TEXTURE_2D, _colorBuffer);
+            glBindTextureUnit(unit, _colorBuffer);
         }
 
     private:
         GLuint _fboId{};
         GLuint _colorBuffer{};
         GLuint _depthStencilBuffer{};
+
+        int _width{};
+        int _height{};
+
+        GLint _internalFormat{};
+        GLenum _format{};
     };
 
     class LearnOpenGLFramebuffersApp final : public LearnOpenGLAppBase
