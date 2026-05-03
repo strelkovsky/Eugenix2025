@@ -61,6 +61,12 @@ namespace Eugenix::Render::OpenGL
 			glProgramUniform1i(_handle, location, value);
 		}
 		// ------------------------------------------------------------------------
+		void SetUniform(std::string_view name, uint32_t value) const
+		{
+			auto location = glGetUniformLocation(_handle, name.data());
+			glProgramUniform1ui(_handle, location, value);
+		}
+		// ------------------------------------------------------------------------
 		void SetUniform(std::string_view name, bool v) const
 		{
 			SetUniform(name, int(v));
@@ -81,6 +87,7 @@ namespace Eugenix::Render::OpenGL
 		void SetUniform(std::string_view name, const glm::vec3& value) const
 		{
 			auto location = glGetUniformLocation(_handle, name.data());
+			//assert(location > 0);
 			glProgramUniform3fv(_handle, location, 1, &value[0]);
 		}
 		// ------------------------------------------------------------------------
