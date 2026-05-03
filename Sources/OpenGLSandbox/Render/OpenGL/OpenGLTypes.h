@@ -14,6 +14,7 @@ namespace Eugenix::Render::OpenGL
 		{
 		case DataType::UByte : return GL_UNSIGNED_BYTE;
 		case DataType::UInt : return GL_UNSIGNED_INT;
+		case DataType::Int : return GL_INT;
 		case DataType::Float : return GL_FLOAT;
 		}
 		assert(false && "Invalid DataType");

@@ -6,6 +6,7 @@ namespace Eugenix::Render
 	{
 		UByte,
 		UInt,
+		Int,
 		Float
 	};
 
